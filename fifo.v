@@ -63,5 +63,4 @@ module fifo #(
     assign push_stall  =    (read_index == (write_index + 1) % DEPTH);
     assign empty       =    (read_index == write_index);
 
-    // new
 endmodule
