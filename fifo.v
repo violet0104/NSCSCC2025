@@ -1,66 +1,50 @@
-`timescale 1ns / 1ps
-
-module fifo #(
-    parameter DATA_WIDTH = 128,     // 数据位宽（默认128位）
-    parameter      DEPTH = 8        // FIFO深度（默认8个条目）
-) (
+module FIFO
+(
     input wire clk,
     input wire rst,
-    
-    // 入队信号
-    input wire push,    // 入队使能信号
-    input wire [DATA_WIDTH - 1 : 0] push_data,      // 入队数据
+    input wire flush,
 
-    // 出队信号
-    input wire pop,     // 出队使能信号
-    output wire [DATA_WIDTH - 1 : 0] pop_data,      // 出队数据
-
-    input wire flush,       // FIFO清空信号
-    output wire full,        // FIFO满标志
-    output wire push_stall,  // 入队阻塞信号
-    output wire empty        // FIFO空标志
+    input wire push_en,
+    input wire [96:0] push_data,
+    input wire pop_en,
+    output wire [96:0] pop_data,
+    output wire empty,
+    output wire full,
+    output wire stall
 );
+    localparam length = 4;
 
-    localparam PTR_WIDTH = $clog2(DEPTH); // 指针位宽
+    reg [3:0] write_index;   
+    reg [3:0] read_index;
+    reg [96:0] data [15:0];  //32+32+32+1
     
-    // 队列主体
-    reg [DATA_WIDTH - 1 : 0] ram [0 : DEPTH - 1];
-
-    // 头尾指针
-    reg [PTR_WIDTH - 1 : 0] write_index;   // 写指针
-    reg [PTR_WIDTH - 1 : 0] read_index;    // 读指针
-
+    assign empty = write_index == read_index;
+    assign full  = read_index == (write_index + 1)%16;
+    assign stall = read_index == (write_index + 2)%16;
+    assign pop_data = data[read_index];
     
-    // 写入数据
-    always @(posedge clk) begin
-        // if (rst|flush) ram <= '{default: '0};
-        // else 
-        if (push) ram[write_index] <= push_data;
-    end
-
-    // 更新指针
-    always @(posedge clk) begin
-        if (rst || flush) begin
-            read_index <= 0;
-            // for(integer i = 0 ; i < DEPTH ; ++i) begin       // 初始化数组
-            //     ram[i] = 0;
-            // end
+    integer i;
+    always @(posedge clk or negedge rst)
+    begin
+        if(!rst | flush)
+        begin
+            write_index <= 4'b0;
+            read_index <= 4'b0;
+            for(i=0; i<16; i=i+1)
+                data[i] <= 97'b0;
         end
-        else if (pop & ~empty) read_index <= read_index + 1;
-    end
-    always @(posedge clk) begin
-        if (rst || flush) begin
-            write_index <= 0;
+        else 
+        begin
+            if(push_en & !full)
+            begin
+                data[write_index] <= push_data;
+                write_index <= write_index +1;
+            end
+            if(pop_en & !empty)
+            begin
+                read_index <= read_index + 1;
+            end
         end
-        else if (push & ~push_stall) write_index <= write_index + 1;
     end
-
-    // 读出数据
-    assign pop_data = ram[read_index];
-
-    //判断是否空或者满
-    assign full        =    (read_index == (write_index + 2) % DEPTH);
-    assign push_stall  =    (read_index == (write_index + 1) % DEPTH);
-    assign empty       =    (read_index == write_index);
 
 endmodule
