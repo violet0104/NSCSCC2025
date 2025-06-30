@@ -89,33 +89,10 @@ wire        dev2dc_rvalid;
 wire [`CACHE_BLK_SIZE-1:0] dev2dc_rdata;
 
 myCPU u_mycpu (
-    .cpu_rstn   (aresetn),
-    .cpu_clk    (aclk),
+    .cpu_clk   (aclk),
+    .cpu_rst   (aresetn),
+    .pi_master 
 
-    // Instruction Fetch Interface
-    .ifetch_rreq    (cpu2ic_rreq ),
-    .ifetch_addr    (cpu2ic_addr ),
-    .ifetch_valid   (ic2cpu_valid),
-    .ifetch_inst    (ic2cpu_inst ),
-    
-    // Data Access Interface
-    .daccess_ren    (cpu2dc_ren  ),
-    .daccess_addr   (cpu2dc_addr ),
-    .daccess_valid  (dc2cpu_valid),
-    .daccess_rdata  (dc2cpu_rdata),
-    .daccess_wen    (cpu2dc_wen  ),
-    .daccess_wdata  (cpu2dc_wdata),
-    .daccess_wresp  (dc2cpu_wresp),
-    
-`ifndef IMPL_TRAP
-    .excp_occur         (excp_occur),
-`endif
-    // Debug Interface
-    .debug_wb_valid     (debug_wb_valid),
-    .debug_wb_pc        (debug_wb_pc),
-    .debug_wb_ena       (debug_wb_rf_we),
-    .debug_wb_reg       (debug_wb_rf_wnum),
-    .debug_wb_value     (debug_wb_rf_wdata)
 );
 
 inst_cache U_icache (

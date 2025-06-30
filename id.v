@@ -39,7 +39,7 @@ module id
     reg  [5:0] [4:0]id_reg2_read_addr;
     reg  [5:0] [4:0]id_reg_write_addr;
 
-    decoder_1R u_decoder_1R (
+    id_1R_I26 u_did_1R_I26 (
         .pc(pc),
         .inst(inst),
 
@@ -57,7 +57,7 @@ module id
         .reg_write_addr(id_reg1_write_addr[0]);
     ); 
 
-    decoder_1RI21 u_decoder_1RI21 (
+    id_1RI21 u_id_1RI21 (
         .pc(pc),
         .inst(inst),
 
@@ -75,7 +75,7 @@ module id
         .reg_write_addr(id_reg1_write_addr[1]);
     ); 
 
-    decoder_2RI12 u_decoder_2RI12 (
+    id_2RI12 u_id_2RI12 (
         .pc(pc),
         .inst(inst),
 
@@ -93,7 +93,7 @@ module id
         .reg_write_addr(id_reg1_write_addr[2]);
     ); 
 
-    decoder_2RI14 u_decoder_2RI14 (
+    id_2RI14 u_id_2RI14 (
         .pc(pc),
         .inst(inst),
 
@@ -111,7 +111,7 @@ module id
         .reg_write_addr(id_reg1_write_addr[3]);
     ); 
 
-    decoder_2RI16 u_decoder_2RI16 (
+    id_2RI16 u_id_2RI16 (
         .pc(pc),
         .inst(inst),
 
@@ -129,7 +129,7 @@ module id
         .reg_write_addr(id_reg1_write_addr[4]);
     ); 
 
-    decoder_3R u_decoder_3R (
+    id_3R u_id_3R (
         .pc(pc),
         .inst(inst),
 

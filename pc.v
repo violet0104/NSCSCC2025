@@ -15,7 +15,7 @@ module pc
     input wire [31:0] pre_addr, //预测的分支地址
     input wire [1:0]  taken_sure, // 确定跳转的信号
 
-    output reg pc_o,
+    output reg pc_out,
     output reg pc_is_exception,
     output reg pc_exception_cause,
     output reg inst_en_1,   //指令使能信号
@@ -28,7 +28,7 @@ module pc
 
     //pc异常的情况
     reg pc_excp;
-    assign pc_excp = (pc_o[1: 0] != 2'b00);
+    assign pc_excp = (pc_out[1: 0] != 2'b00);
     assign pc_is_exception = pc_excp;
     assign pc_exception_cause = (pc_excp ?  `EXCEPTION_ADEF: `EXCEPTION_NOP);
 
@@ -44,8 +44,8 @@ module pc
             pc_8 <= new_pc;
         end
         else if(|taken_sure) begin
-            pc_4 <= pre_branch_addr;
-            pc_8 <= pre_branch_addr;
+            pc_4 <= pre_addr;
+            pc_8 <= pre_addr;
         end
         else if(pause) begin
             pc_4 <= pc_4;
@@ -57,11 +57,11 @@ module pc
                 pc_8 <= pc_8;
             end
             else begin
-                pc_4 <= pc_o + 32'h4;
-                pc_8 <= pc_o + 32'h8;
+                pc_4 <= pc_out + 32'h4;
+                pc_8 <= pc_out + 32'h8;
             end
         end
     end
-    assign pc_o=iuncache?pc_4:pc_8;
+    assign pc_out = iuncache?pc_4:pc_8;
 
 endmodule

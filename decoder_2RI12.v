@@ -68,7 +68,7 @@ module decoder_2RI12
                 imm = {{20{si12[11]}},si12};
                 inst_valid = 1'b1;
             end
-            `ADDIW_OPCODE:begin
+            `ADDI_OPCODE:begin
                 reg_writen_en = 1'b1;
                 aluop = `ALU_ADDIW;
                 alusel = `ALU_SEL_ARITHMETIC;

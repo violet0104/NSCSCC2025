@@ -16,9 +16,9 @@ module fifo #(
     output wire [DATA_WIDTH - 1 : 0] pop_data,      // 出队数据
 
     input wire flush,       // FIFO清空信号
-    output reg full,        // FIFO满标志
-    output reg push_stall,  // 入队阻塞信号
-    output reg empty        // FIFO空标志
+    output wire full,        // FIFO满标志
+    output wire push_stall,  // 入队阻塞信号
+    output wire empty        // FIFO空标志
 );
 
     localparam PTR_WIDTH = $clog2(DEPTH); // 指针位宽
@@ -27,8 +27,8 @@ module fifo #(
     reg [DATA_WIDTH - 1 : 0] ram [0 : DEPTH - 1];
 
     // 头尾指针
-    wire [PTR_WIDTH - 1 : 0] write_index;   // 写指针
-    wire [PTR_WIDTH - 1 : 0] read_index;    // 读指针
+    reg [PTR_WIDTH - 1 : 0] write_index;   // 写指针
+    reg [PTR_WIDTH - 1 : 0] read_index;    // 读指针
 
     
     // 写入数据
