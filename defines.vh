@@ -165,3 +165,8 @@
 `define ALU_SEL_JUMP_BRANCH 3'b101
 `define ALU_SEL_LOAD_STORE 3'b110
 `define ALU_SEL_CSR 3'b111
+
+// 数据长度
+`define DEPTH 8                 // 队列深度
+`define DATA_WIDTH 97           // 前端传递的数据宽度   
+`define DECODE_DATA_WIDTH 32    // 解码数据宽度 (?? 还未确定长度)
