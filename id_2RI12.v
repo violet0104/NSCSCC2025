@@ -5,6 +5,9 @@ module decoder_2RI12
 (
     input  wire [31:0] pc,
     input  wire [31:0] inst,
+
+    output reg  [2:0] is_exception,
+    output reg  [2:0][6:0] exception_cause,
     output reg  inst_valid,
     output reg  [31:0] pc_out,
     output reg  [31:0] inst_out,
@@ -17,7 +20,7 @@ module decoder_2RI12
     output reg  [4:0]reg1_read_addr,
     output reg  [4:0]reg2_read_addr,
     output reg  [4:0]reg_write_addr,  //目的寄存器地址
-    output reg  privilege, //特权指令标志
+    output reg  is_privilege, //特权指令标志
     output reg  csr_read_en, //CSR寄存器读使能
     output reg  csr_write_en, //CSR寄存器写使能
     output reg  [13:0] csr_addr, //CSR
@@ -30,20 +33,24 @@ module decoder_2RI12
     reg [11:0] ui12;
     reg [11:0] si12;
 
-    opcode = inst[31:22];
-    rj = inst[9:5];
-    rd = inst[21:10];
-    ui12 = inst[21:10];
-    si12 = inst[21:10];
-    pc_out = pc;
-    inst_out = inst;
-    reg_write_addr = rd;
-    is_privilege = 1'b0;
-    csr_read_en = 1'b0;
-    csr_write_en = 1'b0;
-    csr_addr = 14'b0;
-    is_cnt = 1'b0;
-    invtlb_op = 5'b0;
+    always @(*) begin
+        opcode = inst[31:22];
+        rj = inst[9:5];
+        rd = inst[4:0];
+        is_exception = 3'b0;
+        exception_cause = {3{`EXCEPTION_INE}};
+        ui12 = inst[21:10];
+        si12 = inst[21:10];
+        pc_out = pc;
+        inst_out = inst;
+        reg_write_addr = rd;
+        is_privilege = 1'b0;
+        csr_read_en = 1'b0;
+        csr_write_en = 1'b0;
+        csr_addr = 14'b0;
+        is_cnt = 1'b0;
+        invtlb_op = 5'b0;
+    end
 
     always @(*) begin
         case(opcode)
