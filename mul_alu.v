@@ -2,7 +2,7 @@
 
 module mul_alu (
     input wire clk,
-    input wire rst,
+    input wire rstn,
 
     input wire start,           //乘法运算开始信号
     input wire signed_op,       // 操作数有无符号选择（1表示有符号数，0表示无符号数）
@@ -31,7 +31,7 @@ module mul_alu (
     end
 
     always @(posedge clk) begin
-        if (rst)    valid <= 0;
+        if (rstn)    valid <= 0;
         else        valid <= start ? 1 : 0;
     end
 
