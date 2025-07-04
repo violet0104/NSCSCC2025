@@ -5,7 +5,7 @@
 module dispatch
 (
     input wire clk,
-    input wire clk,
+    input wire rst,
 
     //控制单元的暂停和刷新信号
     input wire pause,
@@ -22,7 +22,12 @@ module dispatch
     input wire [1:0] [4:0]  reg_read_addr_i0,   //第0条指令的两个源寄存器地址
     input wire [1:0] [4:0]  reg_read_addr_i1,   //第1条指令的两个源寄存器地址
 
-    
+    input wire [1:0]        is_privilege_i, //两条指令的特权指令标志
+    input wire [1:0]        is_cnt_i,       //两条指令的计数器指令标志
+    input wire [1:0] [2:0]  is_exception_i, //两条指令的异常标志
+    input wire [1:0] [2:0] [6:0]  exception_cause_i, //两条指令的异常原因,会变长
+    input wire [1:0] [4:0]  invtlb_op_i,   //两条指令的分支指令标志
+
     input wire [1:0]        reg_write_en_i,    //目的寄存器写使能
     input wire [1:0] [4:0]  reg_write_addr_i,  //目的寄存器地址
      
@@ -54,10 +59,10 @@ module dispatch
     output reg [1:0] [31:0] inst_o,
     output reg [1:0]        valid_o,
 
-    output reg [1:0]        reg_read_en_o0,     //第0条指令的两个源寄存器读使能   
-    output reg [1:0]        reg_read_en_o1,     //第1条指令的两个源寄存器读使能
-    output reg [1:0] [4:0]  reg_read_addr_o0,   //第0条指令的两个源寄存器地址
-    output reg [1:0] [4:0]  reg_read_addr_o1,   //第1条指令的两个源寄存器地址
+    output wire [1:0]        is_privilege_o, //两条指令的特权指令标志
+    output wire [1:0] [3:0]  is_exception_o, //两条指令的异常标志
+    output wire [1:0] [3:0] [6:0]  exception_cause_o, //两条指令的异常原因,会变长
+    output wire [1:0] [4:0]  invtlb_op_o,   //两条指令的分支指令标志
 
     output reg [1:0]        reg_write_en_o,    //目的寄存器写使能
     output reg [1:0] [4:0]  reg_write_addr_o,  //目的寄存器地址
@@ -69,13 +74,30 @@ module dispatch
     output reg [1:0] [7:0]  alu_op_o,
     output reg [1:0] [2:0]  alu_sel_o,
 
-    output wire       [1:0]  invalid_en //指令发射控制信号
+    output wire       [1:0]  invalid_en, //指令发射控制信号
 
     //与寄存器之间的输入与输出
-    input wire [1:0] [31:0]  from_reg_read_data_i0;//寄存器给出的第0条指令的源操作数，这么写可能存在问题？？？
-    input wire [1:0] [31:0]  from_reg_read_data_i1;//寄存器给出的第1条指令的源操作数，这么写可能存在问题？？？
+    input wire [1:0] [31:0]  from_reg_read_data_i0,//寄存器给出的第0条指令的源操作数，这么写可能存在问题？？？
+    input wire [1:0] [31:0]  from_reg_read_data_i1,//寄存器给出的第1条指令的源操作数，这么写可能存在问题？？？
 
-    output wire dispatch_pause ;//发射器暂停信号,当发生load-use冒险时需要暂停
+    output wire dispatch_pause ,//发射器暂停信号,当发生load-use冒险时需要暂停
+
+    //给csr模块的读使能和读地址
+    input wire [1:0]         csr_read_en_i,//csr写使能
+    input wire [1:0] [13:0]  csr_addr_i,//寄csr写地址
+    input wire [1:0]         csr_write_en_i,//csr写数据
+    input wire [1:0]         pre_is_branch_taken_i,// //前一条指令是否是分支指令
+    input wire [1:0] [31:0]  pre_branch_addr_i, //前一条指令的分支地址
+
+    input wire [1:0] [31:0]  csr_read_data_i,//csr读数据
+
+    output wire [1:0]        csr_write_en_o, //寄存器堆的csr读使能
+    output wire [1:0] [13:0] csr_addr_o, //寄存器堆的csr写地址
+
+    output wire [1:0] [31:0] csr_read_data_o, //寄存器堆的csr写数据
+    
+    output wire [1:0]        pre_is_branch_taken_o, //前一条指令是否是分支指令
+    output wire [1:0] [31:0] pre_branch_addr_o //前一条指令的分支地址
 );
 
     wire [1:0] send_en;     //内部发射信号，给invalid_en赋值
@@ -83,6 +105,8 @@ module dispatch
     
     wire [1:0] inst_valid;  //内部指令有效标志
 
+    wire       cnt_inst; //计数器指令标志，判断发射的两条指令中有没有计数器指令
+    wire       privilege_inst; //特权指令标志，判断发射的两条指令中有没有特权指令
     wire       mem_inst;//访存信号标志，判断发射的两条指令中有没有load和store类型
     wire       data_hazard_inst;//数据冒险标志，判断是否出现了数据冒险
 
@@ -93,25 +117,32 @@ module dispatch
     reg [2:0]  alu_sel_temp [1:0]; //临时寄存器，存储ALU功能选择
     reg [1:0]  reg_write_en_temp; //临时寄存器，存储目的寄存器写使能
     reg [4:0]  reg_write_addr_temp [1:0]; //临时寄存器，存储目的寄存器地址
-    reg [1:0]  reg_read_en_temp0; //临时寄存器，存储第0条指令的两个源寄存器读使能
-    reg [1:0]  reg_read_en_temp1; //临时寄存器，存储第1条指令的两个源寄存器读使能
-    reg [4:0]  reg_read_addr_temp0 [1:0]; //临时寄存器，存储第0条指令的两个源寄存器地址
-    reg [4:0]  reg_read_addr_temp1 [1:0]; //临时寄存器，存储第1条指令的两个源寄存器地址
-    reg [31:0] imm_temp [1:0]; //临时寄存器，存储立即数值
     reg [31:0] reg_read_data_temp0 [1:0]; //寄存器堆给出的第0条指令的两个源操作数
     reg [31:0] reg_read_data_temp1 [1:0]; //寄存器堆给出的第1条指令的两个源操作数
+    reg [1:0]  is_privilege_temp; //临时寄存器，存储特权指令标志
+    reg [1:0] [3:0]  is_exception_temp; //两条指令的异常标志
+    reg [1:0] [3:0] [6:0]  exception_cause_temp; //两条指令的异常原因,会变长
+    reg [1:0] [4:0]  invtlb_op_temp;   //两条指令的分支指令标志
+    reg [1:0]  csr_write_en_temp; //临时寄存器，存储csr写使能
+    reg [1:0] [13:0] csr_addr_temp; //临时寄存器，存储csr写地址
+    reg [1:0]        pre_is_branch_taken_temp; //临时寄存器，存储前一条指令是否是分支指令
+    reg [1:0] [31:0] pre_branch_addr_temp; //临时寄存器，存储前一条指令的分支地址
+    reg [1:0] [31:0] csr_read_data_temp; //临时寄存器，存储csr读数据
 
     assign invalid_en = pause ? 2'b00 : send_en;//发射控制信号赋值
 
     assign inst_valid = {valid_i[1] , valid_i[0]};//内部有效标志赋值
     
+
+    assign privilege_inst = (is_privilege_i[0] == 1'b1 || is_privilege_i[1] == 1'b1);//判断发射的两条指令中有没有特权指令
     assign mem_inst = (alu_sel_i[0] == `ALU_SEL_LOAD_STORE || alu_sel_i[1] == `ALU_SEL_LOAD_STORE);//判断发射的两条指令中有没有load和store类型的指令
     //下面这条语句，检验了将要双发射的这两条指令间是否存在数据相关冒险
     assign data_hazard_inst = (reg_write_en_i[0] == 1'b1 && reg_write_addr_i[o] != 5'b0)//第0条指令有写寄存器的功能
                             &&((reg_write_addr_i[0] == reg_read_addr_i1[0] && reg_read_en_i1[0])//第0条指令的写寄存器的地址与第1条指令第1个源寄存器相同
                             ||(reg_write_addr_i[0] == reg_read_addr_i1[0] && reg_read_en_i1[1]));//第0条指令的写寄存器的地址与第1条指令第2个源寄存器相同
+    assign cnt_inst = (is_cnt_i[0] == 1'b1 || is_cnt_i[1] == 1'b1);//判断发射的两条指令中有没有计数器指令
 
-    assign send_double = (!mem_inst) && (!data_hazard_inst); //判断这两条指令能否同时发射
+    assign send_double = (!mem_inst) && (!data_hazard_inst) && (!cnt_inst) && (!privilege_inst) && (&inst_valid); //判断这两条指令能否同时发射
     assign send_en = (send_double == 1'b1) ? 2'b11 : (inst_valid[0] ? 2'b01 : (inst_valid[1] ? 2'b10 : 2'b00));//当指令不能双发射时优先发第一条
 
     //信号传输(指令的读数据怎么办)？？？？？？？
@@ -124,11 +155,14 @@ module dispatch
             alu_sel_temp[i] = alu_sel_i[i];
             reg_write_en_temp[i] = reg_write_en_i[i];
             reg_write_addr_temp[i] = reg_write_addr_i[i];
-            reg_read_en_temp0[i] = reg_read_en_i0[i];
-            reg_read_en_temp1[i] = reg_read_en_i1[i];
-            reg_read_addr_temp0[i] = reg_read_addr_i0[i];
-            reg_read_addr_temp1[i] = reg_read_addr_i1[i];
-            imm_temp[i] = imm_i[i];
+            is_privilege_temp[i] = is_privilege_i[i];
+            is_exception_temp[i] = {is_exception_i[i],1'b0};
+            exception_cause_temp[i] = {exception_cause_i[i],`EXCEPTION_NOP}
+            invtlb_op_temp[i] = invtlb_op_i[i];
+            csr_write_en_temp[i] = csr_write_en_i[i];
+            csr_addr_temp[i] = csr_addr_i[i];
+            pre_is_branch_taken_temp[i] = pre_is_branch_taken_i[i];
+            pre_branch_addr_temp[i] = pre_branch_addr_i[i];
         end
     end
     
@@ -209,6 +243,18 @@ module dispatch
         end
     end
 
+    //csr
+        always @(*) begin
+            for(integer i = 0 ; i < 2 ; i++) begin
+                if(csr_read_en_i[i] == 1'b1) begin
+                    csr_read_data_temp[i] = csr_read_data_i[i];
+                end else begin
+                    csr_read_data_temp[i] = 32'b0; //如果没有读使能，则赋值为0
+                end
+            end
+        end
+
+
     //load-use冒险比起一般的数据冒险更严重。
     //一般的数据冒险在执行阶段就可得到结果
     //load-use冒险则需要在访存阶段后才能结束
@@ -248,13 +294,17 @@ module dispatch
     reg [2:0]  ex_alu_sel_temp        [1:0]; 
     reg [1:0]  ex_reg_write_en_temp; 
     reg [4:0]  ex_reg_write_addr_temp [1:0]; 
-    reg [1:0]  ex_reg_read_en_temp0; 
-    reg [1:0]  ex_reg_read_en_temp1; 
-    reg [4:0]  ex_reg_read_addr_temp0 [1:0]; 
-    reg [4:0]  ex_reg_read_addr_temp1 [1:0]; 
-    reg [31:0] ex_imm_temp            [1:0]; 
     reg [31:0] ex_reg_read_data_temp0 [1:0]; 
     reg [31:0] ex_reg_read_data_temp1 [1:0]; 
+    reg [1:0]  ex_is_privilege_temp; //临时寄存器，存储特权指令标志
+    reg [1:0] [3:0]  ex_is_exception_temp; //两条指令的异常标志
+    reg [1:0] [3:0] [6:0]  ex_exception_cause_temp; //两条指令的异常原因,会变长
+    reg [1:0] [4:0]  ex_invtlb_op_temp;   //两条指令的分支指令标志
+    reg [1:0]  ex_csr_write_en_temp; //临时寄存器，存储csr写使能
+    reg [1:0] [13:0] ex_csr_addr_temp; //临时寄存器，存储csr写地址
+    reg [1:0]        ex_pre_is_branch_taken_temp; //临时寄存器，存储前一条指令是否是分支指令
+    reg [1:0] [31:0] ex_pre_branch_addr_temp; //临时寄存器，存储前一条指令的分支地址
+    reg [1:0] [31:0] ex_csr_read_data_temp; //临时寄存器，存储csr读数据
 
     always @(*) begin
         if(send_en[0])begin
@@ -265,13 +315,17 @@ module dispatch
             ex_alu_sel_temp[0] = alu_sel_temp[0];
             ex_reg_write_en_temp[0] = reg_write_en_temp[0];
             ex_reg_write_addr_temp[0] = reg_write_addr_temp[0];
-            ex_imm_temp[0] = imm_temp[0];
-            ex_reg_read_en_temp0[0] = reg_read_en_temp0[0];
-            ex_reg_read_en_temp0[1] = reg_read_en_temp1[1];
-            ex_reg_read_addr_temp0[0] = reg_read_addr_temp0[0];
-            ex_reg_read_addr_temp0[1] = reg_read_addr_temp1[1];
             ex_reg_read_data_temp0[0] = reg_read_data_temp0[0];
             ex_reg_read_data_temp0[1] = reg_read_data_temp1[1];
+            ex_is_privilege_temp[0] = is_privilege_temp[0];
+            ex_is_exception_temp[0] = is_exception_temp[0];
+            ex_exception_cause_temp[0] = exception_cause_temp[0];
+            ex_invtlb_op_temp[0] = invtlb_op_temp[0];
+            ex_csr_write_en_temp[0] = csr_write_en_temp[0];
+            ex_csr_addr_temp[0] = csr_addr_temp[0];
+            ex_pre_is_branch_taken_temp[0] = pre_is_branch_taken_temp[0];
+            ex_pre_branch_addr_temp[0] = pre_branch_addr_temp[0];
+            ex_csr_read_data_temp[0] = csr_read_data_temp[0];
         end 
         else begin
             ex_pc_temp[0] = 32'b0;
@@ -281,13 +335,17 @@ module dispatch
             ex_alu_sel_temp[0] = 3'b0;
             ex_reg_write_en_temp[0] = 1'b0;
             ex_reg_write_addr_temp[0] = 5'b0;
-            ex_imm_temp[0] = 32'b0;
-            ex_reg_read_en_temp0[0] = 1'b0;
-            ex_reg_read_en_temp0[1] = 1'b0;
-            ex_reg_read_addr_temp0[0] = 5'b0;
-            ex_reg_read_addr_temp0[1] = 5'b0;
             ex_reg_read_data_temp0[0] = 32'b0;
             ex_reg_read_data_temp0[1] = 32'b0;
+            ex_is_privilege_temp[0] = 1'b0;
+            ex_is_exception_temp[0] = 4'b0;
+            ex_exception_cause_temp[0] = 7'b0;
+            ex_invtlb_op_temp[0] = 5'b0;
+            ex_csr_write_en_temp[0] = 1'b0;
+            ex_csr_addr_temp[0] = 14'b0;
+            ex_pre_is_branch_taken_temp[0] = 1'b0;
+            ex_pre_branch_addr_temp[0] = 32'b0;
+            ex_csr_read_data_temp[0] = 32'b0;
         end
         if(send_en[1]) begin
              ex_pc_temp[1] = pc_temp[1];
@@ -297,13 +355,17 @@ module dispatch
             ex_alu_sel_temp[1] = alu_sel_temp[1];
             ex_reg_write_en_temp[1] = reg_write_en_temp[1];
             ex_reg_write_addr_temp[1] = reg_write_addr_temp[1];
-            ex_imm_temp[1] = imm_temp[1];
-            ex_reg_read_en_temp1[0] = reg_read_en_temp1[0];
-            ex_reg_read_en_temp1[1] = reg_read_en_temp1[1];
-            ex_reg_read_addr_temp1[0] = reg_read_addr_temp1[0];
-            ex_reg_read_addr_temp1[1] = reg_read_addr_temp1[1];
             ex_reg_read_data_temp1[0] = reg_read_data_temp1[0];
             ex_reg_read_data_temp1[1] = reg_read_data_temp1[1];
+            ex_is_privilege_temp[1] = is_privilege_temp[1];
+            ex_is_exception_temp[1] = is_exception_temp[1];
+            ex_exception_cause_temp[1] = exception_cause_temp[1];
+            ex_invtlb_op_temp[1] = invtlb_op_temp[1];
+            ex_csr_write_en_temp[1] = csr_write_en_temp[1];
+            ex_csr_addr_temp[1] = csr_addr_temp[1];
+            ex_pre_is_branch_taken_temp[1] = pre_is_branch_taken_temp[1];
+            ex_pre_branch_addr_temp[1] = pre_branch_addr_temp[1];
+            ex_csr_read_data_temp[1] = csr_read_data_temp[1];
         end
         else begin
             ex_pc_temp[1] = 32'b0;
@@ -313,13 +375,17 @@ module dispatch
             ex_alu_sel_temp[1] = 3'b0;
             ex_reg_write_en_temp[1] = 1'b0;
             ex_reg_write_addr_temp[1] = 5'b0;
-            ex_imm_temp[1] = 32'b0;
-            ex_reg_read_en_temp1[0] = 1'b0;
-            ex_reg_read_en_temp1[1] = 1'b0;
-            ex_reg_read_addr_temp1[0] = 5'b0;
-            ex_reg_read_addr_temp1[1] = 5'b0;
             ex_reg_read_data_temp1[0] = 32'b0;
             ex_reg_read_data_temp1[1] = 32'b0;
+            ex_is_privilege_temp[1] = 1'b0;
+            ex_is_exception_temp[1] = 4'b0;
+            ex_exception_cause_temp[1] = 7'b0;
+            ex_invtlb_op_temp[1] = 5'b0;
+            ex_csr_write_en_temp[1] = 1'b0;
+            ex_csr_addr_temp[1] = 14'b0;
+            ex_pre_is_branch_taken_temp[1] = 1'b0;
+            ex_pre_branch_addr_temp[1] = 32'b0;
+            ex_csr_read_data_temp[1] = 32'b0;
         end
     end
     wire dispatch_current_pause;//当前发射器的暂停信号
@@ -331,50 +397,62 @@ module dispatch
             pc_o <= 2'b0;
             inst_o <= 2'b0;
             valid_o <= 2'b0;
-            reg_read_en_o0 <= 2'b0;
-            reg_read_en_o1 <= 2'b0;
-            reg_read_addr_o0 <= 2'b0;
-            reg_read_addr_o1 <= 2'b0;
             reg_write_en_o <= 2'b0;
             reg_write_addr_o <= 2'b0;
-            imm_o <= 2'b0;
             alu_op_o <= 2'b0;
             alu_sel_o <= 2'b0;
             reg_read_data_o0 <= 2'b0;
             reg_read_data_o1 <= 2'b0;
+            is_privilege_o <= 2'b0;
+            is_exception_o <= 2'b0;
+            exception_cause_o <= 2'b0;
+            invtlb_op_o <= 2'b0;
+            csr_write_en_o <= 2'b0;
+            csr_addr_o <= 2'b0;
+            csr_read_data_o <= 2'b0;
+            pre_is_branch_taken_o <= 2'b0;
+            pre_branch_addr_o <= 2'b0;
         end 
         else if( !pause ) begin
             pc_o <= ex_pc_temp;
             inst_o <= ex_inst_temp;
             valid_o <= ex_valid_temp;
-            reg_read_en_o0 <= ex_reg_read_en_temp0;
-            reg_read_en_o1 <= ex_reg_read_en_temp1;
-            reg_read_addr_o0 <= ex_reg_read_addr_temp0;
-            reg_read_addr_o1 <= ex_reg_read_addr_temp1;
             reg_write_en_o <= ex_reg_write_en_temp;
             reg_write_addr_o <= ex_reg_write_addr_temp;
-            imm_o <= ex_imm_temp;
             alu_op_o <= ex_alu_op_temp;
             alu_sel_o <= ex_alu_sel_temp;
             reg_read_data_o0 <= ex_reg_read_data_temp0;
             reg_read_data_o1 <= ex_reg_read_data_temp1;
+            is_privilege_o <= ex_is_privilege_temp;
+            is_exception_o <= ex_is_exception_temp;
+            exception_cause_o <= ex_exception_cause_temp;
+            invtlb_op_o <= ex_invtlb_op_temp;
+            csr_write_en_o <= ex_csr_write_en_temp;
+            csr_addr_o <= ex_csr_addr_temp;
+            csr_read_data_o <= ex_csr_read_data_temp;
+            pre_is_branch_taken_o <= ex_pre_is_branch_taken_temp;
+            pre_branch_addr_o <= ex_pre_branch_addr_temp;
         end
         else begin
             //暂停时不做任何操作
             pc_o <= pc_o;
             inst_o <= inst_o;
             valid_o <= valid_o;
-            reg_read_en_o0 <= reg_read_en_o0;
-            reg_read_en_o1 <= reg_read_en_o1;
-            reg_read_addr_o0 <= reg_read_addr_o0;
-            reg_read_addr_o1 <= reg_read_addr_o1;
             reg_write_en_o <= reg_write_en_o;
             reg_write_addr_o <= reg_write_addr_o;
-            imm_o <= imm_o;
             alu_op_o <= alu_op_o;
             alu_sel_o <= alu_sel_o;
             reg_read_data_o0 <= reg_read_data_o0;
             reg_read_data_o1 <= reg_read_data_o1;
+            is_privilege_o <= is_privilege_o;
+            is_exception_o <= is_exception_o;
+            exception_cause_o <= exception_cause_o;
+            invtlb_op_o <= invtlb_op_o;
+            csr_write_en_o <= csr_write_en_o;
+            csr_addr_o <= csr_addr_o;
+            csr_read_data_o <= csr_read_data_o;
+            pre_is_branch_taken_o <= pre_is_branch_taken_o;
+            pre_branch_addr_o <= pre_branch_addr_o;
         end
     end
     
