@@ -5,8 +5,8 @@ module mem
 (
     input  wire clk,
     input  wire rst,
-    input  wire [31:0] pc,
-    input  wire [31:0] inst,
+    input  wire [31:0] pc [1:0],
+    input  wire [31:0] inst [1:0],
 
     // 执行阶段的信号
     input  wire [1:0][4:0] is_exception,   //异常标志
