@@ -27,7 +27,6 @@ module mem
 
     //dcache的信号
     input  wire [31:0] dcache_read_data, 
-    input  wire addr_ok,
     input  wire data_ok, //数据访问完成信号
     input  wire [31:0] dcache_P_addr,
     

@@ -59,10 +59,10 @@ module dispatch
     output reg [1:0] [31:0] inst_o,
     output reg [1:0]        valid_o,
 
-    output wire [1:0]        is_privilege_o, //两条指令的特权指令标志
-    output wire [1:0] [3:0]  is_exception_o, //两条指令的异常标志
-    output wire [1:0] [3:0] [6:0]  exception_cause_o, //两条指令的异常原因,会变长
-    output wire [1:0] [4:0]  invtlb_op_o,   //两条指令的分支指令标志
+    output reg [1:0]        is_privilege_o, //两条指令的特权指令标志
+    output reg [1:0] [3:0]  is_exception_o, //两条指令的异常标志
+    output reg [1:0] [3:0] [6:0]  exception_cause_o, //两条指令的异常原因,会变长
+    output reg [1:0] [4:0]  invtlb_op_o,   //两条指令的分支指令标志
 
     output reg [1:0]        reg_write_en_o,    //目的寄存器写使能
     output reg [1:0] [4:0]  reg_write_addr_o,  //目的寄存器地址
@@ -70,11 +70,10 @@ module dispatch
     output reg [1:0] [31:0] reg_read_data_o0, //寄存器堆给出的第0条指令的两个源操作数
     output reg [1:0] [31:0] reg_read_data_o1, //寄存器堆给出的第1条指令的两个源操作数
 
-    output reg [1:0] [4:0]  imm_o,
     output reg [1:0] [7:0]  alu_op_o,
     output reg [1:0] [2:0]  alu_sel_o,
 
-    output wire       [1:0]  invalid_en, //指令发射控制信号
+    output wire      [1:0]  invalid_en, //指令发射控制信号
 
     //与寄存器之间的输入与输出
     input wire [1:0] [31:0]  from_reg_read_data_i0,//寄存器给出的第0条指令的源操作数，这么写可能存在问题？？？
@@ -91,13 +90,13 @@ module dispatch
 
     input wire [1:0] [31:0]  csr_read_data_i,//csr读数据
 
-    output wire [1:0]        csr_write_en_o, //寄存器堆的csr读使能
-    output wire [1:0] [13:0] csr_addr_o, //寄存器堆的csr写地址
+    output reg [1:0]        csr_write_en_o, //寄存器堆的csr读使能
+    output reg [1:0] [13:0] csr_addr_o, //寄存器堆的csr写地址
 
-    output wire [1:0] [31:0] csr_read_data_o, //寄存器堆的csr写数据
+    output reg [1:0] [31:0] csr_read_data_o, //寄存器堆的csr写数据
     
-    output wire [1:0]        pre_is_branch_taken_o, //前一条指令是否是分支指令
-    output wire [1:0] [31:0] pre_branch_addr_o //前一条指令的分支地址
+    output reg [1:0]        pre_is_branch_taken_o, //前一条指令是否是分支指令
+    output reg [1:0] [31:0] pre_branch_addr_o //前一条指令的分支地址
 );
 
     wire [1:0] send_en;     //内部发射信号，给invalid_en赋值
@@ -110,24 +109,24 @@ module dispatch
     wire       mem_inst;//访存信号标志，判断发射的两条指令中有没有load和store类型
     wire       data_hazard_inst;//数据冒险标志，判断是否出现了数据冒险
 
-    reg [31:0] pc_temp      [1:0]; //临时寄存器，存储指令地址
-    reg [31:0] inst_temp    [1:0]; //临时寄存器，存储指令编码
-    reg [1:0]  valid_temp;          //临时寄存器，存储指令有效标志
-    reg [7:0]  alu_op_temp  [1:0]; //临时寄存器，存储ALU操作码
-    reg [2:0]  alu_sel_temp [1:0]; //临时寄存器，存储ALU功能选择
-    reg [1:0]  reg_write_en_temp; //临时寄存器，存储目的寄存器写使能
-    reg [4:0]  reg_write_addr_temp [1:0]; //临时寄存器，存储目的寄存器地址
-    reg [31:0] reg_read_data_temp0 [1:0]; //寄存器堆给出的第0条指令的两个源操作数
-    reg [31:0] reg_read_data_temp1 [1:0]; //寄存器堆给出的第1条指令的两个源操作数
-    reg [1:0]  is_privilege_temp; //临时寄存器，存储特权指令标志
-    reg [1:0] [3:0]  is_exception_temp; //两条指令的异常标志
-    reg [1:0] [3:0] [6:0]  exception_cause_temp; //两条指令的异常原因,会变长
-    reg [1:0] [4:0]  invtlb_op_temp;   //两条指令的分支指令标志
-    reg [1:0]  csr_write_en_temp; //临时寄存器，存储csr写使能
-    reg [1:0] [13:0] csr_addr_temp; //临时寄存器，存储csr写地址
-    reg [1:0]        pre_is_branch_taken_temp; //临时寄存器，存储前一条指令是否是分支指令
-    reg [1:0] [31:0] pre_branch_addr_temp; //临时寄存器，存储前一条指令的分支地址
-    reg [1:0] [31:0] csr_read_data_temp; //临时寄存器，存储csr读数据
+    reg  [31:0] pc_temp[1:0]      ; //临时寄存器，存储指令地址
+    reg  [31:0] inst_temp[1:0]    ; //临时寄存器，存储指令编码
+    reg         valid_temp[1:0];          //临时寄存器，存储指令有效标志
+    reg  [7:0]  alu_op_temp [1:0] ; //临时寄存器，存储ALU操作码
+    reg  [2:0]  alu_sel_temp[1:0] ; //临时寄存器，存储ALU功能选择
+    reg  [1:0]  reg_write_en_temp; //临时寄存器，存储目的寄存器写使能
+    reg  [4:0]  reg_write_addr_temp[1:0] ; //临时寄存器，存储目的寄存器地址
+    reg  [31:0] reg_read_data_temp0[1:0] ; //寄存器堆给出的第0条指令的两个源操作数
+    reg  [31:0] reg_read_data_temp1[1:0] ; //寄存器堆给出的第1条指令的两个源操作数
+    reg  [1:0]  is_privilege_temp; //临时寄存器，存储特权指令标志
+    reg  [3:0]  is_exception_temp[1:0]; //两条指令的异常标志
+    reg  [3:0] [6:0]  exception_cause_temp[1:0]; //两条指令的异常原因,会变长
+    reg  [4:0]  invtlb_op_temp[1:0];   //两条指令的分支指令标志
+    reg  [1:0]  csr_write_en_temp; //临时寄存器，存储csr写使能
+    reg  [13:0] csr_addr_temp[1:0]; //临时寄存器，存储csr写地址
+    reg  [1:0]  pre_is_branch_taken_temp; //临时寄存器，存储前一条指令是否是分支指令
+    reg  [31:0] pre_branch_addr_temp[1:0]; //临时寄存器，存储前一条指令的分支地址
+    reg  [31:0] csr_read_data_temp[1:0]; //临时寄存器，存储csr读数据
 
     assign invalid_en = pause ? 2'b00 : send_en;//发射控制信号赋值
 
@@ -137,7 +136,7 @@ module dispatch
     assign privilege_inst = (is_privilege_i[0] == 1'b1 || is_privilege_i[1] == 1'b1);//判断发射的两条指令中有没有特权指令
     assign mem_inst = (alu_sel_i[0] == `ALU_SEL_LOAD_STORE || alu_sel_i[1] == `ALU_SEL_LOAD_STORE);//判断发射的两条指令中有没有load和store类型的指令
     //下面这条语句，检验了将要双发射的这两条指令间是否存在数据相关冒险
-    assign data_hazard_inst = (reg_write_en_i[0] == 1'b1 && reg_write_addr_i[o] != 5'b0)//第0条指令有写寄存器的功能
+    assign data_hazard_inst = (reg_write_en_i[0] == 1'b1 && reg_write_addr_i[0] != 5'b0)//第0条指令有写寄存器的功能
                             &&((reg_write_addr_i[0] == reg_read_addr_i1[0] && reg_read_en_i1[0])//第0条指令的写寄存器的地址与第1条指令第1个源寄存器相同
                             ||(reg_write_addr_i[0] == reg_read_addr_i1[0] && reg_read_en_i1[1]));//第0条指令的写寄存器的地址与第1条指令第2个源寄存器相同
     assign cnt_inst = (is_cnt_i[0] == 1'b1 || is_cnt_i[1] == 1'b1);//判断发射的两条指令中有没有计数器指令
@@ -145,9 +144,12 @@ module dispatch
     assign send_double = (!mem_inst) && (!data_hazard_inst) && (!cnt_inst) && (!privilege_inst) && (&inst_valid); //判断这两条指令能否同时发射
     assign send_en = (send_double == 1'b1) ? 2'b11 : (inst_valid[0] ? 2'b01 : (inst_valid[1] ? 2'b10 : 2'b00));//当指令不能双发射时优先发第一条
 
+    integer i;
+    integer j;
+
     //信号传输(指令的读数据怎么办)？？？？？？？
     always @(*) begin
-        for (integer i = 0; i < 2 ; i++) begin
+        for ( i = 0; i < 2 ; i = i + 1) begin
             pc_temp[i] = pc_i[i];
             inst_temp[i] = inst_i[i];
             valid_temp[i] = valid_i[i];
@@ -157,7 +159,7 @@ module dispatch
             reg_write_addr_temp[i] = reg_write_addr_i[i];
             is_privilege_temp[i] = is_privilege_i[i];
             is_exception_temp[i] = {is_exception_i[i],1'b0};
-            exception_cause_temp[i] = {exception_cause_i[i],`EXCEPTION_NOP}
+            exception_cause_temp[i] = {exception_cause_i[i],`EXCEPTION_NOP};
             invtlb_op_temp[i] = invtlb_op_i[i];
             csr_write_en_temp[i] = csr_write_en_i[i];
             csr_addr_temp[i] = csr_addr_i[i];
@@ -168,7 +170,7 @@ module dispatch
     
     always @(*) begin
         //正常的读数据
-        for(integer i = 0 ; i < 2 ; i++)begin//两个源寄存器
+        for( i = 0 ; i < 2 ; i = i + 1)begin//两个源寄存器
             if(reg_read_en_i0[i] == 1'b1) begin
                 reg_read_data_temp0[i] = from_reg_read_data_i0[i];
             end else begin
@@ -181,8 +183,8 @@ module dispatch
             end
         end
         //与写回阶段有数据冲突进行数据前递
-        for (integer i = 0 ; i < 2 ; i++) begin//两个源寄存器
-            for(integer j = 0 ; j < 2 ; j++)begin//wb阶段的前递回的两条指令
+        for ( i = 0 ; i < 2 ; i = i + 1) begin//两个源寄存器
+            for( j = 0 ; j < 2 ; j = j + 1)begin//wb阶段的前递回的两条指令
                 if(wb_pf_write_en[j] == 1'b1 && reg_read_en_i0[i] == 1'b1) begin
                     if(reg_read_addr_i0[i] == wb_pf_write_addr[j]) begin
                         reg_read_data_temp0[i] = wb_pf_write_data[j];
@@ -196,8 +198,8 @@ module dispatch
             end
         end
         //与访存阶段有数据冲突进行数据前递
-        for (integer i = 0 ; i < 2 ; i++) begin//两个源寄存器
-            for(integer j = 0 ; j < 2 ; j++)begin//mem阶段的前递回的两条指令
+        for ( i = 0 ; i < 2 ; i = i + 1) begin//两个源寄存器
+            for( j = 0 ; j < 2 ; j = j + 1)begin//mem阶段的前递回的两条指令
                 if(mem_pf_write_en[j] == 1'b1 && reg_read_en_i0[i] == 1'b1) begin
                     if(reg_read_addr_i0[i] == mem_pf_write_addr[j]) begin
                         reg_read_data_temp0[i] = mem_pf_write_data[j];
@@ -211,8 +213,8 @@ module dispatch
             end
         end
         //与执行阶段有数据冲突进行数据前递
-        for (integer i = 0 ; i < 2 ; i++) begin//两个源寄存器
-            for(integer j = 0 ; j < 2 ; j++)begin//ex阶段的前递回的两条指令
+        for ( i = 0 ; i < 2 ; i = i + 1) begin//两个源寄存器
+            for( j = 0 ; j < 2 ; j = j + 1)begin//ex阶段的前递回的两条指令
                 if(ex_pf_write_en[j] == 1'b1 && reg_read_en_i0[i] == 1'b1) begin
                     if(reg_read_addr_i0[i] == ex_pf_write_addr[j]) begin
                         reg_read_data_temp0[i] = ex_pf_write_data[j];
@@ -225,7 +227,7 @@ module dispatch
                 end
             end
         end
-        for (integer i = 0 ; i < 2 ; i++) begin
+        for ( i = 0 ; i < 2 ; i = i + 1) begin
             if(reg_read_en_i0[i] == 1'b1 && reg_read_addr_i0[i] == 5'b0) begin
                 reg_read_data_temp0[i] = 32'b0; //如果源寄存器地址为0，则赋值为0
             end
@@ -233,7 +235,7 @@ module dispatch
                 reg_read_data_temp1[i] = 32'b0; //如果源寄存器地址为0，则赋值为0
             end
         end
-        for(integer i = 0 ; i < 2 ; i++) begin
+        for( i = 0 ; i < 2 ; i = i + 1) begin
             if(alu_op_i[0] == `ALU_PCADDU12I && reg_read_en_i0[i] == 1'b1) begin
                 reg_read_data_temp0[i] = pc_i[0]; 
             end
@@ -245,7 +247,7 @@ module dispatch
 
     //csr
         always @(*) begin
-            for(integer i = 0 ; i < 2 ; i++) begin
+            for( i = 0 ; i < 2 ; i = i + 1) begin
                 if(csr_read_en_i[i] == 1'b1) begin
                     csr_read_data_temp[i] = csr_read_data_i[i];
                 end else begin
@@ -280,22 +282,22 @@ module dispatch
                     || (ex_pre_aluop[1] == `ALU_SCW);
 
     //判断发射器中的两条指令是否与当前ex阶段的load指令相关（load指令一次只发一条）
-    for(integer i = 0 ; i < 2 ; i++) begin
-        reg_relate_i0[i] = (pre_load && reg_read_en_i0[i] == 1'b1 && reg_read_addr_i0[i] == ex_pf_write_addr[0]);
-        reg_relate_i1[i] = (pre_load && reg_read_en_i1[i] == 1'b1 && reg_read_addr_i1[i] == ex_pf_write_addr[0]) ;
-    end
+    assign    reg_relate_i0[0] = (pre_load && reg_read_en_i0[0] == 1'b1 && reg_read_addr_i0[0] == ex_pf_write_addr[0]);
+    assign    reg_relate_i1[0] = (pre_load && reg_read_en_i1[0] == 1'b1 && reg_read_addr_i1[0] == ex_pf_write_addr[0]);
+    assign    reg_relate_i0[1] = (pre_load && reg_read_en_i0[1] == 1'b1 && reg_read_addr_i0[1] == ex_pf_write_addr[0]);
+    assign    reg_relate_i1[1] = (pre_load && reg_read_en_i1[1] == 1'b1 && reg_read_addr_i1[1] == ex_pf_write_addr[0]);
 
     assign dispatch_pause = | (reg_relate_i0 | reg_relate_i1); //若存在load-use冒险，则暂停发射器
 
-    reg [31:0] ex_pc_temp             [1:0]; 
-    reg [31:0] ex_inst_temp           [1:0]; 
+    reg [1:0][31:0] ex_pc_temp             ; 
+    reg [1:0][31:0] ex_inst_temp           ; 
     reg [1:0]  ex_valid_temp;          
-    reg [7:0]  ex_alu_op_temp         [1:0]; 
-    reg [2:0]  ex_alu_sel_temp        [1:0]; 
+    reg [1:0][7:0]  ex_alu_op_temp         ; 
+    reg [1:0][2:0]  ex_alu_sel_temp        ; 
     reg [1:0]  ex_reg_write_en_temp; 
-    reg [4:0]  ex_reg_write_addr_temp [1:0]; 
-    reg [31:0] ex_reg_read_data_temp0 [1:0]; 
-    reg [31:0] ex_reg_read_data_temp1 [1:0]; 
+    reg [1:0][4:0]  ex_reg_write_addr_temp ; 
+    reg [1:0][31:0] ex_reg_read_data_temp0 ; 
+    reg [1:0][31:0] ex_reg_read_data_temp1 ; 
     reg [1:0]  ex_is_privilege_temp; //临时寄存器，存储特权指令标志
     reg [1:0] [3:0]  ex_is_exception_temp; //两条指令的异常标志
     reg [1:0] [3:0] [6:0]  ex_exception_cause_temp; //两条指令的异常原因,会变长
@@ -316,7 +318,7 @@ module dispatch
             ex_reg_write_en_temp[0] = reg_write_en_temp[0];
             ex_reg_write_addr_temp[0] = reg_write_addr_temp[0];
             ex_reg_read_data_temp0[0] = reg_read_data_temp0[0];
-            ex_reg_read_data_temp0[1] = reg_read_data_temp1[1];
+            ex_reg_read_data_temp0[1] = reg_read_data_temp0[1];
             ex_is_privilege_temp[0] = is_privilege_temp[0];
             ex_is_exception_temp[0] = is_exception_temp[0];
             ex_exception_cause_temp[0] = exception_cause_temp[0];

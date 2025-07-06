@@ -1,4 +1,4 @@
-`include "defines.v"
+`include "defines.vh"
 `timescale 1ps/1ps
 
 module id
@@ -12,7 +12,7 @@ module id
     input wire [1:0] [6:0] exception_cause,
 
     output reg  inst_valid,
-    output reg  id_valid,
+    output reg  id_valid_out,
     output reg  [2:0] is_exception_out, //是否异常
     output reg  [2:0][6:0] exception_cause_out, //异常原因
     output reg  [31:0] pc_out,
@@ -33,29 +33,31 @@ module id
     output reg  csr_write_en, //CSR寄存器写使能
     output reg  [13:0] csr_addr, //CSR
     output reg  is_cnt, //是否是计数器寄存器
-    output reg  invtlb_op , //TLB无效操作
+    output reg  invtlb_op  //TLB无效操作
 
-)
-    reg  [5:0] id_valid;  //这个6位的向量表示哪个解码器的输出是有效的
-    reg  [5:0] [31:0] id_pc_out;
-    reg  [5:0] [2:0] id_is_exception; //是否异常
-    reg  [5:0] [2:0][6:0] id_exception_cause; //异常原因
-    reg  [5:0] [31:0] id_inst_out;
-    reg  [5:0] id_reg_writen_en; 
-    reg  [5:0] [7:0]id_aluop;
-    reg  [5:0] [2:0]id_alusel;
-    reg  [5:0] [31:0]id_imm;
-    reg  [5:0] id_reg1_read_en;   
-    reg  [5:0] id_reg2_read_en;   
-    reg  [5:0] [4:0]id_reg1_read_addr;
-    reg  [5:0] [4:0]id_reg2_read_addr;
-    reg  [5:0] [4:0]id_reg_write_addr;
-    reg  [5:0] is_privilege; //特权指令标志
-    reg  [5:0] csr_read_en; //CSR寄存器读使能
-    reg  [5:0] csr_write_en; //CSR寄存器写使能
-    reg  [5:0] [13:0] csr_addr; //CSR
-    reg  [5:0] is_cnt; //是否是计数器寄存器
-    reg  [5:0] invtlb_op ; //TLB无效操作    
+);
+    reg  [5:0]  id_valid;  //这个6位的向量表示哪个解码器的输出是有效的
+    reg  [31:0] id_pc_out[5:0];
+    reg  [2:0]  id_is_exception[5:0]; //是否异常
+    reg  [6:0]  id_exception_cause[5:0] [2:0]; //异常原因
+    reg  [31:0] id_inst_out[5:0];
+    reg  [5:0]  id_reg_writen_en; 
+    reg  [5:0]  id_is_privilege;
+    reg  [7:0]  id_aluop[5:0];
+    reg  [2:0]  id_alusel[5:0];
+    reg  [31:0] id_imm[5:0];
+    reg  [5:0]  id_reg1_read_en;   
+    reg  [5:0]  id_reg2_read_en;   
+    reg  [4:0]  id_reg1_read_addr[5:0];
+    reg  [4:0]  id_reg2_read_addr[5:0];
+    reg  [4:0]  id_reg_write_addr[5:0];
+    reg  [5:0]  is_privilege; //特权指令标志
+    reg  [5:0]  id_csr_read_en; //CSR寄存器读使能
+    reg  [5:0]  id_csr_write_en; //CSR寄存器写使能
+    reg  [13:0] id_csr_addr[5:0]; //CSR
+    reg  [5:0]  id_is_cnt; //是否是计数器寄存器
+    reg  [5:0]  id_invtlb_op ; //TLB无效操作    
+    wire [5:0]  id_valid_vec;
 
     id_1R_I26 u_did_1R_I26 (
         .pc(pc),
@@ -74,13 +76,13 @@ module id
         .reg2_read_en(id_reg2_read_en[0]),  
         .reg1_read_addr(id_reg1_read_addr[0]),
         .reg2_read_addr(id_reg2_read_addr[0]),
-        .reg_write_addr(id_reg1_write_addr[0]),
-        .is_privilege(is_privilege[0]),
-        .csr_read_en(csr_read_en[0]),
-        .csr_write_en(csr_write_en[0]),
+        .reg_write_addr(id_reg_write_addr[0]),
+        .is_privilege(id_is_privilege[0]),
+        .csr_read_en(id_csr_read_en[0]),
+        .csr_write_en(id_csr_write_en[0]),
         .csr_addr(csr_addr[0]),
-        .is_cnt(is_cnt[0]),
-        .invtlb_op(invtlb_op[0])
+        .is_cnt(id_is_cnt[0]),
+        .invtlb_op(id_invtlb_op[0])
     ); 
 
     id_1RI21 u_id_1RI21 (
@@ -100,13 +102,13 @@ module id
         .reg2_read_en(id_reg2_read_en[1]),   
         .reg1_read_addr(id_reg1_read_addr[1]),
         .reg2_read_addr(id_reg2_read_addr[1]),
-        .reg_write_addr(id_reg1_write_addr[1]),
-        .is_privilege(is_privilege[1]),
-        .csr_read_en(csr_read_en[1]),
-        .csr_write_en(csr_write_en[1]),
-        .csr_addr(csr_addr[1]),
-        .is_cnt(is_cnt[1]),
-        .invtlb_op(invtlb_op[1])
+        .reg_write_addr(id_reg_write_addr[1]),
+        .is_privilege(id_is_privilege[1]),
+        .csr_read_en(id_csr_read_en[1]),
+        .csr_write_en(id_csr_write_en[1]),
+        .csr_addr(id_csr_addr[1]),
+        .is_cnt(id_is_cnt[1]),
+        .invtlb_op(id_invtlb_op[1])
     ); 
 
     id_2RI12 u_id_2RI12 (
@@ -126,13 +128,13 @@ module id
         .reg2_read_en(id_reg2_read_en[2]),   
         .reg1_read_addr(id_reg1_read_addr[2]),
         .reg2_read_addr(id_reg2_read_addr[2]),
-        .reg_write_addr(id_reg1_write_addr[2]),
-        .is_privilege(is_privilege[2]),
-        .csr_read_en(csr_read_en[2]),
-        .csr_write_en(csr_write_en[2]),
-        .csr_addr(csr_addr[2]),
-        .is_cnt(is_cnt[2]),
-        .invtlb_op(invtlb_op[2])
+        .reg_write_addr(id_reg_write_addr[2]),
+        .is_privilege(id_is_privilege[2]),
+        .csr_read_en(id_csr_read_en[2]),
+        .csr_write_en(id_csr_write_en[2]),
+        .csr_addr(id_csr_addr[2]),
+        .is_cnt(id_is_cnt[2]),
+        .invtlb_op(id_invtlb_op[2])
     ); 
 
     id_2RI14 u_id_2RI14 (
@@ -152,13 +154,13 @@ module id
         .reg2_read_en(id_reg2_read_en[3]),  
         .reg1_read_addr(id_reg1_read_addr[3]),
         .reg2_read_addr(id_reg2_read_addr[3]),
-        .reg_write_addr(id_reg1_write_addr[3]),
-        .is_privilege(is_privilege[3]),
-        .csr_read_en(csr_read_en[3]),
-        .csr_write_en(csr_write_en[3]),
-        .csr_addr(csr_addr[3]),
-        .is_cnt(is_cnt[3]),
-        .invtlb_op(invtlb_op[3])
+        .reg_write_addr(id_reg_write_addr[3]),
+        .is_privilege(id_is_privilege[3]),
+        .csr_read_en(id_csr_read_en[3]),
+        .csr_write_en(id_csr_write_en[3]),
+        .csr_addr(id_csr_addr[3]),
+        .is_cnt(id_is_cnt[3]),
+        .invtlb_op(id_invtlb_op[3])
     ); 
 
     id_2RI16 u_id_2RI16 (
@@ -178,13 +180,13 @@ module id
         .reg2_read_en(id_reg2_read_en[4]),   
         .reg1_read_addr(id_reg1_read_addr[4]),
         .reg2_read_addr(id_reg2_read_addr[4]),
-        .reg_write_addr(id_reg1_write_addr[4]),
-        .is_privilege(is_privilege[4]),
-        .csr_read_en(csr_read_en[4]),
-        .csr_write_en(csr_write_en[4]),
-        .csr_addr(csr_addr[4]),
-        .is_cnt(is_cnt[4]),
-        .invtlb_op(invtlb_op[4])
+        .reg_write_addr(id_reg_write_addr[4]),
+        .is_privilege(id_is_privilege[4]),
+        .csr_read_en(id_csr_read_en[4]),
+        .csr_write_en(id_csr_write_en[4]),
+        .csr_addr(id_csr_addr[4]),
+        .is_cnt(id_is_cnt[4]),
+        .invtlb_op(id_invtlb_op[4])
     ); 
 
     id_3R u_id_3R (
@@ -204,14 +206,15 @@ module id
         .reg2_read_en(id_reg2_read_en[5]),   
         .reg1_read_addr(id_reg1_read_addr[5]),
         .reg2_read_addr(id_reg2_read_addr[5]),
-        .reg_write_addr(id_reg1_write_addr[5]),
-        .is_privilege(is_privilege[5]),
-        .csr_read_en(csr_read_en[5]),
-        .csr_write_en(csr_write_en[5]),
-        .csr_addr(csr_addr[5]),
-        .is_cnt(is_cnt[5]),
-        .invtlb_op(invtlb_op[5])
+        .reg_write_addr(id_reg_write_addr[5]),
+        .is_privilege(id_is_privilege[5]),
+        .csr_read_en(id_csr_read_en[5]),
+        .csr_write_en(id_csr_write_en[5]),
+        .csr_addr(id_csr_addr[5]),
+        .is_cnt(id_is_cnt[5]),
+        .invtlb_op(id_invtlb_op[5])
     ); 
+    
 
     wire sys_exception;
     wire brk_exception;
@@ -365,7 +368,7 @@ module id
                 invtlb_op = id_invtlb_op[5];
             end
             default: begin
-                inst_valid = 0;
+                inst_valid = 1'b0;
                 pc_out = pc;
                 is_exception_out = {is_exception,1'b1};
                 exception_cause_out = {exception_cause,`EXCEPTION_INE};
@@ -387,9 +390,11 @@ module id
                 invtlb_op = 0;
             end
         endcase
+     end
 
-        id_pre_taken = pre_taken;
-        id_pre_addr  = pre_addr;
-        id_valid     = valid;
-    end
+        always @(*) begin
+            id_pre_taken = pre_taken;
+            id_pre_addr  = pre_addr;
+            id_valid     = valid;
+        end
 endmodule

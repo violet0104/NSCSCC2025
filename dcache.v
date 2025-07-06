@@ -218,16 +218,7 @@ module dcache
             if(is_load)
             begin
                 rdata_valid <= 1'b1;
-                case(ren_2)
-                4'b1111:rdata <= hit_data_word_choose;
-                4'b0011:rdata <= {16'b0,hit_data_word_choose[15:0]};
-                4'b1100:rdata <= {16'b0,hit_data_word_choose[31:16]};
-                4'b0001:rdata <= {24'b0,hit_data_word_choose[7:0]};
-                4'b0010:rdata <= {16'b0,hit_data_word_choose[15:8],8'b0};
-                4'b0100:rdata <= {8'b0,hit_data_word_choose[23:16],16'b0};
-                4'b1000:rdata <= {hit_data_word_choose[31:24],24'b0};
-                default:rdata <= 32'b0;
-                endcase
+                rdata <= hit_data_word_choose;
             end
             if(is_store) 
             begin

@@ -12,8 +12,6 @@ module FIFO
     output wire full,
     output wire stall
 );
-    localparam length = 4;
-
     reg [3:0] write_index;   
     reg [3:0] read_index;
     reg [96:0] data [15:0];  //32+32+32+1
@@ -22,11 +20,10 @@ module FIFO
     assign full  = read_index == (write_index + 1)%16;
     assign stall = read_index == (write_index + 2)%16;
     assign pop_data = data[read_index];
-    
     integer i;
-    always @(posedge clk or negedge rst)
+    always @(posedge clk)
     begin
-        if(!rst | flush)
+        if(rst | flush)
         begin
             write_index <= 4'b0;
             read_index <= 4'b0;
@@ -46,5 +43,4 @@ module FIFO
             end
         end
     end
-
 endmodule

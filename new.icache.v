@@ -86,9 +86,9 @@ module inst_cache
     assign pc_suspend = suspend;
 
     integer i;
-    always @(posedge clk or negedge rst)
+    always @(posedge clk)
     begin
-        if(!rst)
+        if(rst)
         begin
             addr_1_2 <= 32'b0;
             addr_2_2 <= 32'b0;
@@ -179,11 +179,11 @@ module inst_cache
     reg [5:0] index1_delay;
     reg [5:0] index2_delay;
 
-    always @(posedge clk or negedge rst)
+    always @(posedge clk)
     begin
         index1_delay <= index1;
         index2_delay <= index2;
-        if(!rst)
+        if(rst)
         begin
             dealing1 <= 1'b0;
             dealing2 <= 1'b0;

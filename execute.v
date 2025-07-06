@@ -40,7 +40,6 @@ module execute (
     input wire pasue_mem_i,
 
     // 和dcache的接口
-    input wire addr_ok_i,           // 罗佬没有这个
     input wire data_ok_i,            
     input wire [31:0] rdata_i,            // 读DCache的结果
     input wire [31:0] physical_addr_i,    // 物理地址
@@ -146,7 +145,6 @@ module execute (
 
     assign valid_dache_o = |valid_o;
     assign op_o = valid_o[0] ? op[0] : op[1]; 
-    assign addr_ok = addr_ok_i;
     assign virtual_addr_o = valid_o[0] ? virtual_addr[0] : virtual_addr[1];
     assign wdata_o = valid_o[0] ? wdata[0] : wdata[1];
     assign wstrb_o = valid_o[0] ? wstrb[0] : wstrb[1];
@@ -186,7 +184,6 @@ module execute (
         .cnt_i(cnt_i),
 
         // with dache
-        .addr_ok_i(addr_ok_i),
         .valid_o(valid_o[0]),
         .op_o(op[0]),
         .virtual_addr_o(virtual_addr[0]),
@@ -235,7 +232,7 @@ module execute (
         .is_llw_scw_mem(is_llw_scw[0])
 );
 
-    alu u_alu_0 (
+    alu u_alu_1 (
         .clk(clk),
         .rst(rst),
         .flush(flush),
@@ -269,7 +266,6 @@ module execute (
         .cnt_i(cnt_i),
 
         // with dache
-        .addr_ok_i(addr_ok_i),
         .valid_o(valid_o[1]),
         .op_o(op[1]),
         .virtual_addr_o(virtual_addr[1]),

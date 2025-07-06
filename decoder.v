@@ -6,41 +6,41 @@ module decoder (
 
     input wire flush, //强制更新信号
 
-    input wire [31:0] pc [1:0],
-    input wire [31:0] inst [1:0],
+    input wire [31:0][1:0] pc,
+    input wire [31:0][1:0] inst ,
     input wire [1:0]  valid,
     input wire [1:0]  pretaken,
-    input wire [31:0] pre_addr [1:0],
-    input wire [1:0]  is_exception [1:0],
-    input wire [6:0]  exception_cause [1:0][1:0],
+    input wire [31:0][1:0] pre_addr_in ,
+    input wire [1:0][1:0]  is_exception ,
+    input wire [6:0][1:0][1:0]  exception_cause ,
 
-    input wire [1:0] invalid_en, //用于从外部（如调度器）控制某些指令不进入队列         // 为什么是出队信号？？
+    input wire [1:0] invalid_en,  //无效信号
 
     output wire pause_decoder, //通知暂停取指信号
 
     output reg  [1:0]  dispatch_inst_valid,
     output reg  [1:0]  dispatch_id_valid, //pc有效信号  
-    output reg  [31:0] dispatch_pc_out [1:0],
-    output reg  [6:0]  dispatch_exception_cause [1:0][2:0], //异常原因
-    output reg  [1:0]  dispatch_is_exception, //是否异常
-    output reg  [31:0] dispatch_inst_out [1:0],
-    output reg  [7:0]  dispatch_aluop [1:0],
-    output reg  [2:0]  dispatch_alusel [1:0],
-    output reg  [31:0] dispatch_imm [1:0],
+    output reg  [31:0][1:0] dispatch_pc_out ,
+    output reg  [6:0][1:0][2:0]  dispatch_exception_cause , //异常原因
+    output reg  [1:0][2:0]  dispatch_is_exception , //是否异常
+    output reg  [31:0][1:0] dispatch_inst_out ,
+    output reg  [7:0][1:0]  dispatch_aluop ,
+    output reg  [2:0][1:0]  dispatch_alusel ,
+    output reg  [31:0][1:0] dispatch_imm ,
     output reg  [1:0]  dispatch_reg1_read_en,   //rR1寄存器读使能
     output reg  [1:0]  dispatch_reg2_read_en,   //rR2寄存器读使能
-    output reg  [4:0]  dispatch_reg1_read_addr [1:0],
-    output reg  [4:0]  dispatch_reg2_read_addr [1:0],
+    output reg  [4:0][1:0]  dispatch_reg1_read_addr ,
+    output reg  [4:0][1:0]  dispatch_reg2_read_addr ,
     output reg  [1:0]  dispatch_reg_writen_en,  //寄存器写使能信号
-    output reg  [4:0]  dispatch_reg_write_addr [1:0],
+    output reg  [4:0][1:0]  dispatch_reg_write_addr ,
     output reg  [1:0]  dispatch_id_pre_taken,
-    output reg  [31:0] dispatch_id_pre_addr[1:0],
+    output reg  [31:0][1:0] dispatch_id_pre_addr,
     output reg  [1:0]  dispatch_is_privilege, //特权指令标志
     output reg  [1:0]  dispatch_csr_read_en, //CSR寄存器读使能
     output reg  [1:0]  dispatch_csr_write_en, //CSR寄存器写使能
-    output reg  [13:0] dispatch_csr_addr[1:0], //CSR
+    output reg  [13:0][1:0] dispatch_csr_addr, //CSR
     output reg  [1:0]  dispatch_is_cnt, //是否是计数器寄存器
-    output reg  [1:0]  dispatch_invtlb_op , //TLB无效操作
+    output reg  [1:0]  dispatch_invtlb_op  //TLB无效操作
 
 
 );
@@ -48,7 +48,7 @@ module decoder (
     reg  [1:0]  inst_valid;  
     reg  [1:0]  id_valid; //ID阶段有效信号
     reg  [31:0] pc_out [1:0];
-    reg  [1:0]  is_exception_out; //是否异常
+    reg  [1:0]  is_exception_out [2:0]; //是否异常
     reg  [6:0]  exception_cause_out [1:0][2:0]; //异常原因
     reg  [31:0] inst_out [1:0];
     reg  [1:0]  reg_writen_en; 
@@ -149,7 +149,7 @@ module decoder (
                                 imm[0],                 // 107:76
                                 alusel[0],              // 75:73
                                 aluop[0],               // 72:65
-                                inst_valid[0]           // 64
+                                inst_valid[0],           // 64
                                 inst_out[0],            // 63:32
                                 pc_out[0]};             // 31:0
     assign  enqueue_data[1] =  {
@@ -193,8 +193,8 @@ module decoder (
     enqueue_en[0] = !full && valid[0];
     enqueue_en[1] = !full && valid[1];
 
-    wire    dequeue_data1; 
-    wire    dequeue_data2;
+    wire    [125:0]dequeue_data1; 
+    wire    [125:0]dequeue_data2;
     assign  dequeue_data1 = dequeue_data[0];
     assign  dequeue_data2 = dequeue_data[1];
 
@@ -220,12 +220,12 @@ module decoder (
         dispatch_reg1_read_addr[1]  =   dequeue_data1[119:115];
         dispatch_reg2_read_addr[0]  =   dequeue_data2[114:110];
         dispatch_reg2_read_addr[1]  =   dequeue_data2[119:115];
-        dispatch_reg_writen_en[0]   =   dequeue_data1[120]
+        dispatch_reg_writen_en[0]   =   dequeue_data1[120];
         dispatch_reg_writen_en[1]   =   dequeue_data2[120];  
         dispatch_reg_write_addr[0]  =   dequeue_data1[125:121];
         dispatch_reg_write_addr[1]  =   dequeue_data1[125:121];
     end
 
-    pause_decoder = full;
+    assign pause_decoder = full;
 
 endmodule

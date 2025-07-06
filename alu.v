@@ -37,7 +37,6 @@ module alu (
     input wire [63:0] cnt_i,
 
     // 和dcache的接口
-    input  wire addr_ok_i,
     output wire valid_o,
     output reg op_o,       // 访存操作类型, 0表示读, 1表示写
     output wire [31:0] virtual_addr_o,
@@ -147,7 +146,7 @@ module alu (
             start_mul <= 1'b0;
         end
     end
-qweqweqweqweqwe
+
     assign signed_mul = (aluop_i == `ALU_MULW || aluop_i == `ALU_MULHW);      // 有符号乘法
 
     mul_alu u_mul_alu (
@@ -277,7 +276,7 @@ qweqweqweqweqwe
                     || aluop_i == `ALU_LLW || aluop_i == `ALU_SCW
                     || aluop_i == `ALU_PRELD;
     wire pasue_mem;
-    assign pasue_mem = is_mem && valid && !addr_ok_i;  
+    assign pasue_mem = is_mem && valid;  
 
     wire [11:0] si12;
     wire [13:0] si14;

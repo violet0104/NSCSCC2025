@@ -25,7 +25,7 @@ module decoder_2RI12
     output reg  csr_write_en, //CSR寄存器写使能
     output reg  [13:0] csr_addr, //CSR
     output reg  is_cnt, //是否是计数器寄存器
-    output reg  invtlb_op , //TLB无效操作
+    output reg  invtlb_op //TLB无效操作
 );
     reg [9:0] opcode;
     reg [4:0] rj;
@@ -48,7 +48,7 @@ module decoder_2RI12
         invtlb_op = 5'b0;
     end
 
-   always @() begin
+   always @(*) begin
         case (opcode)
             `LLW_OPCODE: begin
                 is_privilege = 1'b0;

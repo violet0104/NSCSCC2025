@@ -10,11 +10,12 @@ module BPU
     input  wire         cpu_rstn   ,
     input  wire [31:0]  if_pc      ,        // IF阶段PC
     // predict branch direction and target
-    output wire [31:0]  pred_addr,        // 预测目标地址
     output wire         pred_taken1,
     output wire         pred_taken2,
+    output wire [31:0]  pred_addr,        // 预测目标地址
     output wire         pred_error1 ,        // 是否预测错误,驱动清除流水线上的错误指令
     output wire         pred_error2 ,
+
     input  wire         if_valid   ,     
     input  wire         ex_is_bj_1   ,
     input  wire         ex_pred_taken1,      
@@ -29,7 +30,7 @@ module BPU
     input  wire [31:0]  real_addr1, 
     input  wire [31:0]  real_addr2,
     input  wire [31:0]  pred_addr1,
-    input  wire [31:0]  pred_addr1       
+    input  wire [31:0]  pred_addr2       
 );
 
 // BHT and BTB
@@ -47,7 +48,7 @@ wire [`BHT_IDX_W-1:0] index2 = {if_pc4[29:24]^if_pc4[23:18]^if_pc4[17:12]^if_pc4
 
 assign pred_taken1 = if_valid & if_tag1 == tag[index1] & valid[index1] == 1'b1 & history[index1][1] == 1'b1;
 assign pred_taken2 = if_valid & if_tag2 == tag[index2] & valid[index2] == 1'b1 & history[index2][1] == 1'b1;
-assign pred_addr = pred_taken1 ? addr[index1] : pred_taken2 ? addr[index2] : if_pc + 8;
+wire pred_addr = pred_taken1 ? addr[index1] : pred_taken2 ? addr[index2] : if_pc + 8;
 
 wire ex_tag1 = ex_pc_1[31:24];
 wire ex_tag2 = ex_pc_2[31:24];
@@ -63,8 +64,8 @@ wire replace2 = ex_valid2 & valid[ex_index2] & real_taken2 & tag[ex_index2]!=ex_
 
 wire taken_error1 = ex_pred_taken1 != real_taken1;
 wire taken_error2 = ex_pred_taken2 != real_taken2;
-wire addr_error1 = ex_pc_1 != real_addr1;
-wire addr_error2 = ex_pc_2 != real_addr2;
+wire addr_error1 = pred_addr1 != real_addr1;
+wire addr_error2 = pred_addr2 != real_addr2;
 assign pred_error1 = ex_valid1 & (taken_error1 | addr_error1);
 assign pred_error2 = ex_valid2 & !pred_error1 & (taken_error2 | addr_error2);
 
