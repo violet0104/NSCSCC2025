@@ -1,13 +1,15 @@
+`timescale 1ns / 1ps
 `include "defines.vh"
-`timescale 1ps/1ps
+`include "csr_defines.vh"
+
 
 module id
 (
-    input [31:0] pc,
-    input [31:0] inst,
+    input wire [31:0] pc,
+    input wire [31:0] inst,
     input wire   valid,
     input wire   pre_taken,  //确定预测的分支跳转正确
-    input [31:0] pre_addr,   // 预测的分支跳转的地址
+    input wire [31:0] pre_addr,   // 预测的分支跳转的地址
     input wire [1:0] is_exception,
     input wire [1:0] [6:0] exception_cause,
 
@@ -39,7 +41,7 @@ module id
     reg  [5:0]  id_valid;  //这个6位的向量表示哪个解码器的输出是有效的
     reg  [31:0] id_pc_out[5:0];
     reg  [2:0]  id_is_exception[5:0]; //是否异常
-    reg  [6:0]  id_exception_cause[5:0] [2:0]; //异常原因
+    reg  [5:0] [6:0]  id_exception_cause [2:0]; //异常原因
     reg  [31:0] id_inst_out[5:0];
     reg  [5:0]  id_reg_writen_en; 
     reg  [5:0]  id_is_privilege;

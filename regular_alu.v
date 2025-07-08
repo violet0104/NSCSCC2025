@@ -1,5 +1,6 @@
-`include "defines.v"
-`timescale 1ns/1ps
+`timescale 1ns / 1ps
+`include "defines.vh"
+`include "csr_defines.vh"
 
 // 常规加法器
 module regular_alu (
@@ -17,8 +18,8 @@ module regular_alu (
 
     // 操作数2选择：减法/SLT、SLTI指令时取补码，其余指令用原来的值
     assign reg2_i_mux = ((aluop == `ALU_SUBW) || (aluop == `ALU_SLT) || (aluop == `ALU_SLTI))
-                        ? ~reg2 + 32'd1;
-                        : reg2,
+                        ? ~reg2 + 32'b1
+                        : reg2;
 
     // 加法器输出
     assign sum_result = reg1 + reg2_i_mux;

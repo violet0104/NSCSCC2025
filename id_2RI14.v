@@ -1,7 +1,8 @@
-`include   "defines.vh"
-`timescale  1ns / 1ps
+`timescale 1ns / 1ps
+`include "defines.vh"
+`include "csr_defines.vh"
 
-module decoder_2RI12
+module decoder_2RI14
 (
     input  wire [31:0] pc,
     input  wire [31:0] inst,
@@ -11,7 +12,7 @@ module decoder_2RI12
     output reg  inst_valid,
     output reg  [31:0] pc_out,
     output reg  [31:0] inst_out,
-    output reg  reg_writen_en,  //寄存器写使能信号
+    output reg  reg_write_en,  //寄存器写使能信号
     output reg  [7:0]aluop,
     output reg  [2:0]alusel,
     output reg  [31:0]imm,
@@ -25,7 +26,7 @@ module decoder_2RI12
     output reg  csr_write_en, //CSR寄存器写使能
     output reg  [13:0] csr_addr, //CSR
     output reg  is_cnt, //是否是计数器寄存器
-    output reg  invtlb_op //TLB无效操作
+    output reg  invtlb_op  //TLB无效操作
 );
     reg [9:0] opcode;
     reg [4:0] rj;

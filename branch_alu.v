@@ -1,3 +1,7 @@
+`timescale 1ns / 1ps
+`include "defines.vh"
+`include "csr_defines.vh"
+
 
 module branch_alu (
     input wire [31:0] pc,          // 当前指令地址
@@ -11,9 +15,9 @@ module branch_alu (
     input wire [31:0] pre_branch_addr,  // 预测分支跳转指令目标地址
 
     output wire update_en,                  // 分支预测器更新使能信号
-    output wire taken_or_not_actual,        // 分支跳转指令实际是否跳转
-    output wire [31:0] branch_actual_addr,  // 分支跳转指令实际跳转地址
-    output wire [31:0] pc_dispatch          // 传给dispatch的pc
+    output reg taken_or_not_actual,        // 分支跳转指令实际是否跳转
+    output reg [31:0] branch_actual_addr,  // 分支跳转指令实际跳转地址
+    output wire [31:0] pc_dispatch,         // 传给dispatch的pc
 
     output reg branch_flush,             // 分支预测状态刷新信号
     output wire [31:0] branch_alu_res     // ALU计算结果 
@@ -28,7 +32,7 @@ module branch_alu (
     
     wire [31:0] sum_result;     // 加法器结果
 
-    assign reg2_i_mux = ((alu_op == `ALU_BLT) || (alu_op == `ALU_BGE)) ? ~reg2 + 1 : reg2;
+    assign reg2_i_mux = ((aluop == `ALU_BLT) || (aluop == `ALU_BGE)) ? ~reg2 + 1 : reg2;
     assign sum_result = reg1 + reg2_i_mux;
 
     assign reg1_lt_reg2 = ((aluop == `ALU_BLT) || (aluop == `ALU_BGE)) ? 

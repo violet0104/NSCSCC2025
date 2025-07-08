@@ -1,4 +1,6 @@
-`timescale 1ps/1ps
+`timescale 1ns / 1ps
+`include "defines.vh"
+`include "csr_defines.vh"
 
 module decoder (
     input wire clk,
@@ -8,7 +10,7 @@ module decoder (
 
     input wire [31:0][1:0] pc,
     input wire [31:0][1:0] inst ,
-    input wire [1:0]  valid,
+    input wire [1:0]  valid,        // 前端传递的数据有效信号
     input wire [1:0]  pretaken,
     input wire [31:0][1:0] pre_addr_in ,
     input wire [1:0][1:0]  is_exception ,
@@ -16,7 +18,7 @@ module decoder (
 
     input wire [1:0] invalid_en,  //无效信号
 
-    output wire pause_decoder, //通知暂停取指信号
+    output wire get_data_req,   //取指信号
 
     output reg  [1:0]  dispatch_inst_valid,
     output reg  [1:0]  dispatch_id_valid, //pc有效信号  
@@ -49,7 +51,7 @@ module decoder (
     reg  [1:0]  id_valid; //ID阶段有效信号
     reg  [31:0] pc_out [1:0];
     reg  [1:0]  is_exception_out [2:0]; //是否异常
-    reg  [6:0]  exception_cause_out [1:0][2:0]; //异常原因
+    reg  [2:0] [6:0]  exception_cause_out [1:0]; //异常原因
     reg  [31:0] inst_out [1:0];
     reg  [1:0]  reg_writen_en; 
     reg  [7:0]  aluop [1:0];
@@ -74,7 +76,7 @@ module decoder (
         .inst(inst[0]),
         .valid(valid[0]),
         .pre_taken(pretaken[0]),
-        .pre_addr(pre_addr[0]),
+        .pre_addr(pre_addr_in[0]),
         .is_exception(is_exception[0]),
         .exception_cause(exception_cause[0]),
 
@@ -108,7 +110,7 @@ module decoder (
         .inst(inst[1]),
         .valid(valid[1]),
         .pre_taken(pretaken[1]),
-        .pre_addr(pre_addr[1]),
+        .pre_addr(pre_addr_in[1]),
         .is_exception(is_exception[1]),
         .exception_cause(exception_cause[1]),
 
@@ -138,7 +140,7 @@ module decoder (
     );
 
     // 入队数据，如果要添加信号，加信号加在最前面并且修改`DECODE_DATA_WIDTH的值
-    wire [`DECODE_DATA_WIDTH - 1] enqueue_data [1:0];
+    wire [1:0] [`DECODE_DATA_WIDTH:0] enqueue_data;
     assign  enqueue_data[0] =  {
                                 reg_write_addr[0],      // 125:121
                                 reg_writen_en[0],       // 120
@@ -166,12 +168,13 @@ module decoder (
                                 inst_out[0],            
                                 pc_out[0]};                   
     // 出队数据
-    wire [`DECODE_DATA_WIDTH - 1] dequeue_data [1:0];
+    wire  [1:0] [`DECODE_DATA_WIDTH:0] dequeue_data;
 
     reg [1:0] enqueue_en; //入队使能信号
 
     reg full;
     reg empty;
+    reg get_data_req_o;
     wire fifo_rst;
     assign fifo_rst = rst || flush;
 
@@ -186,12 +189,15 @@ module decoder (
         .invalid_en(invalid_en),
         .dequeue_data(dequeue_data),
 
+        .get_data_req(get_data_req_o),
         .full(full),
         .empty(empty)
     );
-
-    enqueue_en[0] = !full && valid[0];
-    enqueue_en[1] = !full && valid[1];
+    
+    always @(*) begin
+        enqueue_en[0] = !full && valid[0];
+        enqueue_en[1] = !full && valid[1];
+    end
 
     wire    [125:0]dequeue_data1; 
     wire    [125:0]dequeue_data2;
@@ -226,6 +232,6 @@ module decoder (
         dispatch_reg_write_addr[1]  =   dequeue_data1[125:121];
     end
 
-    assign pause_decoder = full;
+    assign get_data_req = get_data_req_o;
 
 endmodule

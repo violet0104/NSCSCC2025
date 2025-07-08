@@ -1,10 +1,14 @@
+`timescale 1ns / 1ps
+`include "defines.vh"
+`include "csr_defines.vh"
+
 
 module alu (
-    input wire clk.
+    input wire clk,
     input wire rst,
     input wire flush,           // 流水线刷新信号
 
-    input wire pasue_mem,       // 访存阶段暂停信号
+    input wire pause_mem_i,       // 访存阶段暂停信号
 
     // 来自dispatch的指令信息
     input wire [31:0] pc_i,
@@ -18,12 +22,12 @@ module alu (
     input wire [7:0] aluop_i,
     input wire [2:0] alusel_i,
 
-    input wire [1:0] reg_data_i [4:0],
+    input wire [1:0] [4:0] reg_data_i,
 
     input wire reg_write_en_i,                // 寄存器写使能
     input wire [4:0] reg_write_addr_i,        // 寄存器写地址
 
-    input wire csr_read_data_i,    // csr读数据
+    input wire [31:0] csr_read_data_i,    // csr读数据
     input wire csr_write_en_i,     // csr写使能
     input wire [13:0] csr_addr_i,  // csr地址 
 
@@ -57,13 +61,6 @@ module alu (
     // 输出给 dispatch 的信号
     output wire [7:0] pre_ex_aluop_o,     // 到发射阶段的预执行信息
 
-    // 输出给 Cache 的信号
-    output wire is_cacop_o,
-    output wire [4:0] cacop_code_o,
-    output wire is_preld_o,
-    output wire hint_o,
-    output [31:0] addr_o,
-
     // 输出给 mem 的信号
     output wire [31:0] pc_mem,
     output wire [31:0] inst_mem,
@@ -90,10 +87,10 @@ module alu (
     output reg is_llw_scw_mem
 );
 
-    wire [31:0] reg1;
-    wire [31:0] reg2;
-    assign reg1 = reg_data[0];   // 源操作数1
-    assign reg2 = reg_data[1];   // 源操作数2
+    wire [31:0] reg_data1;
+    wire [31:0] reg_data2;
+    assign reg_data1 = reg_data_i[0];   // 源操作数1
+    assign reg_data2 = reg_data_i[1];   // 源操作数2
 
     assign pc_mem      = pc_i;
     assign inst_mem    = inst_i;
@@ -104,9 +101,9 @@ module alu (
     assign is_idle_mem = (aluop_i == `ALU_IDLE);
 
     //异常处理
-    wire ex_mem_exception;
+    reg ex_mem_exception;
     assign is_exception_mem = {is_exception_i, ex_mem_exception};  
-    assign exception_cause_o = {exception_cause_i, `EXCEPTION_ALE};
+    assign exception_cause_mem = {exception_cause_i, `EXCEPTION_ALE};
     
     // 预执行alu操作类型
     assign pre_ex_aluop_o = aluop_i;
@@ -116,13 +113,13 @@ module alu (
 
     regular_alu u_regular_alu (
         .aluop(aluop_i),
-        .reg1(reg1),
-        .reg2(reg2),
+        .reg1(reg_data1),
+        .reg2(reg_data2),
         .result(regular_alu_res)
     );
 
     // mul alu
-    wire [31:0] mul_alu_res;    // 乘法器输出结果
+    reg [31:0] mul_alu_res;    // 乘法器输出结果
     wire pause_ex_mul;
     wire is_mul;
     reg start_mul;
@@ -190,8 +187,8 @@ module alu (
     reg [31:0] div_data2;
     wire divide_by_zero;    // 这个信号好像还没用到，与异常有关
 
-    assign is_div = (aluop_i == `ALU_DIVW || aluop_i == `ALU_DIVUW
-                    || aluop_i == `ALU_MODW || aluop_i == `ALU_MODUW) && !div_done;
+    assign is_div = (aluop_i == `ALU_DIVW || aluop_i == `ALU_DIVWU
+                    || aluop_i == `ALU_MODW || aluop_i == `ALU_MODWU) && !div_done;
     assign pause_ex_div = is_div && !div_done;  // 除法未完成时暂停
 
     always @(posedge clk) begin
@@ -222,16 +219,16 @@ module alu (
     // 结果选择
     always @(*) begin
         case (aluop_i) 
-            `ALU_DIVW, `ALU_DIVUW: begin
+            `ALU_DIVW, `ALU_DIVWU: begin
                 div_alu_res = quotient;  // 商
             end
 
-            `ALU_MODW, `ALU_MODUW: begin
+            `ALU_MODW, `ALU_MODWU: begin
                 div_alu_res = remainder;  // 余数
             end
 
             default: begin
-                div_alu_res = 32'h0;      // 其他情况
+                div_alu_res = 32'b0;      // 其他情况
             end
         endcase
     end
@@ -270,13 +267,13 @@ module alu (
     wire is_mem;
     assign is_mem =    aluop_i == `ALU_LDB || aluop_i == `ALU_LDBU 
                     || aluop_i == `ALU_LDH || aluop_i == `ALU_LDHU 
-                    || aluop_i == `ALU_LDW || 
+                    || aluop_i == `ALU_LDW
                     || aluop_i == `ALU_STB || aluop_i == `ALU_STH 
                     || aluop_i == `ALU_STW 
                     || aluop_i == `ALU_LLW || aluop_i == `ALU_SCW
                     || aluop_i == `ALU_PRELD;
-    wire pasue_mem;
-    assign pasue_mem = is_mem && valid;  
+    wire pause_ex_mem;
+    assign pause_ex_mem = is_mem && valid_o;  
 
     wire [11:0] si12;
     wire [13:0] si14;
@@ -284,7 +281,7 @@ module alu (
     assign si14 = inst_i[13:0];  // 14位立即数
 
     always @(*) begin
-        case (alu_op_i) 
+        case (aluop_i) 
             `ALU_LDB, `ALU_LDBU, `ALU_LDH, `ALU_LDHU, `ALU_LDW, `ALU_LLW, `ALU_PRELD, `ALU_CACOP: begin
                 addr_mem = reg_data1 + reg_data2;
             end
@@ -299,14 +296,15 @@ module alu (
 
             default: begin
                 addr_mem = 32'b0;        
-            end            `
+            end 
+                       
         endcase
     end
 
     assign virtual_addr_o = addr_mem;  // 输出给dcache的虚拟地址
 
-    wire mem_is_valid;
-    assign valid_o = mem_is_valid && !flush && !pause_mem && !is_exception_mem;
+    reg mem_is_valid;
+    assign valid_o = mem_is_valid && !flush && !pause_mem_i && !is_exception_mem;
 
     always @(*) begin
         case (aluop_i)
@@ -422,7 +420,7 @@ module alu (
     end
 
     // csr alu
-    wire [31:0] csr_alu_res;
+    reg [31:0] csr_alu_res;
     wire [31:0] mask_data;
     assign mask_data = ((csr_read_data_i & ~reg_data2) | (reg_data1 & reg_data2));
 
@@ -455,7 +453,7 @@ module alu (
             end
 
             `ALU_RDCNTID: begin
-                csr_alu_res = csr_read_data_i   // 读csr寄存器
+                csr_alu_res = csr_read_data_i;   // 读csr寄存器
             end
 
             `ALU_RDCNTVLW: begin
@@ -463,7 +461,7 @@ module alu (
             end
 
             `ALU_RDCNTVHW: begin
-                csr_alu_res = cnt[63:32];       // 读计数器高32位
+                csr_alu_res = cnt_i[63:32];       // 读计数器高32位
             end
 
             default: begin
@@ -509,6 +507,6 @@ module alu (
     end
 
     // 暂停信号
-    assign pause_alu_o = pause_ex_mul || pause_ex_div || pasue_mem;
+    assign pause_alu_o = pause_ex_mul || pause_ex_div || pause_mem_i;
 
 endmodule

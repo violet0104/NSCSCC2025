@@ -28,7 +28,7 @@ module div_alu (
     wire        m_axis_tvalid_unsingned; // 无符号除法结果有效信号
 
     // 除法器IP核实例化
-    div_gen_0 u_divider (
+    div_gen_0 u_divider_0 (
         .aclk(clk),
         .aresetn(rstn),
         .s_axis_dividend_tdata(s_axis_dividend),
@@ -41,7 +41,7 @@ module div_alu (
         .m_axi_dout_tvalid(m_axis_tvalid_singned)
     );
 
-    div_gen_1 u_divider (
+    div_gen_1 u_divider_1 (
         .aclk(clk),
         .aresetn(rstn),
         .s_axis_dividend_tdata(s_axis_dividend),

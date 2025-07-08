@@ -1,5 +1,6 @@
-`include "defines.v"
-`timescale 1ns/1ps
+`timescale 1ns / 1ps
+`include "defines.vh"
+`include "csr_defines.vh"
 
 module dram_fifo (
     input wire clk,
@@ -8,15 +9,17 @@ module dram_fifo (
     input wire flush,
 
     input wire [1:0] enqueue_en, //入队使能信号
-    input wire [`DECODE_DATA_WIDTH - 1:0] enqueue_data [1:0], //入队数据
+    input wire [1:0] [`DECODE_DATA_WIDTH - 1:0] enqueue_data, //入队数据
 
     input wire invalid_en, //数据有效使能信号
-    output wire [`DECODE_DATA_WIDTH - 1:0] dequeue_data [1:0], //出队数据
+    output wire [1:0] [`DECODE_DATA_WIDTH - 1:0] dequeue_data, //出队数据
     
+    output wire get_data_req,
     output wire full,
     output wire empty
 );
-    reg [`DECODE_DATA_WIDTH - 1:0] ram[`DEPTH - 1:0];
+
+    reg [`DECODE_DATA_WIDTH - 1:0] ram [`DEPTH - 1:0];
 
     // 尾进头出（队尾写数据，队头读数据）
     reg [$clog2(`DEPTH) - 1:0] head;    // 队头指针
@@ -75,9 +78,11 @@ module dram_fifo (
     assign dequeue_data[0] = ram[head];
     assign dequeue_data[1] = ram[head_plus];
 
-    // 判断队列满和空逻辑
+    // 判断队列满，空，阻塞逻辑
+    assign stall = (head == (tail + 3) % `DEPTH);
     assign full = (head == (tail_plus + 1) % `DEPTH) || (head == tail_plus);
     assign empty = (head == tail) || (head_plus == tail);
 
+    assign get_data_req = !(stall || full);
 
 endmodule

@@ -1,12 +1,13 @@
-`include "defines.vh"
 `timescale 1ns / 1ps
+`include "defines.vh"
+`include "csr_defines.vh"
 
 module mem
 (
     input  wire clk,
     input  wire rst,
-    input  wire [31:0] pc [1:0],
-    input  wire [31:0] inst [1:0],
+    input  wire [31:0][1:0] pc ,
+    input  wire [31:0][1:0] inst,
 
     // 执行阶段的信号
     input  wire [1:0][4:0] is_exception,   //异常标志
@@ -27,43 +28,37 @@ module mem
 
     //dcache的信号
     input  wire [31:0] dcache_read_data, 
+    input  wire addr_ok,
     input  wire data_ok, //数据访问完成信号
     input  wire [31:0] dcache_P_addr,
     
-    output wire valid,
-    output wire op,//操作类型
-    output wire [31:0] dcache_V_addr, //内存读数据
-    output wire wstrb, //写使能信号
-    output wire [31:0] dcache_write_data, //内存写数据
-
-
     // 输出给dispatcher的信号
-    output reg  [1:0]mem_pf_reg_write_en, 
-    output reg  [1:0][4:0] mem_pf_reg_write_addr,
-    output reg  [1:0][31:0] mem_pf_reg_write_data,
+    output wire  [1:0]mem_pf_reg_write_en, 
+    output wire  [1:0][4:0] mem_pf_reg_write_addr,
+    output wire  [1:0][31:0] mem_pf_reg_write_data,
 
     // 输出给ctrl的信号
-    output reg   pause_mem, //通知暂停内存访问信号
+    output wire   pause_mem, //通知暂停内存访问信号
 
     //输出给wb的信号
-    output reg  [1:0]wb_reg_write_en, 
-    output reg  [1:0][4:0] wb_reg_write_addr,
+    output wire  [1:0]wb_reg_write_en, 
+    output wire  [1:0][4:0] wb_reg_write_addr,
     output reg  [1:0][31:0] wb_reg_write_data,
 
-    output reg  [1:0]wb_csr_write_en, //CSR寄存器写使能
-    output reg  [1:0][13:0] wb_csr_addr, //CSR寄存器地址
-    output reg  [1:0][31:0] wb_csr_write_data,
-    output reg  [1:0]wb_is_llw_scw, //是否是LLW/SCW指令
+    output wire  [1:0]wb_csr_write_en, //CSR寄存器写使能
+    output wire  [1:0][13:0] wb_csr_addr, //CSR寄存器地址
+    output wire  [1:0][31:0] wb_csr_write_data,
+    output wire  [1:0]wb_is_llw_scw, //是否是LLW/SCW指令
 
     //commit_ctrl的信号
-    output reg  [1:0] commit_valid, //指令是否有效
-    output reg  [1:0][5:0]  commit_is_exception,
-    output reg  [1:0][5:0][6:0] commit_exception_cause, //异常原因
-    output reg  [1:0][31:0] commit_pc,
-    output reg  [1:0][31:0] commit_addr, //内存地址
-    output reg  [1:0] commit_idle, //是否是空闲指令
-    output reg  [1:0] commit_ertn, //是否是异常返回指令
-    output reg  [1:0] commit_is_privilege //特权指令
+    output wire  [1:0] commit_valid, //指令是否有效
+    output wire  [1:0][5:0]  commit_is_exception,
+    output wire  [1:0][5:0][6:0] commit_exception_cause, //异常原因
+    output wire  [1:0][31:0] commit_pc,
+    output wire  [1:0][31:0] commit_addr, //内存地址
+    output wire  [1:0] commit_idle, //是否是空闲指令
+    output wire  [1:0] commit_ertn, //是否是异常返回指令
+    output wire  [1:0] commit_is_privilege //特权指令
 
    `ifdef DIFF
     // diff
@@ -110,16 +105,16 @@ module mem
     assign wb_csr_write_data[0] = reg_write_data[0];
     assign wb_csr_write_data[1] = reg_write_data[1];
 
-    reg [1:0][5:0] mem_is_exception_reg;
-    reg [1:0][5:0][6:0] mem_exception_cause_reg;
+    wire [5:0] mem_is_exception[1:0];
+    wire [5:0] [6:0] mem_exception_cause [1:0];
 
-    assign mem_is_exception_reg[0] = {is_exception[0],1'b0};
-    assign mem_is_exception_reg[1] = {is_exception[1],1'b0};
-    assign mem_exception_cause_reg[0] = {exception_cause[0],`EXCEPTION_NOP};
-    assign mem_exception_cause_reg[1] = {exception_cause[1],`EXCEPTION_NOP};
+    assign mem_is_exception[0] = {is_exception[0],1'b0};
+    assign mem_is_exception[1] = {is_exception[1],1'b0};
+    assign mem_exception_cause[0] = {exception_cause[0],`EXCEPTION_NOP};
+    assign mem_exception_cause[1] = {exception_cause[1],`EXCEPTION_NOP};
 
-    assign commit_is_exception[0] = mem_is_exception_reg[0];
-    assign commit_is_exception[1] = mem_is_exception_reg[1];
+    assign commit_is_exception[0] = mem_is_exception[0];
+    assign commit_is_exception[1] = mem_is_exception[1];
     assign commit_pc[0] = pc;
     assign commit_pc[1] = pc;
     assign commit_addr[0] = mem_addr[0];
@@ -134,13 +129,17 @@ module mem
     assign commit_idle[1] = is_idle[1];
 
     reg [1:0] pause_uncache;
+    wire [31:0] mem_addr_reg [1:0];
+    
+    assign mem_addr_reg[0] = mem_addr[0];
+    assign mem_addr_reg[1] = mem_addr[1];
 
     always @(*) begin
         case(aluop[0])
             `ALU_LDB:begin
                 if(data_ok) begin
                     pause_uncache[0] = 1'b0;
-                    case(mem_addr[0][1:0])
+                    case(mem_addr_reg[0][1:0])
                         2'b00: begin
                             wb_reg_write_data[0] = {{24{dcache_read_data[7]}},dcache_read_data[7:0]};
                         end
@@ -166,7 +165,7 @@ module mem
             `ALU_LDBU:begin
                 if(data_ok) begin
                     pause_uncache[0] = 1'b0;
-                    case(mem_addr[0][1:0])
+                    case(mem_addr_reg[0][1:0])
                         2'b00: begin
                             wb_reg_write_data[0] = {24'b0,dcache_read_data[7:0]};
                         end
@@ -192,7 +191,7 @@ module mem
             `ALU_LDH:begin
                 if(data_ok) begin
                     pause_uncache[0] = 1'b0;
-                    case(mem_addr[0][1:0])
+                    case(mem_addr_reg[0][1:0])
                         2'b00: begin
                             wb_reg_write_data[0] = {{16{dcache_read_data[15]}},dcache_read_data[15:0]};
                         end
@@ -212,7 +211,7 @@ module mem
             `ALU_LDHU:begin
                 if(data_ok) begin
                     pause_uncache[0] = 1'b0;
-                    case(mem_addr[0][1:0])
+                    case(mem_addr_reg[0][1:0])
                         2'b00: begin
                             wb_reg_write_data[0] = {16'b0,dcache_read_data[15:0]};
                         end
@@ -262,7 +261,7 @@ module mem
             `ALU_LDB:begin
                 if(data_ok) begin
                     pause_uncache[1] = 1'b0;
-                    case(mem_addr[1][1:0])
+                    case(mem_addr_reg[1][1:0])
                         2'b00: begin
                             wb_reg_write_data[1] = {{24{dcache_read_data[7]}},dcache_read_data[7:0]};
                         end
@@ -288,7 +287,7 @@ module mem
             `ALU_LDBU:begin
                 if(data_ok) begin
                     pause_uncache[1] = 1'b0;
-                    case(mem_addr[1][1:0])
+                    case(mem_addr_reg[1][1:0])
                         2'b00: begin
                             wb_reg_write_data[1] = {24'b0,dcache_read_data[7:0]};
                         end
@@ -314,7 +313,7 @@ module mem
             `ALU_LDH:begin
                 if(data_ok) begin
                     pause_uncache[1] = 1'b0;
-                    case(mem_addr[1][1:0])
+                    case(mem_addr_reg[1][1:0])
                         2'b00: begin
                             wb_reg_write_data[1] = {{16{dcache_read_data[15]}},dcache_read_data[15:0]};
                         end
@@ -334,7 +333,7 @@ module mem
             `ALU_LDHU:begin
                 if(data_ok) begin
                     pause_uncache[1] = 1'b0;
-                    case(mem_addr[1][1:0])
+                    case(mem_addr_reg[1][1:0])
                         2'b00: begin
                             wb_reg_write_data[1] = {16'b0,dcache_read_data[15:0]};
                         end
@@ -382,10 +381,10 @@ module mem
 
     `ifdef DIFF
     always @(*) begin
-        debug_wb_pc[0] = pc;
-        debug_wb_pc[1] = pc;
-        debug_wb_inst[0] = inst;
-        debug_wb_inst[1] = inst;
+        debug_wb_pc[0] = pc[0];
+        debug_wb_pc[1] = pc[1];
+        debug_wb_inst[0] = inst[0];
+        debug_wb_inst[1] = inst[1];
         debug_wb_rf_we[0] = 4'b0;
         debug_wb_rf_we[1] = 4'b0;
         debug_wb_rf_wnum[0] = 5'b0;

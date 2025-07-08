@@ -1,5 +1,7 @@
-`include "defines.vh"
 `timescale 1ns / 1ps
+`include "defines.vh"
+`include "csr_defines.vh"
+
 
 module id_1RI20
 (

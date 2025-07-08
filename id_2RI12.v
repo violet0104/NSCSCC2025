@@ -1,5 +1,7 @@
-`include   "defines.vh"
-`timescale  1ns / 1ps
+`timescale 1ns / 1ps
+`include "defines.vh"
+`include "csr_defines.vh"
+
 
 module decoder_2RI12
 (
@@ -87,7 +89,7 @@ module decoder_2RI12
                 imm = {{20{si12[11]}},si12};
                 inst_valid = 1'b1;
             end
-            `ADDI_OPCODE:begin
+            `ADDIW_OPCODE:begin
                 reg_writen_en = 1'b1;
                 aluop = `ALU_ADDIW;
                 alusel = `ALU_SEL_ARITHMETIC;
@@ -100,7 +102,7 @@ module decoder_2RI12
             end
             `ANDI_OPCODE:begin
                 reg_writen_en = 1'b1;
-                aluop = `ALU_ADDI;
+                aluop = `ALU_ADDIW;
                 alusel = `ALU_SEL_ARITHMETIC;
                 reg1_read_en = 1'b1;
                 reg2_read_en = 1'b0;

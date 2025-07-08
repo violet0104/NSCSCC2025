@@ -1,5 +1,6 @@
-`include "defines.vh"
 `timescale 1ns / 1ps
+`include "defines.vh"
+`include "csr_defines.vh"
 
 module id_1R_I26
 (
@@ -59,12 +60,12 @@ module id_1R_I26
                 is_privilege = 1'b1;
                 is_cnt = 1'b0;
                 reg_writen_en = 1'b0;
-                aluop = `ALU_ERET;
+                aluop = `ALU_ERTN;
                 alusel = `ALU_SEL_NOP;
                 inst_valid = 1'b1;
                 reg_write_addr = 5'b0;
             end
-            `RDCNTID_OPCDOE:begin
+            `RDCNTID_OPCODE:begin
                 is_privilege = 1'b0;
                 is_cnt = 1'b1;
                 reg_writen_en = 1'b1;
@@ -80,11 +81,11 @@ module id_1R_I26
                     csr_read_en = 1'b1;
                 end
             end
-            `RDCNTVHM_OPCODE: begin
+            `RDCNTVHW_OPCODE: begin
                 is_cnt = 1'b1;
                 is_privilege = 1'b0;
                 reg_writen_en = 1'b1;
-                aluop = `ALU_RDCNTVHM;
+                aluop = `ALU_RDCNTVHW;
                 alusel = `ALU_SEL_CSR;
                 inst_valid = 1'b1;
                 reg_write_addr = rd;

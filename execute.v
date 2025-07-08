@@ -1,3 +1,6 @@
+`timescale 1ns / 1ps
+`include "defines.vh"
+`include "csr_defines.vh"
 
 module execute (
     input wire clk,
@@ -8,24 +11,24 @@ module execute (
     input wire pause,
 
     // 来自stable counter的信号
-    input [63:0] cnt_i,
+    input wire [63:0] cnt_i,
 
     // 来自dispatch的数据
-    input wire [31:0] pc_i [1:0],
-    input wire [31:0] inst_i [1:0],
+    input wire [1:0] [31:0] pc_i,
+    input wire [1:0] [31:0] inst_i,
     input wire [1:0] valid_i,
 
-    input wire [3:0] is_exception_i [1:0],
-    input wire [3:0] [6:0] exception_cause_i [1:0],
+    input wire [1:0] [3:0] is_exception_i,
+    input wire [1:0] [3:0] [6:0] exception_cause_i,
     input wire [1:0] is_privilege_i,
 
-    input wire [7:0] aluop_i [1:0],
-    input wire [2:0] alusel_i [1:0],
+    input wire [1:0] [7:0] aluop_i,
+    input wire [1:0] [2:0] alusel_i,
 
-    input wire [1:0] reg_data_i [4:0],
+    input wire [1:0] [4:0] reg_data_i,
 
     input wire [1:0] reg_write_en_i,                // 寄存器写使能
-    input wire [4:0] reg_write_addr_i [1:0],        // 寄存器写地址
+    input wire [1:0] [4:0] reg_write_addr_i,        // 寄存器写地址
 
     input wire csr_read_data_i,    // csr读数据
     input wire csr_write_en_i,     // csr写使能
@@ -37,7 +40,7 @@ module execute (
     input wire [31:0] pre_branch_addr_i,   // 预测分支指令跳转地址
     
     // 来自mem的信号
-    input wire pasue_mem_i,
+    input wire pause_mem_i,
 
     // 和dcache的接口
     input wire data_ok_i,            
@@ -57,56 +60,56 @@ module execute (
     output reg [31:0] pc_dispatch_o,
 
     // 前递给dispatch的数据
-    output wire [7:0] pre_ex_aluop_o [1:0],
+    output wire [1:0] [7:0] pre_ex_aluop_o,
     output wire [1:0] reg_write_en_o,
-    output wire [31:0] reg_write_addr_o [1:0],
-    output wire [31:0] reg_write_data_o [1:0],
+    output wire [1:0] [31:0] reg_write_addr_o,
+    output wire [1:0] [31:0] reg_write_data_o,
     
     // 输出给ctrl的数据
     output wire   pause_ex_o,
     output wire   branch_flush_o,
     output wire   ex_excp_flush_o,
-    output [31:0] branch_target_o,
+    output wire [31:0] branch_target_o,
 
     // 输出给mem的数据
-    output wire [31:0] pc_mem [1:0],
-    output wire [31:0] inst_mem [1:0],
-    output wire [4:0] is_exception_mem [1:0],
-    output wire [4:0] [6:0] exception_cause_mem [1:0],
-    output wire [1:0] is_privilege_mem,
-    output wire is_ertn_mem [1:0],
-    output wire is_idle_mem [1:0],
-    output wire [1:0] valid_mem [1:0],
+    output reg [1:0] [31:0] pc_mem,
+    output reg [1:0] [31:0] inst_mem,
+    output reg [1:0] is_exception_mem,
+    output reg [1:0] [4:0] [6:0] exception_cause_mem,
+    output reg [1:0] is_privilege_mem,
+    output reg [1:0] is_ertn_mem,
+    output reg [1:0] is_idle_mem,
+    output reg [1:0] [1:0] valid_mem,
 
-    output wire [1:0] reg_write_en_mem,
-    output wire [4:0] reg_write_addr_mem [1:0],
-    output wire [31:0] reg_write_data_mem [1:0], 
+    output reg [1:0] reg_write_en_mem,
+    output reg [1:0] [4:0] reg_write_addr_mem,
+    output reg [1:0] [31:0] reg_write_data_mem, 
 
-    output wire [7:0] aluop_mem [1:0],
+    output reg [1:0] [7:0] aluop_mem,
 
-    output wire [31:0] addr_mem [1:0],
-    output wire [31:0] data_mem [1:0],
+    output reg [1:0] [31:0] addr_mem,
+    output reg [1:0] [31:0] data_mem,
 
-    output wire [1:0] csr_write_en_mem,
-    output wire [13:0] csr_addr_mem [1:0],
-    output wire [31:0] csr_write_data_mem [1:0],
+    output reg [1:0] csr_write_en_mem,
+    output reg [1:0] [13:0] csr_addr_mem,
+    output reg [1:0] [31:0] csr_write_data_mem,
 
-    output wire [1:0] is_llw_scw_mem
+    output reg [1:0] is_llw_scw_mem
 );
     wire [1:0] pause_alu;
 
     // 和分支预测器有关的信息
     wire [1:0] branch_flush_alu;
-    wire [31:0] [1:0] branch_target_addr_alu;
+    wire [31:0] branch_target_addr_alu [1:0];
 
     wire [1:0] update_en_alu;
     wire [1:0] taken_or_not_actual_alu;
-    wire [31:0] [1:0] branch_actual_addr_alu;
-    wire [31:0] [1:0] pc_dispatch_alu;
+    wire [31:0] branch_actual_addr_alu [1:0];
+    wire [31:0] pc_dispatch_alu [1:0];
 
     // 和cache有关的信息
     wire [1:0] is_cacop_alu;
-    wire [4:0] [1:0] cacop_code_alu;
+    wire [4:0] cacop_code_alu [1:0];
     wire [1:0] is_preld_alu;
     wire [1:0] hint_alu;
     wire [31:0] addr_alu;
@@ -114,9 +117,9 @@ module execute (
     wire [1:0] valid;
     wire [1:0] op;
     wire addr_ok;
-    wire [31:0] [1:0] virtual_addr;
-    wire [31:0] [1:0] wdata;
-    wire [1:0] [3:0] wstrb;
+    wire [31:0] virtual_addr [1:0];
+    wire [31:0] wdata [1:0];
+    wire [3:0] wstrb [1:0];
 
     // to mem
     wire [31:0] pc [1:0];
@@ -126,7 +129,7 @@ module execute (
     wire [1:0] is_privilege;
     wire is_ert [1:0];
     wire is_idle [1:0];
-    wire [1:0] valid_o [1:0];
+    wire [1:0] valid_o;
 
     wire [1:0] reg_write_en;
     wire [4:0] reg_write_addr [1:0];

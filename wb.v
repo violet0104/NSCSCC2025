@@ -1,161 +1,401 @@
-`timescale 1ps/
+`timescale 1ns / 1ps
+`include "defines.vh"
+`include "csr_defines.vh"
 
-module wb
+module id
 (
-    input wire clk,
-    input wire rst,
+    input wire [31:0] pc,
+    input wire [31:0] inst,
+    input wire valid,
+    input wire pre_taken,  //确定预测的分支跳转正确
+    input wire [31:0] pre_addr,   // 预测的分支跳转的地址
+    input wire [1:0] is_exception,
+    input wire [1:0] [6:0] exception_cause,
 
-   //   mem传入的信号
-    input wire  [1:0]wb_reg_write_en, 
-    input wire  [1:0][4:0] wb_reg_write_addr,
-    input wire  [1:0][31:0] wb_reg_write_data,
-    input wire  [1:0]wb_csr_write_en, //CSR寄存器写使能
-    input wire  [1:0][13:0] wb_csr_addr, //CSR寄存器地址
-    input wire  [1:0][31:0] wb_csr_write_data,
-    input wire  [1:0]wb_is_llw_scw, //是否是LLW/SCW指令
+    output reg  inst_valid,
+    output reg  id_valid_out,
+    output reg  [2:0] is_exception_out, //是否异常
+    output reg  [2:0][6:0] exception_cause_out, //异常原因
+    output reg  [31:0] pc_out,
+    output reg  [31:0] inst_out,
+    output reg  reg_writen_en,  //寄存器写使能信号
+    output reg  [7:0]aluop,
+    output reg  [3:0]alusel,
+    output reg  [31:0]imm,
+    output reg  reg1_read_en,   //rR1寄存器读使能
+    output reg  reg2_read_en,   //rR2寄存器读使能
+    output reg  [4:0]reg1_read_addr,
+    output reg  [4:0]reg2_read_addr,
+    output reg  [4:0]reg_write_addr,  //目的寄存器地址
+    output reg  id_pre_taken,
+    output reg  [31:0] id_pre_addr,
+    output reg  is_privilege, //特权指令标志
+    output reg  csr_read_en, //CSR寄存器读使能
+    output reg  csr_write_en, //CSR寄存器写使能
+    output reg  [13:0] csr_addr, //CSR
+    output reg  is_cnt, //是否是计数器寄存器
+    output reg  invtlb_op  //TLB无效操作
 
-    input wire  [1:0] commit_valid, //指令是否有效
-    input wire  [1:0][5:0]  commit_is_exception,
-    input wire  [1:0][5:0][6:0] commit_exception_cause, //异常原因
-    input wire  [1:0][31:0] commit_pc,
-    input wire  [1:0][31:0] commit_addr, //内存地址
-    input wire  [1:0] commit_idle, //是否是空闲指令
-    input wire  [1:0] commit_ertn, //是否是异常返回指令
-    input wire  [1:0] commit_is_privilege, //特权指令
-
-    input wire pause_mem,
-
-    output reg [1:0] wb_pf_reg_write_en, //输出的寄存器写使能
-    output reg [1:0][4:0] wb_pf_reg_write_addr, //输出的寄存器写地址
-    output reg [1:0][31:0] wb_pf_reg_write_data, 
-
-    // to ctrl
-    output reg  [1:0]ctrl_reg_write_en, 
-    output reg  [1:0][4:0] ctrl_reg_write_addr,
-    output reg  [1:0][31:0] ctrl_reg_write_data,
-
-    output reg  [1:0]ctrl_csr_write_en, //CSR寄存器写使能
-    output reg  [1:0][13:0] ctrl_csr_addr, //CSR寄存器地址
-    output reg  [1:0][31:0] ctrl_csr_write_data,
-    output reg  [1:0]ctrl_is_llw_scw, //是否是LLW/SCW指令
-
-    output reg  [1:0] commit_valid_out, //指令是否有效
-    output reg  [1:0][5:0]  commit_is_exception_out,
-    output reg  [1:0][5:0][6:0] commit_exception_cause_out, //异常原因
-    output reg  [1:0][31:0] commit_pc_out,
-    output reg  [1:0][31:0] commit_addr_out, //内存地址
-    output reg  [1:0] commit_idle_out, //是否是空闲指令
-    output reg  [1:0] commit_ertn_out, //是否是异常返回指令
-    output reg  [1:0] commit_is_privilege_out //特权指令
-
-   `ifdef DIFF
-    input reg  [1:0][31:0] in_debug_wb_pc, // debug信息：写回阶段的PC
-    input reg  [1:0][31:0] in_debug_wb_inst, 
-    input reg  [1:0][3:0] in_debug_wb_rf_we, 
-    input reg  [1:0][4:0] in_debug_wb_rf_wnum, // debug信息：寄存器写地址
-    input reg  [1:0][31:0] in_debug_wb_rf_wdata, // debug信息：寄存器写数据
-    input reg  [1:0] in_inst_valid, // debug信息：指令是否有效
-    input reg  [1:0] in_cnt_inst,
-    input reg  [1:0] in_csr_rstat_en,
-    input reg  [1:0][31:0] in_csr_data,
-    input reg  [1:0]in_excp_flush,
-    input reg  [1:0]in_ertn_flush,
-    input reg  [1:0][5:0] in_ecode,
-    input reg  [1:0][7:0] in_inst_st_en,
-    input reg  [1:0][31:0] in_st_paddr, //存储器地址
-    input reg  [1:0][31:0] in_st_vaddr, //虚拟地址
-    input reg  [1:0][31:0] in_st_data, //存储器写数据
-    input reg  [1:0][7:0] in_inst_ld_en, //加载指令使能
-    input reg  [1:0][31:0] in_ld_paddr, //加载指令地址
-    input reg  [1:0][31:0] in_ld_vaddr, //加载指令虚拟地址
-    input reg  [1:0] in_tlbfill_en, //TLB填充使能
-    // diff
-    output reg  [1:0][31:0] debug_wb_pc, // debug信息：写回阶段的PC
-    output reg  [1:0][31:0] debug_wb_inst, 
-    output reg  [1:0][3:0] debug_wb_rf_we, 
-    output reg  [1:0][4:0] debug_wb_rf_wnum, // debug信息：寄存器写地址
-    output reg  [1:0][31:0] debug_wb_rf_wdata, // debug信息：寄存器写数据
-    output reg  [1:0] inst_valid, // debug信息：指令是否有效
-    output reg  [1:0] cnt_inst,
-    output reg  [1:0] csr_rstat_en,
-    output reg  [1:0][31:0] csr_data,
-    output reg  [1:0]excp_flush,
-    output reg  [1:0]ertn_flush,
-    output reg  [1:0][5:0] ecode,
-    output reg  [1:0][7:0] inst_st_en,
-    output reg  [1:0][31:0] st_paddr, //存储器地址
-    output reg  [1:0][31:0] st_vaddr, //虚拟地址
-    output reg  [1:0][31:0] st_data, //存储器写数据
-    output reg  [1:0][7:0] inst_ld_en, //加载指令使能
-    output reg  [1:0][31:0] ld_paddr, //加载指令地址
-    output reg  [1:0][31:0] ld_vaddr, //加载指令虚拟地址
-    output reg  [1:0] tlbfill_en, //TLB填充使能
-    `endif 
 );
+    reg  [5:0]  id_valid;  //这个6位的向量表示哪个解码器的输出是有效的
+    reg  [31:0] id_pc_out[5:0];
+    reg  [2:0]  id_is_exception[5:0]; //是否异常
+    reg  [5:0] [6:0]  id_exception_cause [2:0]; //异常原因
+    reg  [31:0] id_inst_out[5:0];
+    reg  [5:0]  id_reg_writen_en; 
+    reg  [5:0]  id_is_privilege;
+    reg  [7:0]  id_aluop[5:0];
+    reg  [2:0]  id_alusel[5:0];
+    reg  [31:0] id_imm[5:0];
+    reg  [5:0]  id_reg1_read_en;   
+    reg  [5:0]  id_reg2_read_en;   
+    reg  [4:0]  id_reg1_read_addr[5:0];
+    reg  [4:0]  id_reg2_read_addr[5:0];
+    reg  [4:0]  id_reg_write_addr[5:0];
+    reg  [5:0]  is_privilege; //特权指令标志
+    reg  [5:0]  id_csr_read_en; //CSR寄存器读使能
+    reg  [5:0]  id_csr_write_en; //CSR寄存器写使能
+    reg  [13:0] id_csr_addr[5:0]; //CSR
+    reg  [5:0]  id_is_cnt; //是否是计数器寄存器
+    reg  [5:0]  id_invtlb_op ; //TLB无效操作    
+    wire [5:0]  id_valid_vec;
 
-    always @(posedge clk) begin
-        if(rst || pause_mem) begin
-            ctrl_reg_write_en[0] <= 1'b0;
-            ctrl_reg_write_en[1] <= 1'b0;
-            ctrl_reg_write_addr[0] <= 1'b0;
-            ctrl_reg_write_addr[1] <= 1'b0; 
-            ctrl_reg_write_data[0] <= 32'b0;
-            ctrl_reg_write_data[1] <= 32'b0;
-            ctrl_csr_write_en[0] <= 1'b0;
-            ctrl_csr_write_en[1] <= 1'b0; 
-            ctrl_csr_addr[0] <= 14'b0;
-            ctrl_csr_addr[1] <= 14'b0;
-            ctrl_csr_write_data[0] <= 32'b0;
-            ctrl_csr_write_data[1] <= 32'b0;
-            ctrl_is_llw_scw[0] <= 1'b0;
-            ctrl_is_llw_scw[1] <= 1'b0;
-            commit_valid_out[0] <= 1'b0;
-            commit_valid_out[1] <= 1'b0;
-            commit_is_exception_out[0] <= 1'b0;
-            commit_is_exception_out[1] <= 1'b0;
-            commit_exception_cause_out[0] <= 6'b0;
-            commit_exception_cause_out[1] <= 6'b0;
-            commit_pc_out[0] <= 32'b0;
-            commit_pc_out[1] <= 32'b0;
-            commit_addr_out[0] <= 32'b0;
-            commit_addr_out[1] <= 32'b0;
-            commit_idle_out[0] <= 1'b0;
-            commit_idle_out[1] <= 1'b0;
-            commit_ertn_out[0] <= 1'b0;
-            commit_ertn_out[1] <= 1'b0;
-            commit_is_privilege_out[0] <= 1'b0;
-            commit_is_privilege_out[1] <= 1'b0;
-        end 
-        else begin
-            ctrl_reg_write_en[0] <= wb_reg_write_en[0];
-            ctrl_reg_write_en[1] <= wb_reg_write_en[1];
-            ctrl_reg_write_addr[0] <= wb_reg_write_addr[0];
-            ctrl_reg_write_addr[1] <= wb_reg_write_addr[1]; 
-            ctrl_reg_write_data[0] <= wb_reg_write_data[0];
-            ctrl_reg_write_data[1] <= wb_reg_write_data[1];
-            ctrl_csr_write_en[0] <= wb_csr_write_en[0];
-            ctrl_csr_write_en[1] <= wb_csr_write_en[1]; 
-            ctrl_csr_addr[0] <= wb_csr_addr[0];
-            ctrl_csr_addr[1] <= wb_csr_addr[1];
-            ctrl_csr_write_data[0] <= wb_csr_write_data[0];
-            ctrl_csr_write_data[1] <= wb_csr_write_data[1];
-            ctrl_is_llw_scw[0] <= wb_is_llw_scw[0];
-            ctrl_is_llw_scw[1] <= wb_is_llw_scw[1];
-            commit_valid_out[0] <= commit_valid[0];
-            commit_valid_out[1] <= commit_valid[1];
-            commit_is_exception_out[0] <= commit_is_exception[0];
-            commit_is_exception_out[1] <= commit_is_exception[1];
-            commit_exception_cause_out[0] <= commit_exception_cause[0];
-            commit_exception_cause_out[1] <= commit_exception_cause[1];
-            commit_pc_out[0] <= commit_pc[0];
-            commit_pc_out[1] <= commit_pc[1];
-            commit_addr_out[0] <= commit_addr[0];
-            commit_addr_out[1] <= commit_addr[1];
-            commit_idle_out[0] <= commit_idle[0];
-            commit_idle_out[1] <= commit_idle[1];
-            commit_ertn_out[0] <= commit_ertn[0];
-            commit_ertn_out[1] <= commit_ertn[1];
-            commit_is_privilege_out[0] <= commit_is_privilege[0];
-            commit_is_privilege_out[1] <= commit_is_privilege[1];
+    id_1R_I26 u_did_1R_I26 (
+        .pc(pc),
+        .inst(inst),
+
+        .inst_valid(id_valid[0]),
+        .pc_out(id_pc_out[0]),
+        .is_exception(id_is_exception[0]),
+        .exception_cause(id_exception_cause[0]),
+        .inst_out(id_inst_out[0]),
+        .reg_writen_en(id_reg_writen_en[0]), 
+        .aluop(id_aluop[0]),
+        .alusel(id_alusel[0]),
+        .imm(id_imm[0]),
+        .reg1_read_en(id_reg1_read_en[0]),   
+        .reg2_read_en(id_reg2_read_en[0]),  
+        .reg1_read_addr(id_reg1_read_addr[0]),
+        .reg2_read_addr(id_reg2_read_addr[0]),
+        .reg_write_addr(id_reg_write_addr[0]),
+        .is_privilege(id_is_privilege[0]),
+        .csr_read_en(id_csr_read_en[0]),
+        .csr_write_en(id_csr_write_en[0]),
+        .csr_addr(csr_addr[0]),
+        .is_cnt(id_is_cnt[0]),
+        .invtlb_op(id_invtlb_op[0])
+    ); 
+
+    id_1RI21 u_id_1RI21 (
+        .pc(pc),
+        .inst(inst),
+
+        .inst_valid(id_valid[1]),
+        .pc_out(id_pc_out[1]),
+        .is_exception(id_is_exception[1]),
+        .exception_cause(id_exception_cause[1]),
+        .inst_out(id_inst_out[1]),
+        .reg_writen_en(id_reg_writen_en[1]),
+        .aluop(id_aluop[1]),
+        .alusel(id_alusel[1]),
+        .imm(id_imm[1]),
+        .reg1_read_en(id_reg1_read_en[1]),  
+        .reg2_read_en(id_reg2_read_en[1]),   
+        .reg1_read_addr(id_reg1_read_addr[1]),
+        .reg2_read_addr(id_reg2_read_addr[1]),
+        .reg_write_addr(id_reg_write_addr[1]),
+        .is_privilege(id_is_privilege[1]),
+        .csr_read_en(id_csr_read_en[1]),
+        .csr_write_en(id_csr_write_en[1]),
+        .csr_addr(id_csr_addr[1]),
+        .is_cnt(id_is_cnt[1]),
+        .invtlb_op(id_invtlb_op[1])
+    ); 
+
+    id_2RI12 u_id_2RI12 (
+        .pc(pc),
+        .inst(inst),
+
+        .inst_valid(id_valid[2]),
+        .pc_out(id_pc_out[2]),
+        .is_exception(id_is_exception[2]),
+        .exception_cause(id_exception_cause[2]),
+        .inst_out(id_inst_out[2]),
+        .reg_writen_en(id_reg_writen_en[2]), 
+        .aluop(id_aluop[2]),
+        .alusel(id_alusel[2]),
+        .imm(id_imm[2]),
+        .reg1_read_en(id_reg1_read_en[2]),   
+        .reg2_read_en(id_reg2_read_en[2]),   
+        .reg1_read_addr(id_reg1_read_addr[2]),
+        .reg2_read_addr(id_reg2_read_addr[2]),
+        .reg_write_addr(id_reg_write_addr[2]),
+        .is_privilege(id_is_privilege[2]),
+        .csr_read_en(id_csr_read_en[2]),
+        .csr_write_en(id_csr_write_en[2]),
+        .csr_addr(id_csr_addr[2]),
+        .is_cnt(id_is_cnt[2]),
+        .invtlb_op(id_invtlb_op[2])
+    ); 
+
+    id_2RI14 u_id_2RI14 (
+        .pc(pc),
+        .inst(inst),
+
+        .inst_valid(id_valid[3]),
+        .pc_out(id_pc_out[3]),
+        .is_exception(id_is_exception[3]),
+        .exception_cause(id_exception_cause[3]),
+        .inst_out(id_inst_out[3]),
+        .reg_writen_en(id_reg_writen_en[3]),
+        .aluop(id_aluop[3]),
+        .alusel(id_alusel[3]),
+        .imm(id_imm[3]),
+        .reg1_read_en(id_reg1_read_en[3]),  
+        .reg2_read_en(id_reg2_read_en[3]),  
+        .reg1_read_addr(id_reg1_read_addr[3]),
+        .reg2_read_addr(id_reg2_read_addr[3]),
+        .reg_write_addr(id_reg_write_addr[3]),
+        .is_privilege(id_is_privilege[3]),
+        .csr_read_en(id_csr_read_en[3]),
+        .csr_write_en(id_csr_write_en[3]),
+        .csr_addr(id_csr_addr[3]),
+        .is_cnt(id_is_cnt[3]),
+        .invtlb_op(id_invtlb_op[3])
+    ); 
+
+    id_2RI16 u_id_2RI16 (
+        .pc(pc),
+        .inst(inst),
+
+        .inst_valid(id_valid[4]),
+        .pc_out(id_pc_out[4]),
+        .is_exception(id_is_exception[4]),
+        .exception_cause(id_exception_cause[4]),
+        .inst_out(id_inst_out[4]),
+        .reg_writen_en(id_reg_writen_en[4]), 
+        .aluop(id_aluop[4]),
+        .alusel(id_alusel[4]),
+        .imm(id_imm[4]),
+        .reg1_read_en(id_reg1_read_en[4]),   
+        .reg2_read_en(id_reg2_read_en[4]),   
+        .reg1_read_addr(id_reg1_read_addr[4]),
+        .reg2_read_addr(id_reg2_read_addr[4]),
+        .reg_write_addr(id_reg_write_addr[4]),
+        .is_privilege(id_is_privilege[4]),
+        .csr_read_en(id_csr_read_en[4]),
+        .csr_write_en(id_csr_write_en[4]),
+        .csr_addr(id_csr_addr[4]),
+        .is_cnt(id_is_cnt[4]),
+        .invtlb_op(id_invtlb_op[4])
+    ); 
+
+    id_3R u_id_3R (
+        .pc(pc),
+        .inst(inst),
+
+        .inst_valid(id_valid[5]),
+        .pc_out(id_pc_out[5]),
+        .is_exception(id_is_exception[5]),
+        .exception_cause(id_exception_cause[5]),
+        .inst_out(id_inst_out[5]),
+        .reg_writen_en(id_reg_writen_en[5]), 
+        .aluop(id_aluop[5]),
+        .alusel(id_alusel[5]),
+        .imm(id_imm[5]),
+        .reg1_read_en(id_reg1_read_en[5]),  
+        .reg2_read_en(id_reg2_read_en[5]),   
+        .reg1_read_addr(id_reg1_read_addr[5]),
+        .reg2_read_addr(id_reg2_read_addr[5]),
+        .reg_write_addr(id_reg_write_addr[5]),
+        .is_privilege(id_is_privilege[5]),
+        .csr_read_en(id_csr_read_en[5]),
+        .csr_write_en(id_csr_write_en[5]),
+        .csr_addr(id_csr_addr[5]),
+        .is_cnt(id_is_cnt[5]),
+        .invtlb_op(id_invtlb_op[5])
+    ); 
+    
+
+    wire sys_exception;
+    wire brk_exception;
+    assign sys_exception = aluop == `ALU_SYSCALL;
+    assign brk_exception = aluop == `ALU_BREAK;
+    reg  [6:0]id_exception_cause_else;
+
+    always  @(*) begin
+        if (sys_exception) begin
+            id_exception_cause_else = `EXCEPTION_SYS;
+        end else if (brk_exception) begin
+            id_exception_cause_else = `EXCEPTION_BRK;
+        end else begin
+            id_exception_cause_else = `EXCEPTION_NOP;
         end
-                    
+    end
+
+
+    always  @(*) begin
+        case(id_valid)
+            6'b000001: begin
+                inst_valid = id_valid[0];
+                pc_out = id_pc_out[0];
+                is_exception_out = id_is_exception[0];
+                exception_cause_out = id_exception_cause[0];
+                inst_out = id_inst_out[0];
+                reg_writen_en = id_reg_writen_en[0]; 
+                aluop = id_aluop[0];
+                alusel = id_alusel[0];
+                imm = id_imm[0];
+                reg1_read_en = id_reg1_read_en[0];   
+                reg2_read_en = id_reg2_read_en[0];   
+                reg1_read_addr = id_reg1_read_addr[0];
+                reg2_read_addr = id_reg2_read_addr[0];
+                reg_write_addr = id_reg_write_addr[0];
+                is_privilege = id_is_privilege[0];
+                csr_read_en = id_csr_read_en[0];
+                csr_write_en = id_csr_write_en[0];
+                csr_addr = id_csr_addr[0];
+                is_cnt = id_is_cnt[0];
+                invtlb_op = id_invtlb_op[0];
+            end
+            6'b000010: begin
+                inst_valid = id_valid[1];
+                pc_out = id_pc_out[1];
+                is_exception_out = id_is_exception[1];
+                exception_cause_out = id_exception_cause[1];
+                inst_out = id_inst_out[1];
+                reg_writen_en = id_reg_writen_en[1]; 
+                aluop = id_aluop[1];
+                alusel = id_alusel[1];
+                imm = id_imm[1];
+                reg1_read_en = id_reg1_read_en[1];   
+                reg2_read_en = id_reg2_read_en[1];   
+                reg1_read_addr = id_reg1_read_addr[1];
+                reg2_read_addr = id_reg2_read_addr[1];
+                reg_write_addr = id_reg_write_addr[1];
+                is_privilege = id_is_privilege[1];
+                csr_read_en = id_csr_read_en[1];    
+                csr_write_en = id_csr_write_en[1];
+                csr_addr = id_csr_addr[1];
+                is_cnt = id_is_cnt[1];
+                invtlb_op = id_invtlb_op[1];
+            end
+            6'b000100: begin
+                inst_valid = id_valid[2];
+                pc_out = id_pc_out[2];
+                is_exception_out = id_is_exception[2];
+                exception_cause_out = id_exception_cause[2];
+                inst_out = id_inst_out[2];
+                reg_writen_en = id_reg_writen_en[2]; 
+                aluop = id_aluop[2];
+                alusel = id_alusel[2];
+                imm = id_imm[2];
+                reg1_read_en = id_reg1_read_en[2];   
+                reg2_read_en = id_reg2_read_en[2];   
+                reg1_read_addr = id_reg1_read_addr[2];
+                reg2_read_addr = id_reg2_read_addr[2];
+                reg_write_addr = id_reg_write_addr[2];
+                is_privilege = id_is_privilege[2];
+                csr_read_en = id_csr_read_en[2];
+                csr_write_en = id_csr_write_en[2];
+                csr_addr = id_csr_addr[2];
+                is_cnt = id_is_cnt[2];
+                invtlb_op = id_invtlb_op[2];
+            end
+            6'b001000: begin
+                inst_valid = id_valid[3];
+                pc_out = id_pc_out[3];
+                is_exception_out = id_is_exception[3];
+                exception_cause_out = id_exception_cause[3];
+                inst_out = id_inst_out[3];
+                reg_writen_en = id_reg_writen_en[3]; 
+                aluop = id_aluop[3];
+                alusel = id_alusel[3];
+                imm = id_imm[3];
+                reg1_read_en = id_reg1_read_en[3];   
+                reg2_read_en = id_reg2_read_en[3];   
+                reg1_read_addr = id_reg1_read_addr[3];
+                reg2_read_addr = id_reg2_read_addr[3];
+                reg_write_addr = id_reg_write_addr[3];
+                is_privilege = id_is_privilege[3];
+                csr_read_en = id_csr_read_en[3];
+                csr_write_en = id_csr_write_en[3];
+                csr_addr = id_csr_addr[3];
+                is_cnt = id_is_cnt[3];
+                invtlb_op = id_invtlb_op[3];
+            end
+            6'b010000: begin
+                inst_valid = id_valid[4];
+                pc_out = id_pc_out[4];
+                is_exception_out = id_is_exception[4];
+                exception_cause_out = id_exception_cause[4];
+                inst_out = id_inst_out[4];
+                reg_writen_en = id_reg_writen_en[4]; 
+                aluop = id_aluop[4];
+                alusel = id_alusel[4];
+                imm = id_imm[4];
+                reg1_read_en = id_reg1_read_en[4];   
+                reg2_read_en = id_reg2_read_en[4];   
+                reg1_read_addr = id_reg1_read_addr[4];
+                reg2_read_addr = id_reg2_read_addr[4];
+                reg_write_addr = id_reg_write_addr[4];
+                is_privilege = id_is_privilege[4];
+                csr_read_en = id_csr_read_en[4];
+                csr_write_en = id_csr_write_en[4];
+                csr_addr = id_csr_addr[4];
+                is_cnt = id_is_cnt[4];
+                invtlb_op = id_invtlb_op[4];
+            end
+            6'b100000: begin
+                inst_valid = id_valid[5];
+                pc_out = id_pc_out[5];
+                is_exception_out = {is_exception,sys_exception | brk_exception};
+                exception_cause_out = {exception_cause,id_exception_cause_else};
+                inst_out = id_inst_out[5];
+                reg_writen_en = id_reg_writen_en[5]; 
+                aluop = id_aluop[5];
+                alusel = id_alusel[5];
+                imm = id_imm[5];
+                reg1_read_en = id_reg1_read_en[5];   
+                reg2_read_en = id_reg2_read_en[5];   
+                reg1_read_addr = id_reg1_read_addr[5];
+                reg2_read_addr = id_reg2_read_addr[5];
+                reg_write_addr = id_reg_write_addr[5];
+                is_privilege = id_is_privilege[5];
+                csr_read_en = id_csr_read_en[5];
+                csr_write_en = id_csr_write_en[5];
+                csr_addr = id_csr_addr[5];
+                is_cnt = id_is_cnt[5];
+                invtlb_op = id_invtlb_op[5];
+            end
+            default: begin
+                inst_valid = 1'b0;
+                pc_out = pc;
+                is_exception_out = {is_exception,1'b1};
+                exception_cause_out = {exception_cause,`EXCEPTION_INE};
+                inst_out = 32'b0;
+                reg_writen_en = 0; 
+                aluop = 8'b0;
+                alusel = 3'b0;
+                imm = 32'b0;
+                reg1_read_en = 0;   
+                reg2_read_en = 0;   
+                reg1_read_addr = 0;
+                reg2_read_addr = 0;
+                reg_write_addr = 0;
+                is_privilege = 0;
+                csr_read_en = 0;
+                csr_write_en = 0;
+                csr_addr = 14'b0;
+                is_cnt = 0;
+                invtlb_op = 0;
+            end
+        endcase
+     end
+
+        always @(*) begin
+            id_pre_taken = pre_taken;
+            id_pre_addr  = pre_addr;
+            id_valid     = valid;
+        end
+endmodule

@@ -13,8 +13,8 @@ module mul_alu (
     output wire [64:0] result   // 乘法运算结果     
 );
 
-    wire signed [63:0] mul_result;  
-    wire valid;
+    reg signed [63:0] mul_result;  
+    reg valid;
 
     wire signed [32:0] reg1_ext;
     wire signed [32:0] reg2_ext;
