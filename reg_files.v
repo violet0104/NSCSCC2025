@@ -3,9 +3,9 @@ module reg(
     input  wire clk,
     input  wire [1:0]  reg1_read_en, 
     input  wire [1:0]  reg2_read_en, //寄存器读使能信号
-    input  wire [4:0]  reg1_read_addr [1:0], 
-    input  wire [4:0]  reg2_read_addr [1:0], //寄存器读地址
-    input  wire [31:0] reg_write_data [1:0], 
+    input  wire [1:0] [4:0]  reg1_read_addr, 
+    input  wire [1:0] [4:0]  reg2_read_addr, //寄存器读地址
+    input  wire [1:0] [31:0] reg_write_data, 
     input  wire [1:0]  reg_write_en, //寄存器写使能信号
 
     output wire [31:0] reg1_read_data [1:0],  //寄存器读数据

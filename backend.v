@@ -12,24 +12,27 @@ module backend (
     input wire [7:0] is_hwi,
 ******************************/
 
-    // 来自 instbuffer 的信息
+    // 来自前端的信息
     input wire [1:0] [31:0] pc_i,
     input wire [1:0] [31:0] inst_i,
-    input wire [1:0] valid_i,                     // 前端传递的数据有效信号
-    input wire [1:0] pre_is_branch_taken_i,       // 前端传递的分支预测结果
-    input wire [1:0] [31:0] pre_branch_addr_i,    // 前端传递的分支预测目标地址
-    input wire [1:0] [1:0] is_exception_i,        // 前端传递的异常标志
+    input wire [1:0] valid_i,                           // 前端传递的数据有效信号
+    input wire [1:0] pre_is_branch_taken_i,             // 前端传递的分支预测结果
+    input wire [1:0] [31:0] pre_branch_addr_i,          // 前端传递的分支预测目标地址
+    input wire [1:0] [1:0] is_exception_i,              // 前端传递的异常标志
     input wire [1:0] [1:0] [6:0] exception_cause_i,     // 异常原因
 
+//*********************************
     input wire pause_i,
-    input wire flush_i,
+    input wire flush_i,      // 这两个信号不知道对应前端什么信号
+//*********************************
+
 
 /*****************************
     这个我们没有
     // to pc
     output logic   is_interrupt,
     output bus32_t new_pc,
-
+    
 ******************************/
 
     // 输出给 bpu 的信息
@@ -38,8 +41,8 @@ module backend (
     output wire [31:0] branch_actual_addr_o,
     output wire [31:0] pc_dispatch_o,
 
-    // 输出给 instbuffer 的信息
-    output wire pause_o,
+    // 输出给 instbuffer 的取指请求信号
+    output wire get_data_req_o,
 
     // 和tlb的接口
     output wire [31:0] tlbidx,           // tlb索引寄存器

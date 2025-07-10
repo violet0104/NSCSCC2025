@@ -23,26 +23,26 @@ module front
     input wire fb_up_date_en,
     
     //与icache的交互
-    output reg [31:0] pi_pc, //前端给后端的pc地址
-    output reg [1:0] pi_inst_en, //前端给后端的指令使能信号
-    output reg pi_is_exception, //前端给后端的异常信号
-    output reg [6:0] pi_exception_cause, //前端给后端的异常原因
-    output reg [1:0] pi_fetch_en, //前端给后端的指令缓存使能信号
+    output reg [31:0] pi_pc,                //前端给后端的pc地址
+    output reg [1:0] pi_inst_en,            //前端给后端的指令使能信号
+    output reg pi_is_exception,             //前端给后端的异常信号
+    output reg [6:0] pi_exception_cause,    //前端给后端的异常原因
+    output reg [1:0] pi_fetch_en,           //前端给后端的指令缓存使能信号
 
     //和backend的交互
+    output wire [31:0] fb_pc_out[1:0],              //前端给后端的pc地址
+    output wire [31:0] fb_inst_out[1:0],            //前端给后端的指令
+    output wire fb_valid,                           //前端给后端的指令使能信号
     output wire [1:0] fb_pre_taken,
-    output wire [31:0] fb_pre_branch_addr[1:0], //前端给后端的分支地址
-    output wire [31:0] fb_inst_out[1:0], //前端给后端的指令
-    output wire [31:0] fb_pc_out[1:0], //前端给后端的pc地址
-    output wire fb_valid, //前端给后端的指令使能信号
-    output reg [1:0] fb_is_exception, //前端给后端的
-    output reg [6:0] fb_exception_cause[1:0][1:0], //前端给后端的异常原因
-    output wire buffer_full,   //指令缓存满的信号
+    output wire [31:0] fb_pre_branch_addr[1:0],     //前端给后端的分支地址
+    output reg [1:0] fb_is_exception,               //前端给后端的
+    output reg [6:0] fb_exception_cause[1:0][1:0],  //前端给后端的异常原因
+    output wire buffer_full,                        //指令缓存满的信号
 
     //我新加的信号**************************
     output wire inst_buffer_empty;
     input  wire         ex_is_bj_1,
-    input  wire         ex_is_bj_1   ,
+    input  wire         ex_is_bj_1   ,      // 是不是多了一个
     input  wire         ex_pred_taken1,      
     input  wire [31:0]  ex_pc_1      ,
     input  wire         ex_valid1    ,        

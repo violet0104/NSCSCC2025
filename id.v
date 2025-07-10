@@ -15,10 +15,10 @@ module id
 
     output reg  inst_valid,
     output reg  id_valid_out,
-    output reg  [2:0] is_exception_out, //是否异常
-    output reg  [2:0][6:0] exception_cause_out, //异常原因
     output reg  [31:0] pc_out,
     output reg  [31:0] inst_out,
+    output reg  [2:0] is_exception_out, //是否异常
+    output reg  [2:0][6:0] exception_cause_out, //异常原因
     output reg  reg_writen_en,  //寄存器写使能信号
     output reg  [7:0]aluop,
     output reg  [3:0]alusel,

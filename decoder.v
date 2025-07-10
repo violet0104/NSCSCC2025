@@ -8,137 +8,182 @@ module decoder (
 
     input wire flush, //强制更新信号
 
-    input wire [31:0][1:0] pc,
-    input wire [31:0][1:0] inst ,
-    input wire [1:0]  valid,        // 前端传递的数据有效信号
-    input wire [1:0]  pretaken,
-    input wire [31:0][1:0] pre_addr_in ,
-    input wire [1:0][1:0]  is_exception ,
-    input wire [6:0][1:0][1:0]  exception_cause ,
+    // 前端传递的数据
+    input wire [1:0] [31:0] pc,
+    input wire [1:0] [31:0] inst ,
+    input wire [1:0]  valid,                        // 前端传递的数据有效信号
+    input wire [1:0]  pretaken,                     // 前端传递的分支预测结果（是否跳转）
+    input wire [1:0] [31:0] pre_addr_in ,           // 前端传递的分支预测目标地址
+    input wire [1:0] [1:0]  is_exception ,          // 前端传递的异常信号，is_exception[0]表示inst[0]是否异常，is_exception[1]表示inst[1]是否异常
+                                                    // is_exception[0][1]表示译码阶段第一条指令出现异常...... is_exception的位宽每经过一个阶段加一
+    input wire [1:0] [1:0] [6:0] exception_cause ,  // 7位宽的异常原因，在csr_defines里定义
 
-    input wire [1:0] invalid_en,  //无效信号
+    // 来自 dispatch 的信号
+    input wire [1:0] invalid_en,  // 无效信号
 
-    output wire get_data_req,   //取指信号
 
+    // 输出给前端的取指请求信号
+    output wire get_data_req,   
+
+/**********************************
+    这个不知道有什么用
+    // to ctrl
+    output logic pause_decoder,
+***********************************/
+
+    // 输出给 dispatch 的信号
     output reg  [1:0]  dispatch_inst_valid,
-    output reg  [1:0]  dispatch_id_valid, //pc有效信号  
+    output reg  [1:0]  dispatch_id_valid,       // pc有效信号  
+
     output reg  [31:0][1:0] dispatch_pc_out ,
-    output reg  [6:0][1:0][2:0]  dispatch_exception_cause , //异常原因
-    output reg  [1:0][2:0]  dispatch_is_exception , //是否异常
     output reg  [31:0][1:0] dispatch_inst_out ,
+
+    output reg  [1:0][2:0]  dispatch_is_exception ,         // 是否异常
+    output reg  [6:0][1:0][2:0]  dispatch_exception_cause , // 异常原因
+
     output reg  [7:0][1:0]  dispatch_aluop ,
     output reg  [2:0][1:0]  dispatch_alusel ,
     output reg  [31:0][1:0] dispatch_imm ,
-    output reg  [1:0]  dispatch_reg1_read_en,   //rR1寄存器读使能
-    output reg  [1:0]  dispatch_reg2_read_en,   //rR2寄存器读使能
-    output reg  [4:0][1:0]  dispatch_reg1_read_addr ,
-    output reg  [4:0][1:0]  dispatch_reg2_read_addr ,
-    output reg  [1:0]  dispatch_reg_writen_en,  //寄存器写使能信号
-    output reg  [4:0][1:0]  dispatch_reg_write_addr ,
-    output reg  [1:0]  dispatch_id_pre_taken,
-    output reg  [31:0][1:0] dispatch_id_pre_addr,
-    output reg  [1:0]  dispatch_is_privilege, //特权指令标志
-    output reg  [1:0]  dispatch_csr_read_en, //CSR寄存器读使能
-    output reg  [1:0]  dispatch_csr_write_en, //CSR寄存器写使能
-    output reg  [13:0][1:0] dispatch_csr_addr, //CSR
-    output reg  [1:0]  dispatch_is_cnt, //是否是计数器寄存器
-    output reg  [1:0]  dispatch_invtlb_op  //TLB无效操作
+
+    output reg  [1:0]  dispatch_reg1_read_en,           // 源寄存器1读使能
+    output reg  [1:0]  dispatch_reg2_read_en,           // 源寄存器2读使能
+    output reg  [4:0][1:0]  dispatch_reg1_read_addr ,   // 源寄存器1读地址
+    output reg  [4:0][1:0]  dispatch_reg2_read_addr ,   // 源寄存器2读地址
+    output reg  [1:0]  dispatch_reg_writen_en,          // 寄存器写使能信号（2位）
+    output reg  [4:0][1:0]  dispatch_reg_write_addr ,   // 寄存器写地址
+
+    output reg  [1:0]  dispatch_id_pre_taken,           // 分支预测结果（是否跳转）
+    output reg  [31:0][1:0] dispatch_id_pre_addr,       // 分支预测目标地址
+
+    output reg  [1:0]  dispatch_is_privilege,           //是否是特权指令
+    output reg  [1:0]  dispatch_csr_read_en,            //CSR读使能
+    output reg  [1:0]  dispatch_csr_write_en,           //CSR写使能
+    output reg  [13:0][1:0] dispatch_csr_addr,          //CSR地址
+    output reg  [1:0]  dispatch_is_cnt,                 //是否是计数器
+    output reg  [1:0]  dispatch_invtlb_op               //TLB无效操作
 
 
 );
+
     //内部信号
     reg  [1:0]  inst_valid;  
-    reg  [1:0]  id_valid; //ID阶段有效信号
+    reg  [1:0]  id_valid;       //ID阶段有效信号
+
     reg  [31:0] pc_out [1:0];
-    reg  [1:0]  is_exception_out [2:0]; //是否异常
-    reg  [2:0] [6:0]  exception_cause_out [1:0]; //异常原因
     reg  [31:0] inst_out [1:0];
-    reg  [1:0]  reg_writen_en; 
+
+    reg  [2:0] is_exception_out [1:0];              //是否异常
+    reg  [2:0] [6:0]  exception_cause_out [1:0];    //异常原因
+
     reg  [7:0]  aluop [1:0];
     reg  [2:0]  alusel [1:0];
     reg  [31:0] imm [1:0];
+
     reg  [1:0]  reg1_read_en;   
     reg  [1:0]  reg2_read_en;   
     reg  [4:0]  reg1_read_addr [1:0];
     reg  [4:0]  reg2_read_addr [1:0];
-    reg  [1:0]  id_pre_taken; //ID阶段预测跳转信号
-    reg  [31:0] pre_addr [1:0]; //ID阶段预测
+    reg  [1:0]  reg_writen_en; 
     reg  [4:0]  reg_write_addr [1:0];
-    reg  [1:0]  is_privilege; //特权指令标志
-    reg  [1:0]  csr_read_en; //CSR寄存器读使能
-    reg  [1:0]  csr_write_en; //CSR寄存器写使能
-    reg  [13:0] csr_addr [1:0]; //CSR
-    reg  [1:0]  is_cnt; //是否是计数器寄存器
-    reg  [1:0]  invtlb_op ; //TLB无效
 
-    id u_id1 (
-        .pc(pc[0]),
-        .inst(inst[0]),
+    reg  [1:0]  id_pre_taken;       // ID 阶段预测分支是否跳转
+    reg  [31:0] pre_addr [1:0];     // ID 阶段预测分支跳转地址
+
+    reg  [1:0]  is_privilege;       // 是否是特权指令
+    reg  [1:0]  csr_read_en;        // CSR读使能
+    reg  [1:0]  csr_write_en;       // CSR写使能
+    reg  [13:0] csr_addr [1:0];     // CSR
+    reg  [1:0]  is_cnt;             // 是否是计数器
+    reg  [1:0]  invtlb_op ;         // TLB无效
+
+    id u_id_0 (
         .valid(valid[0]),
+
         .pre_taken(pretaken[0]),
         .pre_addr(pre_addr_in[0]),
+
+        .pc(pc[0]),
+        .inst(inst[0]),
+        
         .is_exception(is_exception[0]),
         .exception_cause(exception_cause[0]),
 
+
         .inst_valid(inst_valid[0]),
         .id_valid(id_valid[0]),
+
         .pc_out(pc_out[0]),
+        .inst_out(inst_out[0]),
+
         .is_exception_out(is_exception_out[0]),
         .exception_cause_out(exception_cause_out[0]),
-        .inst_out(inst_out[0]),
-        .reg_writen_en (reg_writen_en[0]),  //寄存器写使能信号
+
         .aluop(aluop[0]),
         .alusel(alusel[0]),
         .imm(imm[0]),
-        .reg1_read_en(reg1_read_en[0]),   //rR1寄存器读使能
-        .reg2_read_en(reg2_read_en[0]),   //rR2寄存器读使能
+
+        .reg1_read_en(reg1_read_en[0]),   
+        .reg2_read_en(reg2_read_en[0]),   
         .reg1_read_addr(reg1_read_addr[0]),
         .reg2_read_addr(reg2_read_addr[0]),
-        .id_pre_taken(id_pre_taken[0]), //ID阶段预测跳转信号
-        .id_pre_addr(pre_addr[0]), //ID阶段预测
-        .reg_write_addr(reg_write_addr[0]),  //目的寄存器地址
-        .is_privilege(is_privilege[0]), //特权指令标志
-        .csr_read_en(csr_read_en[0]), //CSR寄存器读使能
-        .csr_write_en(csr_write_en[0]), //CSR寄存器写使能
-        .csr_addr(csr_addr[0]), //CSR
-        .is_cnt(is_cnt[0]), //是否是计数器寄存器
-        .invtlb_op(invtlb_op[0]) //TLB无效操作
+        .reg_writen_en (reg_writen_en[0]),  
+        .reg_write_addr(reg_write_addr[0]),  
+
+        .id_pre_taken(id_pre_taken[0]), 
+        .id_pre_addr(pre_addr[0]), 
+
+        .is_privilege(is_privilege[0]), 
+        .csr_read_en(csr_read_en[0]), 
+        .csr_write_en(csr_write_en[0]), 
+        .csr_addr(csr_addr[0]), 
+        .is_cnt(is_cnt[0]), 
+        .invtlb_op(invtlb_op[0]) 
     );
 
-    id u_id2 (
-        .pc(pc[1]),
-        .inst(inst[1]),
+    id u_id_1 (
         .valid(valid[1]),
+
         .pre_taken(pretaken[1]),
         .pre_addr(pre_addr_in[1]),
+
+        .pc(pc[1]),
+        .inst(inst[1]),
+        
         .is_exception(is_exception[1]),
         .exception_cause(exception_cause[1]),
 
+
         .inst_valid(inst_valid[1]),
         .id_valid(id_valid[1]),
+
         .pc_out(pc_out[1]),
-        .is_exception(is_exception_out[1]),
-        .exception_cause(exception_cause_out[1]),
         .inst_out(inst_out[1]),
-        .reg_writen_en (reg_writen_en[1]),  //寄存器写使能信号
+
+        .is_exception_out(is_exception_out[1]),
+        .exception_cause_out(exception_cause_out[1]),
+
         .aluop(aluop[1]),
         .alusel(alusel[1]),
         .imm(imm[1]),
-        .reg1_read_en(reg1_read_en[1]),   //rR1寄存器读使能
-        .reg2_read_en(reg2_read_en[1]),   //rR2寄存器读使能
-        .reg1_read_addr(reg1_read_addr[1]),
-        .reg2_read_addr(reg2_read_addr[1]),
-        .id_pre_taken(id_pre_taken[1]), //ID阶段预测跳转信号
-        .id_pre_addr(pre_addr[1]), //ID阶段预测
-        .reg_write_addr(reg_write_addr[1]),  //目的寄存器地址
-        .is_privilege(is_privilege[1]), //特权指令标志
-        .csr_read_en(csr_read_en[1]), //CSR寄存器读使
-        .csr_write_en(csr_write_en[1]), //CSR寄存器写使能
-        .csr_addr(csr_addr[1]), //CSR
-        .is_cnt(is_cnt[1]), //是否是计数器寄存器
-        .invtlb_op(invtlb_op[1]) //TLB无效操作
-    );
 
+        .reg1_read_en(reg1_read_en[0]),   
+        .reg2_read_en(reg2_read_en[0]),   
+        .reg1_read_addr(reg1_read_addr[0]),
+        .reg2_read_addr(reg2_read_addr[0]),
+        .reg_writen_en (reg_writen_en[0]),  
+        .reg_write_addr(reg_write_addr[0]),  
+
+        .id_pre_taken(id_pre_taken[0]), 
+        .id_pre_addr(pre_addr[0]), 
+        
+        .is_privilege(is_privilege[0]), 
+        .csr_read_en(csr_read_en[0]), 
+        .csr_write_en(csr_write_en[0]), 
+        .csr_addr(csr_addr[0]), 
+        .is_cnt(is_cnt[0]), 
+        .invtlb_op(invtlb_op[0]) 
+    );
+    
     // 入队数据，如果要添加信号，加信号加在最前面并且修改`DECODE_DATA_WIDTH的值
     wire [1:0] [`DECODE_DATA_WIDTH:0] enqueue_data;
     assign  enqueue_data[0] =  {
@@ -233,5 +278,11 @@ module decoder (
     end
 
     assign get_data_req = get_data_req_o;
+
+
+/********************************
+    // pasue request
+    assign pause_decoder = full;
+********************************/
 
 endmodule
