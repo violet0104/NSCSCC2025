@@ -6,10 +6,10 @@ module mem
 (
     input  wire clk,
     input  wire rst,
-    input  wire [31:0][1:0] pc ,
-    input  wire [31:0][1:0] inst,
 
     // 执行阶段的信号
+    input  wire [31:0][1:0] pc ,
+    input  wire [31:0][1:0] inst,
     input  wire [1:0][4:0] is_exception,   //异常标志
     input  wire [1:0][4:0][6:0] exception_cause, //异常原因
     input  wire [1:0]is_privilege, //特权指令标志
@@ -24,6 +24,7 @@ module mem
     input  wire [1:0][31:0]mem_write_data, //内存写数据
     input  wire [1:0]csr_write_en, //CSR寄存器写使能
     input  wire [1:0][13:0] csr_addr, //CSR寄存器地址
+    input  wire [1:0] [31:0] csr_write_data_mem,
     input  wire [1:0]is_llw_scw, //是否是LLW/SCW指令
 
     //dcache的信号

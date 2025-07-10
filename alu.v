@@ -27,13 +27,13 @@ module alu (
     input wire reg_write_en_i,                // 寄存器写使能
     input wire [4:0] reg_write_addr_i,        // 寄存器写地址
 
-    input wire [31:0] csr_read_data_i,    // csr读数据
-    input wire csr_write_en_i,     // csr写使能
-    input wire [13:0] csr_addr_i,  // csr地址 
+    input wire [31:0] csr_read_data_i,      // csr读数据
+    input wire csr_write_en_i,              // csr写使能
+    input wire [13:0] csr_addr_i,           // csr地址 
 
     input wire [4:0] invtlb_op_i,
 
-    input wire pre_is_branch_taken_i,      // 预测分支指令是否跳转
+    input wire 0,      // 预测分支指令是否跳转
     input wire [31:0] pre_branch_addr_i,   // 预测分支指令跳转地址
 
 
@@ -42,7 +42,7 @@ module alu (
 
     // 和dcache的接口
     output wire valid_o,
-    output reg op_o,       // 访存操作类型, 0表示读, 1表示写
+    output reg op_o,                    // 访存操作类型, 0表示读, 1表示写
     output wire [31:0] virtual_addr_o,
     output reg [31:0] wdata_o,
     output reg [3:0] wstrb_o,          // 访存地址字节偏移
@@ -54,12 +54,12 @@ module alu (
     output wire [31:0] pc_dispatch_o,         // 发射阶段的pc
 
     // 输出给 ctrl 的信号
-    output wire pause_alu_o,             // alu暂停信号
-    output wire branch_flush_o,           // 分支刷新信号
-    output wire [31:0] branch_target_addr_o,   // 分支目标地址
+    output wire pause_alu_o,                    // alu暂停信号
+    output wire branch_flush_o,                 // 分支刷新信号
+    output wire [31:0] branch_target_addr_o,    // 分支目标地址
 
     // 输出给 dispatch 的信号
-    output wire [7:0] pre_ex_aluop_o,     // 到发射阶段的预执行信息
+    output wire [7:0] pre_ex_aluop_o,     // 到发射阶段的aluop，用于判断ex阶段的指令是否是load
 
     // 输出给 mem 的信号
     output wire [31:0] pc_mem,

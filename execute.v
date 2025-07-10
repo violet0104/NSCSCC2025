@@ -25,19 +25,19 @@ module execute (
     input wire [1:0] [7:0] aluop_i,
     input wire [1:0] [2:0] alusel_i,
 
-    input wire [1:0] [4:0] reg_data_i,
-
+    input wire [1:0] [31:0] reg_data0_i,
+    input wire [1:0] [31:0] reg_data1_i,
     input wire [1:0] reg_write_en_i,                // 寄存器写使能
     input wire [1:0] [4:0] reg_write_addr_i,        // 寄存器写地址
 
-    input wire csr_read_data_i,    // csr读数据
-    input wire csr_write_en_i,     // csr写使能
-    input wire [13:0] csr_addr_i,  // csr地址 
+    input wire [1:0] [31:0] csr_read_data_i,    // csr读数据
+    input wire [1:0] csr_write_en_i,     // csr写使能
+    input wire [1:0] [13:0] csr_addr_i,  // csr地址 
 
-    input wire [4:0] invtlb_op_i,
+    input wire [1:0] [4:0] invtlb_op_i,
 
-    input wire pre_is_branch_taken_i,      // 预测分支指令是否跳转
-    input wire [31:0] pre_branch_addr_i,   // 预测分支指令跳转地址
+    input wire [1:0] pre_is_branch_taken_i,      // 预测分支指令是否跳转
+    input wire [1:0] [31:0] pre_branch_addr_i,   // 预测分支指令跳转地址
     
     // 来自mem的信号
     input wire pause_mem_i,
@@ -170,18 +170,18 @@ module execute (
         .aluop_i(aluop_i[0]),
         .alusel_i(alusel_i[0]),
 
-        .reg_data_i(reg_data_i[0]),
+        .reg_data_i(reg_data0_i),
         .reg_write_en_i(reg_write_en_i[0]),
         .reg_write_addr_i(reg_write_addr_i[0]),
 
-        .csr_read_data_i(csr_read_data_i),
-        .csr_write_en_i(csr_write_en_i),
-        .csr_addr_i(csr_addr_i),
+        .csr_read_data_i(csr_read_data_i[0]),
+        .csr_write_en_i(csr_write_en_i[0]),
+        .csr_addr_i(csr_addr_i[0]),
 
-        .invtlb_op_i(invtlb_op_i),
+        .invtlb_op_i(invtlb_op_i[0]),
 
-        .pre_is_branch_taken_i(pre_is_branch_taken_i),
-        .pre_branch_addr_i(pre_branch_addr_i),
+        .pre_is_branch_taken_i(pre_is_branch_taken_i[0]),
+        .pre_branch_addr_i(pre_branch_addr_i[0]),
 
         // from stable counter
         .cnt_i(cnt_i),
@@ -252,18 +252,18 @@ module execute (
         .aluop_i(aluop_i[1]),
         .alusel_i(alusel_i[1]),
 
-        .reg_data_i(reg_data_i[1]),
+        .reg_data_i(reg_data1_i),
         .reg_write_en_i(reg_write_en_i[1]),
         .reg_write_addr_i(reg_write_addr_i[1]),
 
-        .csr_read_data_i(csr_read_data_i),
-        .csr_write_en_i(csr_write_en_i),
-        .csr_addr_i(csr_addr_i),
+        .csr_read_data_i(csr_read_data_i[1]),
+        .csr_write_en_i(csr_write_en_i[1]),
+        .csr_addr_i(csr_addr_i[1]),
 
-        .invtlb_op_i(invtlb_op_i),
+        .invtlb_op_i(invtlb_op_i[1]),
 
-        .pre_is_branch_taken_i(pre_is_branch_taken_i),
-        .pre_branch_addr_i(pre_branch_addr_i),
+        .pre_is_branch_taken_i(pre_is_branch_taken_i[1]),
+        .pre_branch_addr_i(pre_branch_addr_i[1]),
 
         // from stable counter
         .cnt_i(cnt_i),
