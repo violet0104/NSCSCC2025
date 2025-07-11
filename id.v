@@ -4,38 +4,47 @@
 
 
 module id
-(
+(   
+    input wire   valid,
+
     input wire [31:0] pc,
     input wire [31:0] inst,
-    input wire   valid,
-    input wire   pre_taken,  //确定预测的分支跳转正确
-    input wire [31:0] pre_addr,   // 预测的分支跳转的地址
+
+    input wire  pre_taken,          // 分支预测结果（是否跳转）
+    input wire [31:0] pre_addr,     // 预测分支跳转目标地址
     input wire [1:0] is_exception,
     input wire [1:0] [6:0] exception_cause,
 
+
     output reg  inst_valid,
     output reg  id_valid_out,
+
     output reg  [31:0] pc_out,
     output reg  [31:0] inst_out,
-    output reg  [2:0] is_exception_out, //是否异常
+
+    output reg  [2:0] is_exception_out,         //是否异常
     output reg  [2:0][6:0] exception_cause_out, //异常原因
-    output reg  reg_writen_en,  //寄存器写使能信号
+
     output reg  [7:0]aluop,
     output reg  [3:0]alusel,
     output reg  [31:0]imm,
-    output reg  reg1_read_en,   //rR1寄存器读使能
-    output reg  reg2_read_en,   //rR2寄存器读使能
+
+    output reg  reg1_read_en,       //rR1寄存器读使能
+    output reg  reg2_read_en,       //rR2寄存器读使能
     output reg  [4:0]reg1_read_addr,
     output reg  [4:0]reg2_read_addr,
-    output reg  [4:0]reg_write_addr,  //目的寄存器地址
+    output reg  reg_writen_en,          //寄存器写使能信号
+    output reg  [4:0]reg_write_addr,    //目的寄存器地址
+
     output reg  id_pre_taken,
     output reg  [31:0] id_pre_addr,
-    output reg  is_privilege, //特权指令标志
-    output reg  csr_read_en, //CSR寄存器读使能
-    output reg  csr_write_en, //CSR寄存器写使能
-    output reg  [13:0] csr_addr, //CSR
-    output reg  is_cnt, //是否是计数器寄存器
-    output reg  invtlb_op  //TLB无效操作
+
+    output reg  is_privilege,       //特权指令标志
+    output reg  csr_read_en,        //CSR寄存器读使能
+    output reg  csr_write_en,       //CSR寄存器写使能
+    output reg  [13:0] csr_addr,    //CSR
+    output reg  is_cnt,             //是否是计数器寄存器
+    output reg  invtlb_op           //TLB无效操作
 
 );
     reg  [5:0]  id_valid;  //这个6位的向量表示哪个解码器的输出是有效的

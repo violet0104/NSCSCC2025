@@ -43,21 +43,21 @@ module execute (
     input wire pause_mem_i,
 
     // 和dcache的接口
-    input wire data_ok_i,            
-    input wire [31:0] rdata_i,            // 读DCache的结果
-    input wire [31:0] physical_addr_i,    // 物理地址
-    
+    input wire data_ok_i, 
+    input wire dache_pause_i,       // 写/读dache 暂停信号 （接dache的write_finish）          
     output wire valid_dache_o,      
-    output wire op_o,           // 0表示读，1表示写
+    output wire [3:0] read_en_o,          // dache读使能信号
     output wire [31:0] virtual_addr_o,
     output wire [3:0] wstrb_o,
     output wire [31:0] wdata_o,
 
-    // 前递给bpu的数据
-    output reg update_en_o,
-    output reg taken_or_not_actual_o,
-    output reg [31:0] branch_actual_addr_o,
-    output reg [31:0] pc_dispatch_o,
+
+    // 输出给前端的信号
+    output wire [1:0] ex_bpu_is_bj,
+    output wire [1:0] ex_pc,
+    output wire [1:0] ex_bpu_taken_or_not_actual,
+    output reg [1:0] [31:0] ex_bpu_branch_actual_addr,
+    output reg [1:0] [31:0] ex_bpu_branch_pred_addr,
 
     // 前递给dispatch的数据
     output wire [1:0] [7:0] pre_ex_aluop_o,
@@ -72,20 +72,19 @@ module execute (
     output wire [31:0] branch_target_o,
 
     // 输出给mem的数据
+    output reg [1:0] [1:0] valid_mem,
+
     output reg [1:0] [31:0] pc_mem,
     output reg [1:0] [31:0] inst_mem,
+
     output reg [1:0] is_exception_mem,
     output reg [1:0] [4:0] [6:0] exception_cause_mem,
-    output reg [1:0] is_privilege_mem,
-    output reg [1:0] is_ertn_mem,
-    output reg [1:0] is_idle_mem,
-    output reg [1:0] [1:0] valid_mem,
+
+    output reg [1:0] [7:0] aluop_mem,
 
     output reg [1:0] reg_write_en_mem,
     output reg [1:0] [4:0] reg_write_addr_mem,
     output reg [1:0] [31:0] reg_write_data_mem, 
-
-    output reg [1:0] [7:0] aluop_mem,
 
     output reg [1:0] [31:0] addr_mem,
     output reg [1:0] [31:0] data_mem,
@@ -94,8 +93,12 @@ module execute (
     output reg [1:0] [13:0] csr_addr_mem,
     output reg [1:0] [31:0] csr_write_data_mem,
 
+    output reg [1:0] is_privilege_mem,
+    output reg [1:0] is_ertn_mem,
+    output reg [1:0] is_idle_mem,
     output reg [1:0] is_llw_scw_mem
 );
+
     wire [1:0] pause_alu;
 
     // 和分支预测器有关的信息
@@ -147,10 +150,10 @@ module execute (
     wire [1:0] is_llw_scw;
 
     assign valid_dache_o = |valid_o;
-    assign op_o = valid_o[0] ? op[0] : op[1]; 
-    assign virtual_addr_o = valid_o[0] ? virtual_addr[0] : virtual_addr[1];
-    assign wdata_o = valid_o[0] ? wdata[0] : wdata[1];
-    assign wstrb_o = valid_o[0] ? wstrb[0] : wstrb[1];
+    assign read_en_o = dache_pause_i ? 4'h0 : 4'hf
+    assign virtual_addr_o = dcache_pause_i ? 32'h0 : valid_o[0] ? virtual_addr[0] : virtual_addr[1];
+    assign wdata_o = dache_pause_i ? 32'b0 : valid_o[0] ? wdata[0] : wdata[1];
+    assign wstrb_o = dache_pause_i ? 4'h0  : valid_o[0] ? wstrb[0] : wstrb[1];
 
 
     alu u_alu_0 (
@@ -188,7 +191,6 @@ module execute (
 
         // with dache
         .valid_o(valid_o[0]),
-        .op_o(op[0]),
         .virtual_addr_o(virtual_addr[0]),
         .wdata_o(wdata[0]),
         .wstrb_o(wstrb[0]),
@@ -270,7 +272,6 @@ module execute (
 
         // with dache
         .valid_o(valid_o[1]),
-        .op_o(op[1]),
         .virtual_addr_o(virtual_addr[1]),
         .wdata_o(wdata[1]),
         .wstrb_o(wstrb[1]),
@@ -317,6 +318,18 @@ module execute (
         .is_llw_scw_mem(is_llw_scw[1])
 );
 
+    // 输出给前端的信号
+    assign ex_bpu_is_bj[0] = alusel_i[0] == `ALU_SEL_JUMP_BRANCH;
+    assign ex_bpu_is_bj[1] = alusel_i[1] == `ALU_SEL_JUMP_BRANCH;
+    assign ex_pc[0] = pc_i[0];
+    assign ex_pc[1] = pc_i[1];
+    assign ex_bpu_taken_or_not_actual = taken_or_not_actual_alu;
+    assign ex_bpu_branch_actual_addr[0] = branch_actual_addr_alu[0];
+    assign ex_bpu_branch_actual_addr[1] = branch_actual_addr_alu[1];
+    assign ex_bpu_branch_pred_addr [0] = pre_branch_addr_i[0];
+    assign ex_bpu_branch_pred_addr [1] = pre_branch_addr_i[1];
+
+
     // 前递给 dispatch 的数据
     assign reg_write_en_o[0] = reg_write_en[0];
     assign reg_write_en_o[1] = reg_write_en[1];
@@ -325,26 +338,30 @@ module execute (
     assign reg_write_data[0] = reg_write_data[0];
     assign reg_write_data[1] = reg_write_data[1];
 
+
+
     // 输出给 ctrl 的信息
     assign pause_ex_o = |pause_alu;
     assign branch_flush_o = |branch_flush_alu && !pause_ex_o && !pause_mem_i;
 
     assign branch_target_o = branch_flush_alu[0] ? branch_target_addr_alu[0] : branch_target_addr_alu[1];
 
+/*********************************************************************
     always @(posedge clk) begin
-        if (branch_flush_alu[0]) begin
-            update_en_o = update_en_alu[0];
-            taken_or_not_actual_o = taken_or_not_actual_alu[0];
-            branch_actual_addr_o = branch_actual_addr_alu[0];
-            pc_dispatch_o = pc_dispatch_alu[0];
+        if (branch_flush_alu[0]) begin      
+            update_en_o <= update_en_alu[0];
+            taken_or_not_actual_o <= taken_or_not_actual_alu[0];
+            branch_actual_addr_o <= branch_actual_addr_alu[0];
+            pc_dispatch_o <= pc_dispatch_alu[0];
         end 
         else begin
-            update_en_o = update_en_alu[1];
-            taken_or_not_actual_o = taken_or_not_actual_alu[1];
-            branch_actual_addr_o = branch_actual_addr_alu[1];
-            pc_dispatch_o = pc_dispatch_alu[1];
+            update_en_o <= update_en_alu[1];
+            taken_or_not_actual_o <= taken_or_not_actual_alu[1];
+            branch_actual_addr_o <= branch_actual_addr_alu[1];
+            pc_dispatch_o <= pc_dispatch_alu[1];
         end
     end
+*********************************************************************/
 
     assign ex_excp_flush_o = (is_exception[0] != 0 || is_exception[1] != 0 
                             || csr_write_en[0] || csr_write_en[1]

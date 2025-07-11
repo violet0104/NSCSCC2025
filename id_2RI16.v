@@ -56,7 +56,7 @@ module id_2RI16
         case (opcode)
             `BEQ_OPCODE: begin
                 reg_writen_en = 1'b0;
-                aluop = `ALU_ORI;
+                aluop = `ALU_BEQ;
                 alusel = `ALU_SEL_JUMP_BRANCH;
                 reg_write_addr = 5'b0;
                 reg1_read_en = 1'b1;

@@ -22,8 +22,8 @@ module backend (
     input wire [1:0] [1:0] [6:0] exception_cause_i,     // 异常原因
 
 //*********************************
-    input wire pause_i,
-    input wire flush_i,      // 这两个信号不知道对应前端什么信号
+    input wire pause_i,        // 暂时放这里，该信号不来自前端
+    input wire bpu_flush,      // 分支预测错误，清空译码队列
 //*********************************
 
 
@@ -35,14 +35,14 @@ module backend (
     
 ******************************/
 
-    // 输出给 bpu 的信息
-    output wire updata_en_o,
-    output wire taken_or_not_actual_o,
-    output wire [31:0] branch_actual_addr_o,
-    output wire [31:0] pc_dispatch_o,
-
-    // 输出给 instbuffer 的取指请求信号
-    output wire get_data_req_o,
+    // 给前端的信号
+    output wire [1:0] ex_bpu_is_bj,     // 两条指令是否是跳转指令
+    output wire [1:0] ex_pc,            // ex 阶段的 pc 
+    output wire [1:0] ex_valid,
+    output wire [1:0] ex_bpu_taken_or_not_actual,       // 两条指令实际是否跳转
+    output reg [1:0] [31:0] ex_bpu_branch_actual_addr,  // 两条指令实际跳转地址
+    output reg [1:0] [31:0] ex_bpu_branch_pred_addr,    // 两条指令预测跳转地址
+    output wire get_data_req_o,     // 输出给前端的取指请求
 
     // 和tlb的接口
     output wire [31:0] tlbidx,           // tlb索引寄存器
@@ -60,7 +60,7 @@ module backend (
     output wire [1:0] csr_datf,
     output wire [1:0] csr_datm,  
 
-    // 和 Cache 的接口
+    // 和 Dcache 的接口
     input wire addr_ok_i,
     input wire data_ok_i,
     input wire [31:0] rdata_i,
@@ -69,7 +69,7 @@ module backend (
     output wire valid_o,
     output wire op_o,
     output wire virtual_addr_o,
-    output wire wstrb_o,
+    output wire [3:0] wstrb_o,
     output wire wdata,
 
     // 从 ctrl 输出的信号
@@ -122,6 +122,8 @@ module backend (
     assign pause_decoder = pause_request.pause_decoder;
 
     **************************/
+
+    assign ex_valid = valid_dispatch;
 
     // reg_files
     wire [1:0] reg1_read_en ;       // 寄存器读使能
@@ -427,7 +429,7 @@ module backend (
         .is_exception_i(is_exception_dispatch),
         .exception_cause_i(exception_cause_dispatch),
         .is_privilege_i(is_privilege_dispatch),
-
+        .ex_bpu_is_bj(ex_bpu_is_bj),
         .aluop_i(aluop_dispatch),
         .alusel_i(alusel_dispatch),
 

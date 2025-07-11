@@ -7,33 +7,42 @@ module dispatch
     input wire clk,
     input wire rst,
 
-    //控制单元的暂停和刷新信号
+    // 和 ctrl 的接口
     input wire pause,
     input wire flush,
 
-    //数据信息
+    output wire dispatch_pause ,    //发射器暂停信号,当发生load-use冒险时需要暂停
+
+
+    // 来自译码阶段的数据
+    input wire [1:0]        valid_i,   //指令有效标志
     input wire [1:0] [31:0] pc_i,      //指令地址
     input wire [1:0] [31:0] inst_i,    //指令编码
-    input wire [1:0]        valid_i,   //指令有效标志
 
-    //读使能和地址要同时传输给寄存器堆和ex阶段
+    input wire [1:0] [31:0]  imm_i,     //立即数值
+    input wire [1:0] [7:0]  alu_op_i,  //ALU操作码
+    input wire [1:0] [2:0]  alu_sel_i, //ALU功能选择
+
+    input wire [1:0] [2:0]  is_exception_i,             //两条指令的异常标志
+    input wire [1:0] [2:0] [6:0]  exception_cause_i,    //两条指令的异常原因,会变长
+
     input wire [1:0]        reg_read_en_i0,     //第0条指令的两个源寄存器源寄存器读使能
     input wire [1:0]        reg_read_en_i1,     //第1条指令的两个源寄存器源寄存器读使能   
     input wire [1:0] [4:0]  reg_read_addr_i0,   //第0条指令的两个源寄存器地址
     input wire [1:0] [4:0]  reg_read_addr_i1,   //第1条指令的两个源寄存器地址
-
-    input wire [1:0]        is_privilege_i, //两条指令的特权指令标志
-    input wire [1:0]        is_cnt_i,       //两条指令的计数器指令标志
-    input wire [1:0] [2:0]  is_exception_i, //两条指令的异常标志
-    input wire [1:0] [2:0] [6:0]  exception_cause_i, //两条指令的异常原因,会变长
-    input wire [1:0] [4:0]  invtlb_op_i,   //两条指令的分支指令标志
-
     input wire [1:0]        reg_write_en_i,    //目的寄存器写使能
     input wire [1:0] [4:0]  reg_write_addr_i,  //目的寄存器地址
+    
+    input wire [1:0]         pre_is_branch_taken_i,     //前一条指令是否是分支指令
+    input wire [1:0] [31:0]  pre_branch_addr_i,         //前一条指令的分支地址
+
+    input wire [1:0]         csr_read_en_i,     //csr写使能
+    input wire [1:0] [13:0]  csr_addr_i,        //寄csr写地址
+    input wire [1:0]         csr_write_en_i,    //csr写数据
+    input wire [1:0]        is_privilege_i, //两条指令的特权指令标志
+    input wire [1:0]        is_cnt_i,       //两条指令的计数器指令标志
+    input wire [1:0] [4:0]  invtlb_op_i,   //两条指令的分支指令标志
      
-    input wire [1:0] [31:0]  imm_i,     //立即数值
-    input wire [1:0] [7:0]  alu_op_i,  //ALU操作码
-    input wire [1:0] [2:0]  alu_sel_i, //ALU功能选择
 
     //前递数据
     input wire [1:0]         ex_pf_write_en,     //从ex阶段前递出来的使能
@@ -48,21 +57,39 @@ module dispatch
     input wire [1:0] [4:0]   wb_pf_write_addr,   //从wb阶段前递出来的地址
     input wire [1:0] [31:0]  wb_pf_write_data,   //从wb阶段前递出来的数据
 
-    //来自ex阶段的，用于判断ex运行的指令是否是load指令
-    input wire [1:0]         ex_pre_aluop,       //ex阶段的load指令标志
 
-    //来自ex阶段的，可能由于乘除法等指令引起的暂停信号
+    //来自ex阶段的信号
+    input wire [1:0]         ex_pre_aluop,       //ex阶段的load指令标志
     input wire               ex_pause,           //ex阶段的暂停信号
 
-    //输出
+
+    // 和寄存器文件的接口（同时也要输出给execute）
+    input wire [1:0] [31:0]  from_reg_read_data_i0,//寄存器给出的第0条指令的源操作数，这么写可能存在问题？？？
+    input wire [1:0] [31:0]  from_reg_read_data_i1,//寄存器给出的第1条指令的源操作数，这么写可能存在问题？？？
+
+
+    // 和 csr 的接口（同时也要输出给execute）
+    input wire [1:0] [31:0]  csr_read_data_i,   //csr读数据
+
+    output reg [1:0]        csr_write_en_o,     //寄存器堆的csr读使能
+    output reg [1:0] [13:0] csr_addr_o,         //寄存器堆的csr写地址
+    output reg [1:0] [31:0] csr_read_data_o,    //寄存器堆的csr写数据
+    
+    output reg [1:0]        pre_is_branch_taken_o,  //前一条指令是否是分支指令
+    output reg [1:0] [31:0] pre_branch_addr_o       //前一条指令的分支地址
+
+
+    // 输出给 execute 的数据
+    output reg [1:0]        valid_o,    
+
     output reg [1:0] [31:0] pc_o,  
     output reg [1:0] [31:0] inst_o,
-    output reg [1:0]        valid_o,
 
-    output reg [1:0]        is_privilege_o, //两条指令的特权指令标志
     output reg [1:0] [3:0]  is_exception_o, //两条指令的异常标志
     output reg [1:0] [3:0] [6:0]  exception_cause_o, //两条指令的异常原因,会变长
-    output reg [1:0] [4:0]  invtlb_op_o,   //两条指令的分支指令标志
+
+    output reg [1:0] [7:0]  alu_op_o,
+    output reg [1:0] [2:0]  alu_sel_o,
 
     output reg [1:0]        reg_write_en_o,    //目的寄存器写使能
     output reg [1:0] [4:0]  reg_write_addr_o,  //目的寄存器地址
@@ -70,33 +97,9 @@ module dispatch
     output reg [1:0] [31:0] reg_read_data_o0, //寄存器堆给出的第0条指令的两个源操作数
     output reg [1:0] [31:0] reg_read_data_o1, //寄存器堆给出的第1条指令的两个源操作数
 
-    output reg [1:0] [7:0]  alu_op_o,
-    output reg [1:0] [2:0]  alu_sel_o,
-
+    output reg [1:0]        is_privilege_o, //两条指令的特权指令标志
+    output reg [1:0] [4:0]  invtlb_op_o,   //两条指令的分支指令标志
     output wire      [1:0]  invalid_en, //指令发射控制信号
-
-    //与寄存器之间的输入与输出
-    input wire [1:0] [31:0]  from_reg_read_data_i0,//寄存器给出的第0条指令的源操作数，这么写可能存在问题？？？
-    input wire [1:0] [31:0]  from_reg_read_data_i1,//寄存器给出的第1条指令的源操作数，这么写可能存在问题？？？
-
-    output wire dispatch_pause ,//发射器暂停信号,当发生load-use冒险时需要暂停
-
-    //给csr模块的读使能和读地址
-    input wire [1:0]         csr_read_en_i,//csr写使能
-    input wire [1:0] [13:0]  csr_addr_i,//寄csr写地址
-    input wire [1:0]         csr_write_en_i,//csr写数据
-    input wire [1:0]         pre_is_branch_taken_i,// //前一条指令是否是分支指令
-    input wire [1:0] [31:0]  pre_branch_addr_i, //前一条指令的分支地址
-
-    input wire [1:0] [31:0]  csr_read_data_i,//csr读数据
-
-    output reg [1:0]        csr_write_en_o, //寄存器堆的csr读使能
-    output reg [1:0] [13:0] csr_addr_o, //寄存器堆的csr写地址
-
-    output reg [1:0] [31:0] csr_read_data_o, //寄存器堆的csr写数据
-    
-    output reg [1:0]        pre_is_branch_taken_o, //前一条指令是否是分支指令
-    output reg [1:0] [31:0] pre_branch_addr_o //前一条指令的分支地址
 );
 
     wire [1:0] send_en;     //内部发射信号，给invalid_en赋值

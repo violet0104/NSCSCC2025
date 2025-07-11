@@ -33,7 +33,7 @@ module alu (
 
     input wire [4:0] invtlb_op_i,
 
-    input wire 0,      // 预测分支指令是否跳转
+    input wire pre_is_branch_taken_i,      // 预测分支指令是否跳转
     input wire [31:0] pre_branch_addr_i,   // 预测分支指令跳转地址
 
 
@@ -42,7 +42,6 @@ module alu (
 
     // 和dcache的接口
     output wire valid_o,
-    output reg op_o,                    // 访存操作类型, 0表示读, 1表示写
     output wire [31:0] virtual_addr_o,
     output reg [31:0] wdata_o,
     output reg [3:0] wstrb_o,          // 访存地址字节偏移
@@ -310,14 +309,12 @@ module alu (
         case (aluop_i)
             `ALU_LDB, `ALU_LDBU: begin
                 ex_mem_exception = 1'b0;
-                op_o = 1'b0;
                 mem_is_valid = 1'b1;
                 wdata_o = 32'b0;
             end
 
             `ALU_LDH, `ALU_LDHU: begin
                 ex_mem_exception = (addr_mem[1:0] == 2'b01) || (addr_mem[1:0] == 2'b11);
-                op_o = 1'b0;
                 mem_is_valid = 1'b1;
                 wdata_o = 32'b0;
                 wstrb_o = 4'b1111;
@@ -325,7 +322,6 @@ module alu (
 
             `ALU_LDW, `ALU_LLW: begin
                 ex_mem_exception = (addr_mem[1:0] != 2'b00);
-                op_o = 1'b0;
                 mem_is_valid = 1'b1;
                 wdata_o = 32'b0;
                 wstrb_o = 4'b1111;
@@ -333,7 +329,6 @@ module alu (
 
             `ALU_STB: begin
                 ex_mem_exception = 1'b0;
-                op_o = 1'b1;
                 mem_is_valid = 1'b1;
                 case (addr_mem[1: 0])
                     2'b00: begin
@@ -360,7 +355,6 @@ module alu (
             end
 
             `ALU_STH: begin
-                op_o = 1'b1;
                 mem_is_valid = 1'b1;
                 case (ex_o.mem_addr[1: 0])
                     2'b00: begin
@@ -388,7 +382,6 @@ module alu (
 
             `ALU_STW: begin
                 ex_mem_exception = (ex_o.mem_addr[1: 0] != 2'b00);
-                op_o = 1'b1;
                 mem_is_valid = 1'b1;
                 wdata_o = reg_data2;
                 wstrb_o = 4'b1111;
@@ -397,12 +390,10 @@ module alu (
             `ALU_SCW: begin
                 ex_mem_exception = (addr_mem[1:0] != 2'b00);
                 if (LLbit) begin
-                    op_o = 1'b1;  // 写操作
                     mem_is_valid = 1'b1;
                     wdata_o = reg_data2;
                     wstrb_o = 4'b1111;
                 end else begin
-                    op_o = 1'b0;  // 不写操作
                     mem_is_valid = 1'b0;
                     wdata_o = 32'b0;
                     wstrb_o = 4'b1111;
@@ -411,7 +402,6 @@ module alu (
 
             default: begin
                 ex_mem_exception = 1'b0;
-                op_o = 1'b0;
                 mem_is_valid = 1'b0;
                 wdata_o = 32'b0;
                 wstrb_o = 4'b1111;
