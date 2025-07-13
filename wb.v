@@ -9,18 +9,24 @@ module wb
 
    //   mem传入的信号
     input wire  [1:0]wb_reg_write_en, 
-    input wire  [1:0][4:0] wb_reg_write_addr,
-    input wire  [1:0][31:0] wb_reg_write_data,
+    input wire  [4:0] wb_reg_write_addr1,
+    input wire  [4:0] wb_reg_write_addr2,
+    input wire  [31:0] wb_reg_write_data1,
+    input wire  [31:0] wb_reg_write_data2,
     input wire  [1:0]wb_csr_write_en, //CSR寄存器写使能
-    input wire  [1:0][13:0] wb_csr_addr, //CSR寄存器地址
-    input wire  [1:0][31:0] wb_csr_write_data,
+    input wire  [13:0] wb_csr_addr1, //CSR寄存器地址
+    input wire  [13:0] wb_csr_addr2,
+    input wire  [31:0] wb_csr_write_data1,
+    input wire  [31:0] wb_csr_write_data2,
     input wire  [1:0]wb_is_llw_scw, //是否是LLW/SCW指令
 
     input wire  [1:0] commit_valid, //指令是否有效
     input wire  [1:0][5:0]  commit_is_exception,
     input wire  [1:0][5:0][6:0] commit_exception_cause, //异常原因
-    input wire  [1:0][31:0] commit_pc,
-    input wire  [1:0][31:0] commit_addr, //内存地址
+    input wire  [31:0] commit_pc1,
+    input wire  [31:0] commit_pc2,
+    input wire  [31:0] commit_addr1, //内存地址
+    input wire  [31:0] commit_addr2,
     input wire  [1:0] commit_idle, //是否是空闲指令
     input wire  [1:0] commit_ertn, //是否是异常返回指令
     input wire  [1:0] commit_is_privilege, //特权指令
@@ -28,28 +34,36 @@ module wb
     input wire pause_mem,
 
     output reg [1:0] wb_pf_reg_write_en, //输出的寄存器写使能
-    output reg [1:0][4:0] wb_pf_reg_write_addr, //输出的寄存器写地址
-    output reg [1:0][31:0] wb_pf_reg_write_data, 
+    output reg [4:0] wb_pf_reg_write_addr1, //输出的寄存器写地址
+    output reg [4:0] wb_pf_reg_write_addr2,
+    output reg [31:0] wb_pf_reg_write_data1,
+    output reg [31:0] wb_pf_reg_write_data2, 
 
     // to ctrl
     output reg  [1:0]ctrl_reg_write_en, 
-    output reg  [1:0][4:0] ctrl_reg_write_addr,
-    output reg  [1:0][31:0] ctrl_reg_write_data,
+    output reg  [4:0] ctrl_reg_write_addr1,
+    output reg  [4:0] ctrl_reg_write_addr2,
+    output reg  [31:0] ctrl_reg_write_data1,
+    output reg  [31:0] ctrl_reg_write_data2,
 
     output reg  [1:0]ctrl_csr_write_en, //CSR寄存器写使能
-    output reg  [1:0][13:0] ctrl_csr_addr, //CSR寄存器地址
-    output reg  [1:0][31:0] ctrl_csr_write_data,
+    output reg  [13:0] ctrl_csr_addr1, //CSR寄存器地址
+    output reg  [13:0] ctrl_csr_addr2,
+    output reg  [31:0] ctrl_csr_write_data1,
+    output reg  [31:0] ctrl_csr_write_data2,
     output reg  [1:0]ctrl_is_llw_scw, //是否是LLW/SCW指令
 
     output reg  [1:0] commit_valid_out, //指令是否有效
     output reg  [1:0][5:0]  commit_is_exception_out,
     output reg  [1:0][5:0][6:0] commit_exception_cause_out, //异常原因
-    output reg  [1:0][31:0] commit_pc_out,
-    output reg  [1:0][31:0] commit_addr_out, //内存地址
+    output reg  [31:0] commit_pc_out1,
+    output reg  [31:0] commit_pc_out2,
+    output reg  [31:0] commit_addr_out1, //内存地址
+    output reg  [31:0] commit_addr_out2,
     output reg  [1:0] commit_idle_out, //是否是空闲指令
     output reg  [1:0] commit_ertn_out, //是否是异常返回指令
     output reg  [1:0] commit_is_privilege_out //特权指令
-
+/**********************************************************************8
    `ifdef DIFF
     input reg  [1:0][31:0] in_debug_wb_pc, // debug信息：写回阶段的PC
     input reg  [1:0][31:0] in_debug_wb_inst, 
@@ -93,22 +107,23 @@ module wb
     output reg  [1:0][31:0] ld_vaddr, //加载指令虚拟地址
     output reg  [1:0] tlbfill_en //TLB填充使能
     `endif 
+**************************************************************************/
 );
 
     always @(posedge clk) begin
         if(rst || pause_mem) begin
             ctrl_reg_write_en[0] <= 1'b0;
             ctrl_reg_write_en[1] <= 1'b0;
-            ctrl_reg_write_addr[0] <= 1'b0;
-            ctrl_reg_write_addr[1] <= 1'b0; 
-            ctrl_reg_write_data[0] <= 32'b0;
-            ctrl_reg_write_data[1] <= 32'b0;
+            ctrl_reg_write_addr1 <= 1'b0;
+            ctrl_reg_write_addr2 <= 1'b0; 
+            ctrl_reg_write_data1 <= 32'b0;
+            ctrl_reg_write_data2 <= 32'b0;
             ctrl_csr_write_en[0] <= 1'b0;
             ctrl_csr_write_en[1] <= 1'b0; 
-            ctrl_csr_addr[0] <= 14'b0;
-            ctrl_csr_addr[1] <= 14'b0;
-            ctrl_csr_write_data[0] <= 32'b0;
-            ctrl_csr_write_data[1] <= 32'b0;
+            ctrl_csr_addr1 <= 14'b0;
+            ctrl_csr_addr2 <= 14'b0;
+            ctrl_csr_write_data1 <= 32'b0;
+            ctrl_csr_write_data2 <= 32'b0;
             ctrl_is_llw_scw[0] <= 1'b0;
             ctrl_is_llw_scw[1] <= 1'b0;
             commit_valid_out[0] <= 1'b0;
@@ -117,10 +132,10 @@ module wb
             commit_is_exception_out[1] <= 1'b0;
             commit_exception_cause_out[0] <= 6'b0;
             commit_exception_cause_out[1] <= 6'b0;
-            commit_pc_out[0] <= 32'b0;
-            commit_pc_out[1] <= 32'b0;
-            commit_addr_out[0] <= 32'b0;
-            commit_addr_out[1] <= 32'b0;
+            commit_pc_out1 <= 32'b0;
+            commit_pc_out2 <= 32'b0;
+            commit_addr_out1 <= 32'b0;
+            commit_addr_out2 <= 32'b0;
             commit_idle_out[0] <= 1'b0;
             commit_idle_out[1] <= 1'b0;
             commit_ertn_out[0] <= 1'b0;
@@ -131,16 +146,16 @@ module wb
         else begin
             ctrl_reg_write_en[0] <= wb_reg_write_en[0];
             ctrl_reg_write_en[1] <= wb_reg_write_en[1];
-            ctrl_reg_write_addr[0] <= wb_reg_write_addr[0];
-            ctrl_reg_write_addr[1] <= wb_reg_write_addr[1]; 
-            ctrl_reg_write_data[0] <= wb_reg_write_data[0];
-            ctrl_reg_write_data[1] <= wb_reg_write_data[1];
+            ctrl_reg_write_addr1 <= wb_reg_write_addr1;
+            ctrl_reg_write_addr2 <= wb_reg_write_addr2; 
+            ctrl_reg_write_data1 <= wb_reg_write_data1;
+            ctrl_reg_write_data2 <= wb_reg_write_data2;
             ctrl_csr_write_en[0] <= wb_csr_write_en[0];
             ctrl_csr_write_en[1] <= wb_csr_write_en[1]; 
-            ctrl_csr_addr[0] <= wb_csr_addr[0];
-            ctrl_csr_addr[1] <= wb_csr_addr[1];
-            ctrl_csr_write_data[0] <= wb_csr_write_data[0];
-            ctrl_csr_write_data[1] <= wb_csr_write_data[1];
+            ctrl_csr_addr1 <= wb_csr_addr1;
+            ctrl_csr_addr2 <= wb_csr_addr2;
+            ctrl_csr_write_data1 <= wb_csr_write_data1;
+            ctrl_csr_write_data2 <= wb_csr_write_data2;
             ctrl_is_llw_scw[0] <= wb_is_llw_scw[0];
             ctrl_is_llw_scw[1] <= wb_is_llw_scw[1];
             commit_valid_out[0] <= commit_valid[0];
@@ -149,10 +164,10 @@ module wb
             commit_is_exception_out[1] <= commit_is_exception[1];
             commit_exception_cause_out[0] <= commit_exception_cause[0];
             commit_exception_cause_out[1] <= commit_exception_cause[1];
-            commit_pc_out[0] <= commit_pc[0];
-            commit_pc_out[1] <= commit_pc[1];
-            commit_addr_out[0] <= commit_addr[0];
-            commit_addr_out[1] <= commit_addr[1];
+            commit_pc_out1 <= commit_pc1;
+            commit_pc_out2 <= commit_pc2;
+            commit_addr_out1 <= commit_addr1;
+            commit_addr_out2 <= commit_addr2;
             commit_idle_out[0] <= commit_idle[0];
             commit_idle_out[1] <= commit_idle[1];
             commit_ertn_out[0] <= commit_ertn[0];
@@ -165,12 +180,12 @@ module wb
     always @(*) begin
         wb_pf_reg_write_en[0] = ctrl_reg_write_en[0];
         wb_pf_reg_write_en[1] = ctrl_reg_write_en[1];
-        wb_pf_reg_write_addr[0] = ctrl_reg_write_addr[0];
-        wb_pf_reg_write_addr[1] = ctrl_reg_write_addr[1];
-        wb_pf_reg_write_data[0] = ctrl_reg_write_data[0];
-        wb_pf_reg_write_data[1] = ctrl_reg_write_data[1];
+        wb_pf_reg_write_addr1 = ctrl_reg_write_addr1;
+        wb_pf_reg_write_addr2 = ctrl_reg_write_addr2;
+        wb_pf_reg_write_data1 = ctrl_reg_write_data2;
+        wb_pf_reg_write_data1 = ctrl_reg_write_data2;
         end
-
+/**********************************************************************
     `ifdef DIFF
     always @(posedge clk) begin
         if(rst || pause_mem) begin
@@ -259,4 +274,5 @@ module wb
         end
     end
     `endif
+*******************************************************************************/
 endmodule

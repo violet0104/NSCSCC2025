@@ -22,7 +22,8 @@ module alu (
     input wire [7:0] aluop_i,
     input wire [2:0] alusel_i,
 
-    input wire [1:0] [4:0] reg_data_i,
+    input wire [31:0] reg_data1_i,
+    input wire [31:0] reg_data2_i,  
 
     input wire reg_write_en_i,                // 寄存器写使能
     input wire [4:0] reg_write_addr_i,        // 寄存器写地址
@@ -47,7 +48,6 @@ module alu (
     output reg [3:0] wstrb_o,          // 访存地址字节偏移
 
     // 输出给 bpu 的信息, 到分支预测单元的更新
-    output wire update_en_o,
     output wire taken_or_not_actual_o,
     output wire [31:0] branch_actual_addr_o,
     output wire [31:0] pc_dispatch_o,         // 发射阶段的pc
@@ -88,8 +88,8 @@ module alu (
 
     wire [31:0] reg_data1;
     wire [31:0] reg_data2;
-    assign reg_data1 = reg_data_i[0];   // 源操作数1
-    assign reg_data2 = reg_data_i[1];   // 源操作数2
+    assign reg_data1 = reg_data1_i;   // 源操作数1
+    assign reg_data2 = reg_data2_i;   // 源操作数2
 
     assign pc_mem      = pc_i;
     assign inst_mem    = inst_i;
@@ -246,7 +246,6 @@ module alu (
         .pre_is_branch_taken(pre_is_branch_taken_i),
         .pre_branch_addr(pre_branch_addr_i),
 
-        .update_en(update_en_o),
         .taken_or_not_actual(taken_or_not_actual_o),
         .branch_actual_addr(branch_actual_addr_o),
         .pc_dispatch(pc_dispatch_o),

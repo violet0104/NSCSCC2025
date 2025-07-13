@@ -21,10 +21,7 @@ module front
     input wire [1:0] fb_pause,
     input wire fb_interrupt,            //中断信号
     input wire [31:0] fb_new_pc,        //中断后新的pc地址
-    input wire [1:0] fb_send_inst_en,   //发送给指令缓存的使能信号
-    input wire fb_up_date_en,
     
-
     //与icache的交互
     output wire BPU_flush,
     output reg [31:0] pi_pc,                //前端给icache的pc地址
@@ -35,25 +32,31 @@ module front
     output reg [6:0] pi_exception_cause,    //前端给icache的异常原因
 
     //和backend的交互
-    output wire [1:0][31:0] fb_pc_out              //前端给后端的pc地址
-    output wire [1:0][31:0] fb_inst_out,            //前端给后端的指令
+    output wire [31:0] fb_pc_out1,              //前端给后端的pc地址
+    output wire [31:0] fb_pc_out2,              
+    output wire [31:0] fb_inst_out1,            //前端给后端的指令
+    output wire [31:0] fb_inst_out2,           
     output wire fb_valid,                           //前端给后端的指令使能信号
     output wire [1:0] fb_pre_taken,
-    output wire [1:0][31:0] fb_pre_branch_addr,     //前端给后端的分支地址
+    output wire [31:0] fb_pre_branch_addr1,         //前端给后端的分支地址
+    output wire [31:0] fb_pre_branch_addr2,
     output reg  [1:0] fb_is_exception,               //前端给后端的
-    output reg  [1:0][1:0][6:0] fb_exception_cause,  //前端给后端的异常原因
+    output reg  [1:0][1:0][6:0] fb_exception_cause,  //前端给后端的异常原因（不知道怎么改？？）
 
 
     //我新加的信号**************************
     input  wire [1:0]           ex_is_bj ,          // 两条指令是否是跳转指令
-    input  wire [1:0] [31:0]    ex_pc ,             // ex 阶段的 pc
+    input  wire [31:0]          ex_pc1 ,            // ex 阶段的 pc
+    input  wire [31:0]          ex_pc2 ,             
     input  wire [1:0]           ex_valid ,        
     input  wire [1:0]           real_taken ,        // 两条指令实际是否跳转
-    input  wire [1:0] [31:0]    real_addr ,         // 两条指令实际跳转地址
-    input  wire [1:0] [31:0]    pred_addr ,         // 两条指令预测跳转地址
+    input  wire [31:0]          real_addr1 ,        // 两条指令实际跳转地址
+    input  wire [31:0]          real_addr2 ,
+    input  wire [31:0]          pred_addr1 ,         // 两条指令预测跳转地址
+    input  wire [31:0]          pred_addr2 ,
     input  wire                 get_data_req     
     //*************************************
-)
+);
     reg [1:0] is_branch;
     reg [31:0] pre_addr;
     reg [31:0] pc_out;
@@ -71,12 +74,12 @@ module front
 
     assign fb_pre_taken[0] = data_out1[96];
     assign fb_pre_taken[1] = data_out2[96];
-    assign fb_pre_branch_addr[0] = data_out1[95:64];
-    assign fb_pre_branch_addr[1] = data_out2[95:64];
-    assign fb_pc_out[0] = data_out1[63:32];
-    assign fb_pc_out[1] = data_out2[63:32];
-    assign fb_inst_out[0] = data_out1[31:0];
-    assign fb_inst_out[1] = data_out2[31:0];
+    assign fb_pre_branch_addr1 = data_out1[95:64];
+    assign fb_pre_branch_addr2 = data_out2[95:64];
+    assign fb_pc_out1 = data_out1[63:32];
+    assign fb_pc_out2 = data_out2[63:32];
+    assign fb_inst_out1 = data_out1[31:0];
+    assign fb_inst_out2 = data_out2[31:0];
 
 
     //********************************
@@ -117,27 +120,27 @@ module front
         .pred_taken2(pred_taken[1]),
         .pred_addr(pre_addr),
 
-        .BPU_flush(),
+        .BPU_flush(BPU_flush),
 
         .ex_is_bj_1(ex_is_bj[0]),     //等后端给我的信号，ex阶段的指令是否是跳转指令
-        .ex_pc_1(ex_pc[0]),
+        .ex_pc_1(ex_pc1),
         .ex_valid1(ex_valid[0]),
-        .ex_is_bj_2(ex_is_bj_2),
-        .ex_pc_2(ex_pc[1]),
+        .ex_is_bj_2(ex_is_bj[1]),
+        .ex_pc_2(ex_pc2),
         .ex_valid2(ex_valid[1]),
         .real_taken1(real_taken[0]),
         .real_taken2(real_taken[1]),
-        .real_addr1(real_addr[0]),
-        .real_addr2(real_addr[1]),
-        .pred_addr1(pred_addr[0]),
-        .pred_addr2(pred_addr[1]),
+        .real_addr1(real_addr1),
+        .real_addr2(real_addr2),
+        .pred_addr1(pred_addr1),
+        .pred_addr2(pred_addr2)
     );
 
     inst_buffer u_inst_buffer 
     (
         .clk(cpu_clk),
         .rst(cpu_rst),
-        .flush(flush[1]),
+        .flush(fb_flush | BPU_flush),
         .get_data_req(get_data_req),   //给instbuffer这个信号instbuffer才会给后端输出inst（异步读）
         .inst_valid(icache_inst_valid),
         .pc1(pc_for_buffer[0]),

@@ -153,6 +153,10 @@ module mycpu_top(
     wire [31:0] dcache_backend_rdata;
     wire dcache_backend_rdata_valid;
     wire dcache_backend_write_finish;
+
+    // dcache-AXI 给的 cache 接口信号
+    wire dev_rrdy_to_cache;
+    wire dev_wrdy_to_cache;
     
 
 
@@ -173,11 +177,9 @@ module mycpu_top(
         .icache_inst_valid(icache_inst_valid),
 
     // *******************
-        .fb_flush(), //如果这是因为分支预测错误，导致后端向前端发送的flush信号，那该信号可以删去，前端的bpu将完成错误判断和flush信号的生成（还需一并去掉front/pc调用中的|前面的fb_flush
-        .fb_pause(),
-        .fb_interrupt(),
-        .fb_send_inst_en(),
-        .fb_up_date_en(),
+        .fb_flush(0), //如果这是因为分支预测错误，导致后端向前端发送的flush信号，那该信号可以删去，前端的bpu将完成错误判断和flush信号的生成（还需一并去掉front/pc调用中的|前面的fb_flush
+        .fb_pause(0),
+        .fb_interrupt(0),       // 先全接0
 
         // 输出给icache的信号
         .BPU_flush(BPU_flush),
@@ -220,12 +222,8 @@ module mycpu_top(
         .is_exception_i(fb_is_exception),
         .exception_cause_i(fb_exception_cause),
 
-// ******************************
-        
-        .pause_i(),     // 暂时放这里，该信号不来自前端
-        .bpu_flush(),   // 分支预测错误，清空译码队列
+        .bpu_flush(BPU_flush),   // 分支预测错误，清空译码队列
     
-// ******************************
         // 输出给前端的信号
         .ex_bpu_is_bj(ex_is_bj),
         .ex_pc(ex_pc),
@@ -262,7 +260,6 @@ module mycpu_top(
         .rdata_i(dcache_backend_rdata),
         .rdata_valid_i(dcache_backend_rdata_valid),
         .dcache_pause_i(~dcache_backend_write_finish),
-        .physical_addr_i(),     // 这个物理地址不知道要不要？？
 
         // 从ctrl输出的信号（8位）
         .flush_o(),
@@ -293,7 +290,7 @@ module mycpu_top(
         .exception_cause_out(exception_cause_for_buffer),
         .pc_suspend(pc_suspend), 
     // Interface to Read Bus
-        .dev_rrdy,       
+        .dev_rrdy(dev_rrdy_to_cache),       
         .cpu_ren(icache_ren),       
         .cpu_raddr(icache_araddr),      
         .dev_rvalid(icache_rvalid),     
@@ -316,16 +313,16 @@ module mycpu_top(
         .write_finish(dcache_backend_write_finish),  
 
     //to write BUS
-        .dev_wrdy(),      
-        .cpu_wen(),        
-        .cpu_waddr(),      
-        .cpu_wdata(),      
+        .dev_wrdy(dev_wrdy_to_cache),      
+        .cpu_wen(dcache_wen),        
+        .cpu_waddr(dcache_awaddr),      
+        .cpu_wdata(dcache_wdata),      
     //to Read Bus
-        .dev_rrdy(),       
-        .cpu_ren(),        
-        .cpu_raddr(),      
-        .dev_rvalid(),     
-        .dev_rdata()      
+        .dev_rrdy(dev_rrdy_to_cache),       
+        .cpu_ren(dcache_ren),        
+        .cpu_raddr(dcache_araddr),      
+        .dev_rvalid(dcache_rvalid),     
+        .dev_rdata(dcache_rdata)      
     );
 
     axi_interface u_axi_interface(
@@ -413,6 +410,10 @@ module mycpu_top(
         .data_wdata_i(dcache_wdata),
         .data_awaddr_i(dcache_awaddr),
         .data_bvalid_o(dcache_bvalid),
+
+    //ready to cache
+        .dev_rrdy_o(dev_rrdy_to_cache),
+        .dev_wrdy_o(),
 
     //AXI communicate
         .axi_ce_o(axi_ce),

@@ -9,11 +9,14 @@ module decoder (
     input wire flush, //强制更新信号
 
     // 前端传递的数据
-    input wire [1:0] [31:0] pc,
-    input wire [1:0] [31:0] inst ,
+    input wire [31:0] pc1,
+    input wire [31:0] pc2,
+    input wire [31:0] inst1,
+    input wire [31:0] inst2,
     input wire [1:0]  valid,                        // 前端传递的数据有效信号
     input wire [1:0]  pretaken,                     // 前端传递的分支预测结果（是否跳转）
-    input wire [1:0] [31:0] pre_addr_in ,           // 前端传递的分支预测目标地址
+    input wire [31:0] pre_addr_in1 ,           // 前端传递的分支预测目标地址
+    input wire [31:0] pre_addr_in2 ,
     input wire [1:0] [1:0]  is_exception ,          // 前端传递的异常信号，is_exception[0]表示inst[0]是否异常，is_exception[1]表示inst[1]是否异常
                                                     // is_exception[0][1]表示译码阶段第一条指令出现异常...... is_exception的位宽每经过一个阶段加一
     input wire [1:0] [1:0] [6:0] exception_cause ,  // 7位宽的异常原因，在csr_defines里定义
@@ -28,37 +31,45 @@ module decoder (
 
 
     // 输出给 dispatch 的信号
-    output reg  [1:0]  dispatch_inst_valid,
     output reg  [1:0]  dispatch_id_valid,       // pc有效信号  
 
-    output reg  [31:0][1:0] dispatch_pc_out ,
-    output reg  [31:0][1:0] dispatch_inst_out ,
+    output reg  [31:0] dispatch_pc_out1 ,
+    output reg  [31:0] dispatch_pc_out2 ,
+    output reg  [31:0] dispatch_inst_out1 ,
+    output reg  [31:0] dispatch_inst_out2 ,
 
     output reg  [1:0][2:0]  dispatch_is_exception ,         // 是否异常
     output reg  [6:0][1:0][2:0]  dispatch_exception_cause , // 异常原因
 
-    output reg  [7:0][1:0]  dispatch_aluop ,
-    output reg  [2:0][1:0]  dispatch_alusel ,
-    output reg  [31:0][1:0] dispatch_imm ,
+    output reg  [7:0]dispatch_aluop1 ,
+    output reg  [7:0]dispatch_aluop2 ,
+    output reg  [2:0]dispatch_alusel1 ,
+    output reg  [2:0]dispatch_alusel2 ,
+    output reg  [31:0]dispatch_imm1 ,
+    output reg  [31:0]dispatch_imm2 ,
 
     output reg  [1:0]  dispatch_reg1_read_en,           // 源寄存器1读使能
     output reg  [1:0]  dispatch_reg2_read_en,           // 源寄存器2读使能
-    output reg  [4:0][1:0]  dispatch_reg1_read_addr ,   // 源寄存器1读地址
-    output reg  [4:0][1:0]  dispatch_reg2_read_addr ,   // 源寄存器2读地址
+    output reg  [4:0]  dispatch_reg1_read_addr1 ,   // 源寄存器1读地址
+    output reg  [4:0]  dispatch_reg1_read_addr2 ,
+    output reg  [4:0]  dispatch_reg2_read_addr1 ,   // 源寄存器2读地址
+    output reg  [4:0]  dispatch_reg2_read_addr2,
     output reg  [1:0]  dispatch_reg_writen_en,          // 寄存器写使能信号（2位）
-    output reg  [4:0][1:0]  dispatch_reg_write_addr ,   // 寄存器写地址
+    output reg  [4:0]  dispatch_reg_write_addr1 ,   // 寄存器写地址
+    output reg  [4:0]  dispatch_reg_write_addr2 ,
 
     output reg  [1:0]  dispatch_id_pre_taken,           // 分支预测结果（是否跳转）
-    output reg  [31:0][1:0] dispatch_id_pre_addr,       // 分支预测目标地址
+    output reg  [31:0] dispatch_id_pre_addr1,       // 分支预测目标地址
+    output reg  [31:0] dispatch_id_pre_addr2,
 
     output reg  [1:0]  dispatch_is_privilege,           //是否是特权指令
     output reg  [1:0]  dispatch_csr_read_en,            //CSR读使能
     output reg  [1:0]  dispatch_csr_write_en,           //CSR写使能
-    output reg  [13:0][1:0] dispatch_csr_addr,          //CSR地址
+    output reg  [13:0] dispatch_csr_addr1,          //CSR地址
+    output reg  [13:0] dispatch_csr_addr2,
     output reg  [1:0]  dispatch_is_cnt,                 //是否是计数器
-    output reg  [1:0]  dispatch_invtlb_op               //TLB无效操作
-
-
+    output reg  [4:0]  dispatch_invtlb_op1,               //TLB无效操作
+    output reg  [4:0]  dispatch_invtlb_op2
 );
 
     //内部信号
@@ -97,10 +108,10 @@ module decoder (
         .valid(valid[0]),
 
         .pre_taken(pretaken[0]),
-        .pre_addr(pre_addr_in[0]),
+        .pre_addr(pre_addr_in1),
 
-        .pc(pc[0]),
-        .inst(inst[0]),
+        .pc(pc1),
+        .inst(inst1),
         
         .is_exception(is_exception[0]),
         .exception_cause(exception_cause[0]),
@@ -141,10 +152,10 @@ module decoder (
         .valid(valid[1]),
 
         .pre_taken(pretaken[1]),
-        .pre_addr(pre_addr_in[1]),
+        .pre_addr(pre_addr_in2),
 
-        .pc(pc[1]),
-        .inst(inst[1]),
+        .pc(pc2),
+        .inst(inst2),
         
         .is_exception(is_exception[1]),
         .exception_cause(exception_cause[1]),
@@ -184,64 +195,63 @@ module decoder (
     // 入队数据，如果要添加信号，加信号加在最前面并且修改`DECODE_DATA_WIDTH的值
     wire [1:0] [`DECODE_DATA_WIDTH:0] enqueue_data;
     assign  enqueue_data[0] =  {
-                                exception_cause_out[0], // 201:181      // 这个不知道对不对
-                                is_exception_out[0],    // 180:179
+                                exception_cause_out[0], // 205:185      // 这个不知道对不对
+                                is_exception_out[0],    // 184:182
 
-                                invtlb_op[0],           // 178
-                                is_cnt[0],              // 177
-                                csr_addr[0],            // 176:163
-                                csr_write_en[0],        // 162
-                                csr_read_en[0],         // 161
-                                is_privilege[0],        // 160    
-                                pre_addr[0],            // 159:128
-                                id_pre_taken[0],        // 127
+                                invtlb_op[0],           // 181:177
+                                is_cnt[0],              // 176
+                                csr_addr[0],            // 175:162
+                                csr_write_en[0],        // 161
+                                csr_read_en[0],         // 160
+                                is_privilege[0],        // 159    
+                                pre_addr[0],            // 158:127
+                                id_pre_taken[0],        // 126
                                 
-                                reg_write_addr[0],      // 126:122
-                                reg_writen_en[0],       // 121
-                                reg2_read_addr[0],      // 120:116
-                                reg1_read_addr[0],      // 115:111
-                                reg2_read_en[0],        // 110
-                                reg1_read_en[0],        // 109
+                                reg_write_addr[0],      // 125:121
+                                reg_writen_en[0],       // 120
+                                reg2_read_addr[0],      // 119:115
+                                reg1_read_addr[0],      // 114:110
+                                reg2_read_en[0],        // 109
+                                reg1_read_en[0],        // 108
 
-                                imm[0],                 // 108:77
-                                alusel[0],              // 76:74
-                                aluop[0],               // 73:66
+                                imm[0],                 // 107:76
+                                alusel[0],              // 75:73
+                                aluop[0],               // 72:65
                                 
-                                inst_out[0],            // 65:34
-                                pc_out[0],              // 33:2
+                                inst_out[0],            // 64:33
+                                pc_out[0],              // 32:1
 
-                                id_valid[0],            // 1
-                                inst_valid[0]};         // 0
+                                id_valid[0]};           // 0
 
-    assign  enqueue_data[1] =  {
-                                exception_cause_out[0], // 201:181      // 这个不知道对不对
-                                is_exception_out[0],    // 180:179
+    assign  enqueue_data[0] =  {
+                                exception_cause_out[1], // 205:185      // 这个不知道对不对
+                                is_exception_out[1],    // 184:182
 
-                                invtlb_op[1],           // 178
-                                is_cnt[1],              // 177
-                                csr_addr[1],            // 176:163
-                                csr_write_en[1],        // 162
-                                csr_read_en[1],         // 161
-                                is_privilege[1],        // 160    
-                                pre_addr[1],            // 159:128
-                                id_pre_taken[1],        // 127
+                                invtlb_op[1],           // 181:177
+                                is_cnt[1],              // 176
+                                csr_addr[1],            // 175:162
+                                csr_write_en[1],        // 161
+                                csr_read_en[1],         // 160
+                                is_privilege[1],        // 159    
+                                pre_addr[1],            // 158:127
+                                id_pre_taken[1],        // 126
                                 
-                                reg_write_addr[1],      // 126:122
-                                reg_writen_en[1],       // 121
-                                reg2_read_addr[1],      // 120:116
-                                reg1_read_addr[1],      // 115:111
-                                reg2_read_en[1],        // 110
-                                reg1_read_en[1],        // 109
+                                reg_write_addr[1],      // 125:121
+                                reg_writen_en[1],       // 120
+                                reg2_read_addr[1],      // 119:115
+                                reg1_read_addr[1],      // 114:110
+                                reg2_read_en[1],        // 109
+                                reg1_read_en[1],        // 108
 
-                                imm[1],                 // 108:77
-                                alusel[1],              // 76:74
-                                aluop[1],               // 73:66
+                                imm[1],                 // 107:76
+                                alusel[1],              // 75:73
+                                aluop[1],               // 72:65
                                 
-                                inst_out[1],            // 65:34
-                                pc_out[1],              // 33:2
+                                inst_out[1],            // 64:33
+                                pc_out[1],              // 32:1
 
-                                id_valid[1],            // 1
-                                inst_valid[1]};         // 0                  
+                                id_valid[1]};           // 0      
+
     // 出队数据
     wire  [1:0] [`DECODE_DATA_WIDTH:0] dequeue_data;
 
@@ -284,52 +294,51 @@ module decoder (
 
     // 分解出队数据
     always @(*) begin
-        dispatch_inst_valid[0]      =   dequeue_data1[0];
-        dispatch_inst_valid[1]      =   dequeue_data2[0];
-        dispatch_id_valid[0]        =   dequeue_data1[1];
-        dispatch_id_valid[1]        =   dequeue_data2[1];
-        dispatch_pc_out[0]          =   dequeue_data1[33:2];
-        dispatch_pc_out[1]          =   dequeue_data2[33:2];
-        dispatch_inst_out[0]        =   dequeue_data1[65:34];
-        dispatch_inst_out[1]        =   dequeue_data2[65:34];
-        dispatch_aluop[0]           =   dequeue_data1[73:66];
-        dispatch_aluop[1]           =   dequeue_data2[73:66];
-        dispatch_alusel[0]          =   dequeue_data1[76:74];
-        dispatch_alusel[1]          =   dequeue_data2[76:74];
-        dispatch_imm[0]             =   dequeue_data1[108:77];
-        dispatch_imm[1]             =   dequeue_data2[108:77];
-        dispatch_reg1_read_en[0]    =   dequeue_data1[109];   
-        dispatch_reg1_read_en[1]    =   dequeue_data2[109];   
-        dispatch_reg2_read_en[0]    =   dequeue_data2[110];   
-        dispatch_reg2_read_en[1]    =   dequeue_data2[110];   
-        dispatch_reg1_read_addr[0]  =   dequeue_data1[115:111];
-        dispatch_reg1_read_addr[1]  =   dequeue_data1[115:111];
-        dispatch_reg2_read_addr[0]  =   dequeue_data2[120:116];
-        dispatch_reg2_read_addr[1]  =   dequeue_data2[120:116];
-        dispatch_reg_writen_en[0]   =   dequeue_data1[121];
-        dispatch_reg_writen_en[1]   =   dequeue_data2[121];  
-        dispatch_reg_write_addr[0]  =   dequeue_data1[126:122];
-        dispatch_reg_write_addr[1]  =   dequeue_data1[126:122];
-        dispatch_id_pre_taken[0]    =   dequeue_data1[127];
-        dispatch_id_pre_taken[1]    =   dequeue_data2[127];
-        dispatch_id_pre_addr[0]     =   dequeue_data1[159:128];
-        dispatch_id_pre_addr[1]     =   dequeue_data2[159:128];
-        dispatch_is_privilege[0]    =   dequeue_data1[160];
-        dispatch_is_privilege[1]    =   dequeue_data2[160];
-        dispatch_csr_read_en[0]     =   dequeue_data1[161];
-        dispatch_csr_read_en[1]     =   dequeue_data2[161];
-        dispatch_csr_write_en[0]    =   dequeue_data1[162];
-        dispatch_csr_write_en[1]    =   dequeue_data2[162];
-        dispatch_csr_addr[0]        =   equeue_data1[176:163];
-        dispatch_csr_addr[1]        =   dequeue_data2[176:163];
-        dispatch_is_cnt[0]          =   dequeue_data1[177];
-        dispatch_is_cnt[1]          =   dequeue_data2[177];
-        dispatch_invtlb_op[0]       =   dequeue_data1[178];
-        dispatch_invtlb_op[1]       =   dequeue_data2[178];
-        dispatch_is_exception[0]    =   dequeue_data1[180:179];
-        dispatch_is_exception[1]    =   dequeue_data2[180:179];
-        dispatch_exception_cause[0] =   dequeue_data1[201:181];
-        dispatch_exception_cause[1] =   dequeue_data2[201:181];
+        dispatch_id_valid[0]        =   dequeue_data1[0];
+        dispatch_id_valid[1]        =   dequeue_data2[0];
+        dispatch_pc_out1            =   dequeue_data1[32:1];
+        dispatch_pc_out2            =   dequeue_data2[32:1];
+        dispatch_inst_out1          =   dequeue_data1[64:33];
+        dispatch_inst_out2          =   dequeue_data2[64:33];
+        dispatch_aluop1             =   dequeue_data1[72:65];
+        dispatch_aluop2             =   dequeue_data2[72:65];
+        dispatch_alusel1            =   dequeue_data1[75:73];
+        dispatch_alusel2            =   dequeue_data2[75:73];
+        dispatch_imm1               =   dequeue_data1[107:76];
+        dispatch_imm2               =   dequeue_data2[107:76];
+        dispatch_reg1_read_en[0]    =   dequeue_data1[108];   
+        dispatch_reg1_read_en[1]    =   dequeue_data2[108];   
+        dispatch_reg2_read_en[0]    =   dequeue_data2[109];   
+        dispatch_reg2_read_en[1]    =   dequeue_data2[109];   
+        dispatch_reg1_read_addr1    =   dequeue_data1[114:110];
+        dispatch_reg1_read_addr2    =   dequeue_data1[114:110];
+        dispatch_reg2_read_addr1    =   dequeue_data2[119:115];
+        dispatch_reg2_read_addr2    =   dequeue_data2[119:115];
+        dispatch_reg_writen_en[0]   =   dequeue_data1[120];
+        dispatch_reg_writen_en[1]   =   dequeue_data2[120];  
+        dispatch_reg_write_addr1    =   dequeue_data1[125:121];
+        dispatch_reg_write_addr2    =   dequeue_data1[125:121];
+        dispatch_id_pre_taken[0]    =   dequeue_data1[126];
+        dispatch_id_pre_taken[1]    =   dequeue_data2[126];
+        dispatch_id_pre_addr1       =   dequeue_data1[158:127];
+        dispatch_id_pre_addr2       =   dequeue_data2[158:127];
+        dispatch_is_privilege[0]    =   dequeue_data1[159];
+        dispatch_is_privilege[1]    =   dequeue_data2[159];
+        dispatch_csr_read_en[0]     =   dequeue_data1[160];
+        dispatch_csr_read_en[1]     =   dequeue_data2[160];
+        dispatch_csr_write_en[0]    =   dequeue_data1[161];
+        dispatch_csr_write_en[1]    =   dequeue_data2[161];
+        dispatch_csr_addr1          =   dequeue_data1[175:162];
+        dispatch_csr_addr2          =   dequeue_data2[175:162];
+        dispatch_is_cnt[0]          =   dequeue_data1[176];
+        dispatch_is_cnt[1]          =   dequeue_data2[176];
+        dispatch_invtlb_op1         =   dequeue_data1[181:177];
+        dispatch_invtlb_op2         =   dequeue_data1[181:177];
+        
+        dispatch_is_exception[0]    =   dequeue_data1[184:182];
+        dispatch_is_exception[1]    =   dequeue_data2[184:182];
+        dispatch_exception_cause[0] =   dequeue_data1[205:185];
+        dispatch_exception_cause[1] =   dequeue_data2[205:185];
     end
 
 

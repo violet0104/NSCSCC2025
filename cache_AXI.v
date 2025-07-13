@@ -8,6 +8,7 @@ module cache_AXI
     input wire [31:0] inst_araddr_i,
     output reg inst_rvalid_o,
     output reg [127:0] inst_rdata_o,
+    
 
     //dcache read
     input wire data_ren_i,
@@ -20,6 +21,10 @@ module cache_AXI
     input wire [127:0] data_wdata_i,
     input wire [31:0] data_awaddr_i,
     output reg data_bvalid_o,
+
+    //ready to cache
+    output wire dev_rrdy_o,
+    output wire dev_wrdy_o,
 
     //AXI communicate
     output wire axi_ce_o,
@@ -56,6 +61,9 @@ module cache_AXI
     reg [1:0] write_count;
 
     assign axi_ce_o = rst ? 1'b1 : 1'b0;
+
+    assign dev_rrdy_o = read_state == read_FREE;
+    assign dev_wrdy_o = write_state == write_FREE;
 
     //read state machine
     always @(posedge clk or negedge rst)

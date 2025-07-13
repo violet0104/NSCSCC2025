@@ -9,10 +9,12 @@ module dram_fifo (
     input wire flush,
 
     input wire [1:0] enqueue_en, //入队使能信号
-    input wire [1:0] [`DECODE_DATA_WIDTH - 1:0] enqueue_data, //入队数据
+    input wire [`DECODE_DATA_WIDTH - 1:0] enqueue_data1, //入队数据
+    input wire [`DECODE_DATA_WIDTH - 1:0] enqueue_data2, 
 
     input wire invalid_en, //数据有效使能信号
-    output wire [1:0] [`DECODE_DATA_WIDTH - 1:0] dequeue_data, //出队数据
+    output wire [`DECODE_DATA_WIDTH - 1:0] dequeue_data1, //出队数据
+    output wire [`DECODE_DATA_WIDTH - 1:0] dequeue_data2,
     
     output wire get_data_req,
     output wire full,
@@ -52,12 +54,12 @@ module dram_fifo (
 
     always @(posedge clk) begin
         if (&enqueue_en) begin
-            ram[tail]     <= enqueue_data[0];
-            ram[tail + 1] <= enqueue_data[1];
+            ram[tail]     <= enqueue_data1;
+            ram[tail + 1] <= enqueue_data2;
         end else if (enqueue_en[0]) begin
-            ram[tail] <= enqueue_data[0];
+            ram[tail] <= enqueue_data1;
         end else if (enqueue_en[1]) begin
-            ram[tail] <= enqueue_data[1];
+            ram[tail] <= enqueue_data2;
         end
     end
 
@@ -75,10 +77,13 @@ module dram_fifo (
     end
 
     // 出队
-    assign dequeue_data[0] = ram[head];
-    assign dequeue_data[1] = ram[head_plus];
+    assign dequeue_data1 = ram[head];
+    assign dequeue_data2 = ram[head_plus];
+
+
 
     // 判断队列满，空，阻塞逻辑
+    wire stall;
     assign stall = (head == (tail + 3) % `DEPTH);
     assign full = (head == (tail_plus + 1) % `DEPTH) || (head == tail_plus);
     assign empty = (head == tail) || (head_plus == tail);

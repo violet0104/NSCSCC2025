@@ -1,3 +1,7 @@
+`timescale 1ns / 1ps
+`include "defines.vh"
+`include "csr_defines.vh"
+
 //内部功能
 //1.异常与中断处理
 //遍历所有指令，生成 is_exception 信号
@@ -36,18 +40,25 @@ module ctrl
 
     //wb阶段输入wb
     input  wire [1:0]        reg_writr_en_i,//写回阶段刷新信号
-    input  wire [1:0] [4:0]  reg_writr_addr_i,//写回阶段寄存器地址
-    input  wire [1:0] [31:0] reg_writr_data_i,//写回阶段寄存器数据
+    input  wire [4:0]        reg_writr_addr1_i,//写回阶段寄存器地址
+    input  wire [4:0]        reg_writr_addr2_i,//写回阶段寄存器地址
+    input  wire [31:0]       reg_writr_data1_i,//写回阶段寄存器数据
+    input  wire [31:0]       reg_writr_data2_i,//写回阶段寄存器数据
     input  wire [1:0]        is_llw_scw_i,//是否是 llw/scw 指令
     input  wire [1:0]        csr_write_en_i,//csr写使能信号
-    input  wire [1:0] [13:0] csr_write_addr_i,//csr写地址
-    input  wire [1:0] [31:0] csr_write_data_i,//csr写数据
+    input  wire [13:0]       csr_write_addr1_i,//csr写地址
+    input  wire [13:0]       csr_write_addr2_i,//csr写地址
+    input  wire [31:0]       csr_write_data1_i,//csr写数据
+    input  wire [31:0]       csr_write_data2_i,//csr写数据
 
     //从wb阶段输入commit
     input  wire [1:0] [5:0]  is_exception_i,//是否有异常
-    input  wire [1:0] [5:0] [6:0] exception_cause_i,//异常原因
-    input  wire [1:0] [31:0] pc_i,
-    input  wire [1:0] [31:0] mem_addr_i,
+    input  wire [5:0] [6:0]  exception_cause1_i,//异常原因
+    input  wire [5:0] [6:0]  exception_cause2_i,//异常原因
+    input  wire [31:0]       pc1_i,
+    input  wire [31:0]       pc2_i,
+    input  wire [31:0]       mem_addr1_i,
+    input  wire [31:0]       mem_addr2_i,
     input  wire [1:0]        is_idle_i,//是否处于空闲状态
     input  wire [1:0]        is_ertn_i,//是否是异常返回指令
     input  wire [1:0]        is_privilege_i,//是否是特权指令
@@ -61,14 +72,16 @@ module ctrl
 
     //to regfile
     output reg  [1:0]  reg_writr_en_o,//写回阶段刷新信号
-    output reg  [1:0] [4:0]  reg_writr_addr_o,//写回阶段寄存器地址
-    output reg  [1:0] [31:0] reg_writr_data_o,//写回阶段寄存器数据
+    output reg  [4:0]  reg_writr_addr1_o,//写回阶段寄存器地址
+    output reg  [4:0]  reg_writr_addr2_o,//写回阶段寄存器地址
+    output reg  [31:0] reg_writr_data1_o,//写回阶段寄存器数据
+    output reg  [31:0] reg_writr_data2_o,//写回阶段寄存器数据
 
     //to csr
     output wire is_llw_scw_o,//是否是 llw/scw 指令
     output wire  csr_write_en_o,//csr写使能信号
     output wire [13:0] csr_write_addr_o,//csr写地址
-    output wire [31:0] csr_write_data_o//csr写数据
+    output wire [31:0] csr_write_data_o,//csr写数据
 
     //to csr_master
     input wire [31:0] csr_eentry_i, //异常入口地址
@@ -81,7 +94,7 @@ module ctrl
     output wire [31:0] csr_exception_addr_o, //异常地址
     output reg  [5:0]  csr_ecode_o, //异常ecode
     output wire [6:0]  csr_exception_cause_o, //异常原因
-    output reg  [8:0] csr_esubcode_o //异常子码
+    output reg  [8:0]  csr_esubcode_o //异常子码
 
 );
     //ertn
@@ -92,15 +105,13 @@ module ctrl
     //新的target,refetch重新取址后
     wire refetch_flush;
     wire [31:0] refetch_target;
-    assign refetch_target = (pc_i[0] | pc_i[1]) + 32'h4; 
+    assign refetch_target = (pc1_i | pc2_i) + 32'h4; 
     reg [1:0] is_exception;
-    assign new_pc = (|is_exception) ? csr_eentry_i : (ertn_flush ? csr_era_i : (referch_flush ? refetch_target : branch_target));
+    assign new_pc = (|is_exception) ? csr_eentry_i : (ertn_flush ? csr_era_i : (refetch_flush ? refetch_target : branch_target));
 
-    integer i;
     always @(*) begin
-        for(i = 0 ; i < 2 ; i = i + 1) begin
-            is_exception[i] = !rst && valid_i[i] && (is_exception_i[i] != 6'b0 || csr_is_interrupt_i);
-        end
+        is_exception[0] = !rst && valid_i[0] && (is_exception_i[0] != 6'b0 || csr_is_interrupt_i);
+        is_exception[1] = !rst && valid_i[1] && (is_exception_i[1] != 6'b0 || csr_is_interrupt_i);
     end
 
     assign csr_is_exception_o = |is_exception;
@@ -120,18 +131,18 @@ module ctrl
     };
 
     always @(*) begin
-        for(i = 0 ; i < 2 ; i = i + 1) begin
-            reg_writr_addr_o[i] = reg_writr_addr_i;
-            reg_writr_data_o[i] = reg_writr_data_i;
-        end
+        reg_writr_addr1_o = reg_writr_addr1_i;
+        reg_writr_addr2_o = reg_writr_addr2_i;
+        reg_writr_data1_o = reg_writr_data1_i;
+        reg_writr_data2_o = reg_writr_data2_i;
     end
 
-    wire [2:0] reg_writr_en_out;
+    wire [1:0] reg_writr_en_out;
     assign reg_writr_en_out[0] = (is_exception[0] || pause[7]) ? 1'b0 : reg_writr_en_i[0];
-    assign reg_writr_en_out[1] = (|is_exception || pause[7]) ? 1'b0 : reg_writr_en_i[0];
+    assign reg_writr_en_out[1] = (|is_exception || pause[7]) ? 1'b0 : reg_writr_en_i[1];
 
     always @(*) begin
-        if(reg_writr_addr_i[0] == reg_writr_addr_i[1]) begin
+        if(reg_writr_addr1_i == reg_writr_addr2_i) begin
             reg_writr_en_o[0] = 1'b0;
             reg_writr_en_o[1] = reg_writr_en_out[1];
         end
@@ -143,41 +154,54 @@ module ctrl
 
     assign is_llw_scw_o = |is_exception ? 1'b0 : (is_llw_scw_i[0] | is_llw_scw_i[1]);
     assign csr_write_en_o = |is_exception ? 1'b0 : (csr_write_en_i[0] | csr_write_en_i[1]);
-    assign csr_write_addr_o = (csr_write_en_i[0] ? csr_write_addr_i[0] : csr_write_addr_i[1]);
-    assign csr_write_data_o = (csr_write_en_i[0] ? csr_write_data_i[0] : csr_write_data_i[1]);
+    assign csr_write_addr_o = (csr_write_en_i[0] ? csr_write_addr1_i : csr_write_addr2_i);
+    assign csr_write_data_o = (csr_write_en_i[0] ? csr_write_data1_i : csr_write_data2_i);
     assign refetch_flush = csr_write_en_o;
 
-    assign csr_exception_pc_o = is_exception[0] ? pc_i[0] : pc_i[1];
-    assign csr_exception_addr_o = is_exception[0] ? mem_addr_i[0] : mem_addr_i[1];
+    assign csr_exception_pc_o = is_exception[0] ? pc1_i : pc2_i;
+    assign csr_exception_addr_o = is_exception[0] ? mem_addr1_i : mem_addr2_i;
 
     //异常造成的原因
-    reg [6:0] exception_cause[1:0];
-    wire [5:0] inst_is_exception[1:0];
-    assign inst_is_exception = {is_exception_i[1], is_exception_i[0]};
-    wire [5:0] [6:0] inst_exception_cause[1:0]; 
-    assign inst_exception_cause = {exception_cause_i[1], exception_cause_i[0]};
-    wire [6:0] excp_vec[1:0];
-    assign excp_vec[0] = {csr_is_interrupt_i, inst_exception_cause[0]};
-    assign excp_vec[1] = {csr_is_interrupt_i, inst_exception_cause[1]};
+    reg [6:0] exception_cause1;
+    reg [6:0] exception_cause2;
+    wire [5:0] inst_is_exception1 = is_exception_i[0];
+    wire [5:0] inst_is_exception2 = is_exception_i[1];
+    wire [5:0] [6:0] inst_exception_cause1 = exception_cause1_i; 
+    wire [5:0] [6:0] inst_exception_cause2 = exception_cause2_i; 
+    wire [6:0] excp_vec1;
+    wire [6:0] excp_vec2;
+    assign excp_vec1 = {csr_is_interrupt_i, inst_exception_cause1};
+    assign excp_vec2 = {csr_is_interrupt_i, inst_exception_cause2};
 
     always @(*) begin
-        for(i = 0 ; i < 2 ; i = i + 1) begin
-            case(excp_vec[i]) 
-                7'b1??????: exception_cause[i] = `EXCEPTION_INT; 
-                7'b01?????: exception_cause[i] = inst_exception_cause[i][5]; 
-                7'b001????: exception_cause[i] = inst_exception_cause[i][4];
-                7'b0001???: exception_cause[i] = (is_privilege_i[i] && csr_crmd_i[1:0] != 2'b00) ? `EXCEPTION_IPE : inst_exception_cause[i][3];
-                7'b00001??: exception_cause[i] = inst_exception_cause[i][2];
-                7'b000001?: exception_cause[i] = inst_exception_cause[i][1];
-                7'b0000001: exception_cause[i] = inst_exception_cause[i][0];
-                default:    exception_cause[i] = `EXCEPTION_NO; 
-            endcase
-        end
+        case(excp_vec1) 
+            7'b1??????: exception_cause1 = `EXCEPTION_INT; 
+            7'b01?????: exception_cause1 = inst_exception_cause1[5]; 
+            7'b001????: exception_cause1 = inst_exception_cause1[4];
+            7'b0001???: exception_cause1 = (is_privilege_i[0] && csr_crmd_i[1:0] != 2'b00) ? `EXCEPTION_IPE : inst_exception_cause1[3];
+            7'b00001??: exception_cause1 = inst_exception_cause1[2];
+            7'b000001?: exception_cause1 = inst_exception_cause1[1];
+            7'b0000001: exception_cause1 = inst_exception_cause1[0];
+            default:    exception_cause1 = `EXCEPTION_NOP; 
+        endcase
+    end
+
+    always @(*) begin
+        case(excp_vec2) 
+            7'b1??????: exception_cause2 = `EXCEPTION_INT; 
+            7'b01?????: exception_cause2 = inst_exception_cause2[5]; 
+            7'b001????: exception_cause2 = inst_exception_cause2[4];
+            7'b0001???: exception_cause2 = (is_privilege_i[1] && csr_crmd_i[1:0] != 2'b00) ? `EXCEPTION_IPE : inst_exception_cause2[3];
+            7'b00001??: exception_cause2 = inst_exception_cause2[2];
+            7'b000001?: exception_cause2 = inst_exception_cause2[1];
+            7'b0000001: exception_cause2 = inst_exception_cause2[0];
+            default:    exception_cause2 = `EXCEPTION_NOP; 
+        endcase
     end
 
     //异常原因编码
     wire [6:0] exception_cause_out;
-    assign exception_cause_out = is_exception[0] ? exception_cause[0] : exception_cause[1];
+    assign exception_cause_out = is_exception[0] ? exception_cause1 : exception_cause2;
     assign csr_exception_cause_o = exception_cause_out;
 
     always @(*) begin
@@ -271,7 +295,7 @@ module ctrl
         else if (pause_dispatch) begin
             pause_back = 5'b00011;
         end 
-        else if (pause_decoder) begin
+        else if (pause_decode) begin
             pause_back = 5'b00001;
         end 
         else begin
@@ -279,7 +303,7 @@ module ctrl
         end
     end
 
-    assign pause_buffer_temp = pause_decoder ? 1'b1 : 1'b0;
+    assign pause_buffer_temp = pause_decode ? 1'b1 : 1'b0;
     assign pause_front = pause_buffer ? 2'b11 : 2'b00;
 
     assign pause = {pause_back, pause_buffer_temp, pause_front[1] && !flush[1], pause_front[0]};
