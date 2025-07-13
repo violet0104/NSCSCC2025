@@ -46,157 +46,394 @@ module mycpu_top(
     input  wire        bvalid,
     output wire        bready,
 
-`ifndef IMPL_TRAP
-    input  wire        excp_occur,
-`endif
-    //debug
-    output wire        debug_wb_valid,
-    output wire [31:0] debug_wb_pc,
+    output wire [31:0] debug_wb_pc,    
     output wire [ 3:0] debug_wb_rf_we,
     output wire [ 4:0] debug_wb_rf_wnum,
-    output wire [31:0] debug_wb_rf_wdata
+    output wire [31:0] debug_wb_rf_wdata,
+    output wire [31:0] debug_wb_inst,
+
+    `ifdef DIFF
+    output [31:0] debug0_wb_pc,
+    output [ 3:0] debug0_wb_rf_wen,
+    output [ 4:0] debug0_wb_rf_wnum,
+    output [31:0] debug0_wb_rf_wdata,
+    output [31:0] debug0_wb_inst,
+    
+    output [31:0] debug1_wb_pc,
+    output [ 3:0] debug1_wb_rf_wen,
+    output [ 4:0] debug1_wb_rf_wnum,
+    output [31:0] debug1_wb_rf_wdata,
+    output [31:0] debug1_wb_inst
+    `endif
 );
+    wire rst;
+    assign rst = ~aresetn;
 
-// ICache Interface
-wire        cpu2ic_rreq  ;
-wire [31:0] cpu2ic_addr  ;
-wire        ic2cpu_valid ;
-wire [31:0] ic2cpu_inst  ;
+    wire icache_ren;
+    wire [31:0] icache_araddr;
+    wire icache_rvalid;
+    wire [127:0] icache_rdata;
+    wire dcache_ren;
+    wire [31:0] dcache_araddr;
+    wire dcache_rvalid;
+    wire dcache_rdata;
+    wire dcache_wen;
+    wire [127:0] dcache_wdata;
+    wire [31:0] dcache_awaddr;
+    wire dcache_bvalid;
 
-wire        dev2ic_rrdy  ;
-wire [ 3:0] ic2dev_ren   ;
-wire [31:0] ic2dev_raddr ;
-wire        dev2ic_rvalid;
-wire [`CACHE_BLK_SIZE-1:0] dev2ic_rdata;
+    //AXI communicate
+    wire axi_ce_o;
+    wire [3:0] axi_wsel;   
+    //AXI read
+    wire [31:0] axi_rdata;
+    wire axi_rdata_valid;
+    wire axi_ren;
+    wire axi_rready;
+    wire [31:0] axi_raddr;
+    wire [7:0] axi_rlen;
+    //AXI write
+    wire axi_wdata_resp;
+    wire axi_wen;
+    wire [31:0] axi_waddr;
+    wire [31:0] axi_wdata;
+    wire axi_wvalid;
+    wire axi_wlast;
+    wire [7:0] axi_wlen;
+    wire [1:0] cache_brust_type;
+    assign cache_brust_type = 2'b01;   
+    wire [2:0] cache_brust_size;
+    assign cache_brust_size = 3'b010
 
-// DCache Interface
-wire [ 3:0] cpu2dc_ren   ;
-wire [31:0] cpu2dc_addr  ;
-wire        dc2cpu_valid ;
-wire [31:0] dc2cpu_rdata ;
-wire [ 3:0] cpu2dc_wen   ;
-wire [31:0] cpu2dc_wdata ;
-wire        dc2cpu_wresp ;
+    //icache  与前端模块的交互信号**********************
+    wire BPU_flush;
+    wire inst_rreq;
+    wire [31:0] inst_addr;
+    wire [31:0] BPU_pred_addr;
+    wire pi_is_exception;
+    wire [6:0] pi_exception_cause; 
 
-wire        dev2dc_wrdy  ;
-wire [ 3:0] dc2dev_wen   ;
-wire [31:0] dc2dev_waddr ;
-wire [31:0] dc2dev_wdata ;
-wire        dev2dc_rrdy  ;
-wire [ 3:0] dc2dev_ren   ;
-wire [31:0] dc2dev_raddr ;
-wire        dev2dc_rvalid;
-wire [`CACHE_BLK_SIZE-1:0] dev2dc_rdata;
+    wire icache_inst_valid;
+    wire [31:0] inst_for_buffer [1:0];
+    wire [31:0] pred_addr_for_buffer;
+    wire is_exception_for_buffer;
+    wire [6:0] exception_cause_for_buffer;
+    wire pc_suspend;
+    wire [31:0] icache_pc [1:0];
+    wire [31:0] icache_inst [1:0];
+    //*************************************************
 
-myCPU u_mycpu (
-    .cpu_clk   (aclk),
-    .cpu_rst   (aresetn),
-    .pi_master 
 
-);
+    // 前端给后端的信号
+    wire [31:0]fb_pc[1:0];
+    wire [31:0]fb_inst[1:0];
+    wire fb_valid;
+    wire [1:0]fb_pre_taken;
+    wire [31:0]fb_pre_branch_addr[1:0];
+    wire [1:0]fb_is_exception;
+    wire [6:0]fb_exception_cause[1:0][1:0];
 
-inst_cache U_icache (
-    .cpu_clk        (aclk),
-    .cpu_rstn       (aresetn),
+    // 后端给前端的信号
+    wire iuncache;
+    wire [1:0]ex_is_bj;
+    wire [31:0]ex_pc[1:0];
+    wire [1:0]ex_valid;
+    wire [1:0]real_taken;
+    wire [31:0]real_addr[1:0];
+    wire [31:0]pred_addr[1:0];
+    wire get_data_req;
+
+    // 后端给 dcache 的信号
+    wire [3:0]  backend_dcache_ren;
+    wire [3:0]  backend_dcache_wen;
+    wire [31:0] backend_dcache_addr;
+    wire [31:0] backend_dcache_write_data;
+
+    // dcache 给后端的信号
+    wire [31:0] dcache_backend_rdata;
+    wire dcache_backend_rdata_valid;
+    wire dcache_backend_write_finish;
+    
+
+
+    front u_front(
+        // 输入
+        .cpu_clk(aclk),
+        .cpu_rst(rst),
+
+        .iuncache(iuncache),//不知道信号来源       //(别管iuncache信号)
+
+        // 来自 icache 的信号
+        .pi_icache_is_exception(is_exception_for_buffer),      //从icache传回来的例外信息
+        .pi_icache_exception_cause(exception_cause_for_buffer),
+        .pc_for_buffer(icache_pc),
+        .pred_addr_for_buffer(pred_addr_for_buffer),
+        .icache_pc_suspend(pc_suspend),
+        .inst_for_buffer(icache_inst),
+        .icache_inst_valid(icache_inst_valid),
+
+    // *******************
+        .fb_flush(), //如果这是因为分支预测错误，导致后端向前端发送的flush信号，那该信号可以删去，前端的bpu将完成错误判断和flush信号的生成（还需一并去掉front/pc调用中的|前面的fb_flush
+        .fb_pause(),
+        .fb_interrupt(),
+        .fb_send_inst_en(),
+        .fb_up_date_en(),
+
+        // 输出给icache的信号
+        .BPU_flush(BPU_flush),
+        .pi_pc(inst_addr),
+        .BPU_pred_addr(BPU_pred_addr),
+        .inst_rreq_to_icache(inst_rreq),
+        .pi_is_exception(pi_exception_cause),
+        .pi_exception_cause(pi_exception_cause),
+
+        // 来自后端的信号
+        .ex_is_bj(ex_is_bj),
+        .ex_pc(ex_pc),
+        .ex_valid(ex_valid),
+        .real_taken(real_taken),
+        .real_addr(real_addr),
+        .pred_addr(pred_addr),
+        .get_data_req(get_data_req),
+
+        // 输出给后端的信号
+        .fb_pc_out(fb_pc),
+        .fb_inst_out(fb_inst),
+        .fb_valid(fb_valid),
+        .fb_pre_taken(fb_pre_taken),
+        .fb_pre_branch_addr(fb_pre_branch_addr),
+        .fb_is_exception(fb_is_exception),
+        .fb_exception_cause(fb_exception_cause)
+    );
+
+
+    backend u_backend(
+        .clk(aclk),
+        .rst(rst),
+        
+        // 来自前端的信号
+        .pc_i(fb_pc),
+        .inst_i(fb_inst),
+        .valid_i(fb_valid),
+        .pre_is_branch_taken_i(fb_pre_taken),
+        .pre_branch_addr_i(fb_pre_branch_addr),
+        .is_exception_i(fb_is_exception),
+        .exception_cause_i(fb_exception_cause),
+
+// ******************************
+        
+        .pause_i(),     // 暂时放这里，该信号不来自前端
+        .bpu_flush(),   // 分支预测错误，清空译码队列
+    
+// ******************************
+        // 输出给前端的信号
+        .ex_bpu_is_bj(ex_is_bj),
+        .ex_pc(ex_pc),
+        .ex_valid(ex_valid),
+        .ex_bpu_taken_or_not_actual(real_taken),
+        .ex_bpu_branch_pred_addr(pred_addr),
+        .get_data_req_o(get_data_req),
+
+/*******************************
+        .tlbidx(),
+        .tlbehi(),
+        .tlbelo0(),
+        .tlbelo1(),
+        .tlbelo1(),
+        .asid(),
+        .ecode(),
+
+        .csr_dme0(),
+        .csr_dme1(),
+        .csr_da(),
+        .csr_pg(),
+        .csr_plv(),
+        .csr_datf(),
+        .csr_datm(),
+***********************************/
+
+        // 输出给 dcache 的信号
+        .ren_o(backend_dcache_ren),
+        .wstrb_o(backend_dcache_wen),
+        .virtual_addr_o(backend_dcache_addr),
+        .wdata_o(backend_dcache_write_data),
+
+        // dcache 返回的信号
+        .rdata_i(dcache_backend_rdata),
+        .rdata_valid_i(dcache_backend_rdata_valid),
+        .dcache_pause_i(~dcache_backend_write_finish),
+        .physical_addr_i(),     // 这个物理地址不知道要不要？？
+
+        // 从ctrl输出的信号（8位）
+        .flush_o(),
+        .pause_o(),
+    
+    );
+
+    icache u_inst_cache
+    (
+        .clk(aclk),
+        .rst(rst),   
+        .BPU_flush(BPU_flush),       
     // Interface to CPU
-    .inst_rreq      (cpu2ic_rreq),
-    .inst_addr      (cpu2ic_addr),
-    .inst_valid     (ic2cpu_valid),
-    .inst_out       (ic2cpu_inst),
-    // Interface to Bus
-    .dev_rrdy       (dev2ic_rrdy),
-    .cpu_ren        (ic2dev_ren),
-    .cpu_raddr      (ic2dev_raddr),
-    .dev_rvalid     (dev2ic_rvalid),
-    .dev_rdata      (dev2ic_rdata)
-);
+        .inst_rreq(inst_rreq),  // 来自CPU的取指请求
+        .inst_addr(unst_addr),      // 来自CPU的取指地址
+        .BPU_pred_addr(BPU_pred_addr),
 
-data_cache U_dcache (
-    .cpu_clk        (aclk),
-    .cpu_rstn       (aresetn),
-    // Interface to CPU
-    .data_ren       (cpu2dc_ren),
-    .data_addr      (cpu2dc_addr),
-    .data_valid     (dc2cpu_valid),
-    .data_rdata     (dc2cpu_rdata),
-    .data_wen       (cpu2dc_wen),
-    .data_wdata     (cpu2dc_wdata),
-    .data_wresp     (dc2cpu_wresp),
-    // Interface to Bus
-    .dev_wrdy       (dev2dc_wrdy),
-    .cpu_wen        (dc2dev_wen),
-    .cpu_waddr      (dc2dev_waddr),
-    .cpu_wdata      (dc2dev_wdata),
-    .dev_rrdy       (dev2dc_rrdy),
-    .cpu_ren        (dc2dev_ren),
-    .cpu_raddr      (dc2dev_raddr),
-    .dev_rvalid     (dev2dc_rvalid),
-    .dev_rdata      (dev2dc_rdata)
-);
+        .pi_is_exception(pi_is_exception),
+        .pi_exception_cause(pi_exception_cause),
 
-axi_master U_aximaster (
-    .aclk           (aclk),
-    .aresetn        (aresetn),
+        .pred_addr(pred_addr_for_buffer),
+        .inst_valid(icache_inst_valid),     
+        .inst_out1(icache_inst[0]),       
+        .inst_out2(icache_inst[1]),
+        .pc1(icache_pc[0]),
+        .pc2(icache_pc[1]),
+        .is_exception_out(is_exception_for_buffer),
+        .exception_cause_out(exception_cause_for_buffer),
+        .pc_suspend(pc_suspend), 
+    // Interface to Read Bus
+        .dev_rrdy,       
+        .cpu_ren(icache_ren),       
+        .cpu_raddr(icache_araddr),      
+        .dev_rvalid(icache_rvalid),     
+        .dev_rdata(icache_rdata)   
+    );
 
-    // ICache Interface
-    .ic_dev_rrdy    (dev2ic_rrdy),
-    .ic_cpu_ren     (|ic2dev_ren),
-    .ic_cpu_raddr   (ic2dev_raddr),
-    .ic_dev_rvalid  (dev2ic_rvalid),
-    .ic_dev_rdata   (dev2ic_rdata),
-    // DCache Interface
-    .dc_dev_wrdy    (dev2dc_wrdy),
-    .dc_cpu_wen     (dc2dev_wen),
-    .dc_cpu_waddr   (dc2dev_waddr),
-    .dc_cpu_wdata   (dc2dev_wdata),
-    .dc_dev_rrdy    (dev2dc_rrdy),
-    .dc_cpu_ren     (|dc2dev_ren),
-    .dc_cpu_raddr   (dc2dev_raddr),
-    .dc_dev_rvalid  (dev2dc_rvalid),
-    .dc_dev_rdata   (dev2dc_rdata),
+    dcache u_dcache(
+        .clk(aclk),
+        .rst(rst),
 
-    // AXI4-Lite Master Interface
-    // write address channel
-    .m_axi_awid     (awid),
-    .m_axi_awaddr   (awaddr),
-    .m_axi_awlen    (awlen),
-    .m_axi_awsize   (awsize),
-    .m_axi_awburst  (awburst),
-    .m_axi_awlock   (awlock),
-    .m_axi_awcache  (awcache),
-    .m_axi_awprot   (awprot),
-    .m_axi_awready  (awready),
-    .m_axi_awvalid  (awvalid),
-    // write data channel
-    .m_axi_wid      (wid),
-    .m_axi_wdata    (wdata),
-    .m_axi_wready   (wready),
-    .m_axi_wstrb    (wstrb),
-    .m_axi_wlast    (wlast),
-    .m_axi_wvalid   (wvalid),
-    // write response channel
-    .m_axi_bid      (bid),
-    .m_axi_bready   (bready),
-    .m_axi_bresp    (bresp),
-    .m_axi_bvalid   (bvalid),
-    // read address channel
-    .m_axi_arid     (arid),
-    .m_axi_araddr   (araddr),
-    .m_axi_arlen    (arlen),
-    .m_axi_arsize   (arsize),
-    .m_axi_arburst  (arburst),
-    .m_axi_arlock   (arlock),
-    .m_axi_arcache  (arcache),
-    .m_axi_arprot   (arprot),
-    .m_axi_arready  (arready),
-    .m_axi_arvalid  (arvalid),
-    // read data channel
-    .m_axi_rid      (rid),
-    .m_axi_rdata    (rdata),
-    .m_axi_rready   (rready),
-    .m_axi_rresp    (rresp),
-    .m_axi_rlast    (rlast),
-    .m_axi_rvalid   (rvalid)
-);
+        // 来自后端的信号
+        .ren(backend_dcache_ren),
+        .wen(backend_dcache_wen),
+        .addr(backend_dcache_addr),
+        .write_data(backend_dcache_write_data),
+
+        // 输出给后端的信号
+        .rdata(dcache_rdata),
+        .rdata_valid(dcache_backend_rdata_valid),    
+        .write_finish(dcache_backend_write_finish),  
+
+    //to write BUS
+        .dev_wrdy(),      
+        .cpu_wen(),        
+        .cpu_waddr(),      
+        .cpu_wdata(),      
+    //to Read Bus
+        .dev_rrdy(),       
+        .cpu_ren(),        
+        .cpu_raddr(),      
+        .dev_rvalid(),     
+        .dev_rdata()      
+    );
+
+    axi_interface u_axi_interface(
+        .clk(aclk),
+        .rst(rst),
+    //connected to cache_axi
+        .cache_ce(axi_ce),
+        .cache_wen(axi_wen),         
+        .cache_ren(axi_ren),         
+        .cache_raddr(axi_raddr),
+        .cache_waddr(axi_waddr),
+        .cache_wdata(axi_wdata),
+        .cache_rready(axi_rready),    
+        .cache_wvalid(axi_wvalid),     
+        .cache_wlast(axi_wlast),      
+        .wdata_resp_o(axi_wdata_resp),    
+    
+        .cache_brust_type(cache_brust_type)  
+        .cache_brust_size(cache_brust_size)
+        .cacher_burst_length(axi_rlen),
+        .cachew_burst_length(axi_wlen),
+
+        .arid(arid),       
+        .araddr(araddr),      
+        .arlen(arlen),      
+        .arsize(arsize),
+        .arburst(arburst),
+        .arlock(arlock),   
+        .arcache(arcache),   
+        .arprot(arprot),   
+        .arvalid(arvalid),       
+        .arready(arready),         
+    //R读数据
+        .rid(rid),
+        .rdata(rdata),   
+        .rresp(rresp),    
+        .rlast(rlast),           
+        .rvalid(rvalid),       
+        .rready(rready),         
+        .rdata_o, 
+        .rdata_valid_o,
+    //AW写地址
+        .awid(awid),     
+        .awaddr(awaddr),  
+        .awlen(awlen),    
+        .awsize(awsize),   
+        .awburst(awburst),
+        .awlock(awlock),   
+        .awcache(awcache),
+        .awprot(awprot),   
+        .awvalid(awvalid),        
+        .awready(awready),        
+    //W写数据
+        .wid(wid),     
+        .wdata(wdata),  
+        .wstrb(wstrb),    
+        .wlast(wlast),          
+        .wvalid(wvalid),       
+        .wready(wready),         
+    //写响应
+        .bid(bid),      
+        .bresp(bresp),    
+        .bvalid(bvalid),        
+        .bready(bready)         
+    );
+
+    cache_AXI u_cache_AXI(
+        .clk(aclk),
+        .rst(rst),    // low active
+
+    //icache read
+        .inst_ren_i(icache_ren),
+        .inst_araddr_i(icache_araddr),
+        .inst_rvalid_o(icache_rvalid),
+        .inst_rdata_o(icache_rdata),
+
+    //dcache read
+        .data_ren_i(dcache_ren),
+        .data_araddr_i(dcache_araddr),
+        .data_rvalid_o(dcache_rvalid),
+        .data_rdata_o(dcache_rdata),
+
+    //dcache write
+        .data_wen_i(dcache_wen),
+        .data_wdata_i(dcache_wdata),
+        .data_awaddr_i(dcache_awaddr),
+        .data_bvalid_o(dcache_bvalid),
+
+    //AXI communicate
+        .axi_ce_o(axi_ce),
+        .axi_wsel_o(axi_wsel),   // 连接总线的wstrb
+
+    //AXI read
+        .rdata_i(rdata),
+        .rdata_valid_i(rdata_valid),
+        .axi_ren_o(axi_ren),
+        .axi_rready_o(axi_rready),
+        .axi_raddr_o(axi_raddr),
+        .axi_rlen_o(axi_rlen),
+
+    //AXI write
+        .wdata_resp_i(wdata_resp),  // 写响应信号
+        .axi_wen_o(axi_wen),
+        .axi_waddr_o(axi_waddr),
+        .axi_wdata_o(axi_wdata),
+        .axi_wvalid_o(axi_wvalid),
+        .axi_wlast_o(axi_wlast),
+        .axi_wlen_o(axi_wlen)
+    );
 
 endmodule

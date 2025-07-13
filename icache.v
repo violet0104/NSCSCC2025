@@ -1,24 +1,26 @@
 `timescale 1ns / 1ps
-
-module inst_cache
+module icache
 (
     input  wire         clk,
     input  wire         rst,       // low active
     // Interface to CPU
     input  wire         inst_rreq,      // 来自CPU的取指请求
     input  wire [31:0]  inst_addr,      // 来自CPU的取指地址
+    input  wire         BPU_flush,
     input  wire [31:0]  BPU_pred_addr,
-    input  wire         BPU_pred_taken1,
-    input  wire         BPU_pred_taken2,
+
+    input  wire         pi_is_exception,
+    input  wire         pi_exception_cause, 
+
     output wire         pred_addr,
-    output wire         pred_taken1,
-    output wire         pred_taken2,
     output reg          inst_valid,     // 输出给CPU的指令有效信号（读指令命中）
     output reg  [31:0]  inst_out1,       // 输出给CPU的指令
     output reg  [31:0]  inst_out2,
     output reg  [31:0]  pc1,
     output reg  [31:0]  pc2,
-    output wire         pc_suspend,  //返回数据有效，暂停FIFO
+    output reg          is_exception_out,
+    output reg  [6:0]   exception_cause_out,
+    output wire         pc_suspend,  
     // Interface to Read Bus
     input  wire         dev_rrdy,       // 主存就绪信号（高电平表示主存可接收ICache的读请求）
     output reg  [ 3:0]  cpu_ren,        // 输出给主存的读使能信号
@@ -43,10 +45,10 @@ module inst_cache
     reg [21:0] tag_1_2;
     reg [21:0] tag_2_2;
     reg req_2;
+    reg pi_is_exception_2;
+    reg [6:0] pi_exception_cause_2;
 
     reg [31:0] pred_addr_2;
-    reg        pred_taken1_2;
-    reg        pred_taken2_2;
 
     wire [150:0]ram1_data_block1;
     wire [150:0]ram1_data_block2;
@@ -61,16 +63,16 @@ module inst_cache
     reg [1:0] use_bit [63:0];
     wire [5:0] refill_index = dealing1 ? addr_1_2[9:4] : dealing2 ? addr_2_2[9:4] : 6'b0;
     wire [21:0] refill_tag = dealing1 ? addr_1_2[31:10] : dealing2 ? addr_2_2[31:10] : 22'b0;
-    wire we1 = (dev_rvalid==1)&(use_bit[refill_index]==2'b10);
-    wire we2 = (dev_rvalid==1)&(use_bit[refill_index]==2'b01);
+    wire we1 = (dev_rvalid==1) & (use_bit[refill_index]==2'b10)& !BPU_flush &req_2;
+    wire we2 = (dev_rvalid==1) & (use_bit[refill_index]==2'b01)& !BPU_flush &req_2;
     wire [150:0] refill_data = {{1'b1,refill_tag},dev_rdata};
 
     //hit第一个1代表ram1，第二个1代表index1
-    wire hit1_1 = (tag_1_2==ram1_tag1) & req_2 & ram1_data_block1[150];  
-    wire hit2_1 = (tag_1_2==ram2_tag1) & req_2 & ram2_data_block1[150];
+    wire hit1_1 = !BPU_flush & (tag_1_2==ram1_tag1) & req_2 & ram1_data_block1[150];  
+    wire hit2_1 = !BPU_flush & (tag_1_2==ram2_tag1) & req_2 & ram2_data_block1[150];
     wire hit1 = hit1_1 | hit2_1;    //index1
-    wire hit1_2 = (tag_2_2==ram1_tag2) & req_2 & ram1_data_block2[150];
-    wire hit2_2 = (tag_2_2==ram2_tag2) & req_2 & ram2_data_block2[150];
+    wire hit1_2 = !BPU_flush & (tag_2_2==ram1_tag2) & req_2 & ram1_data_block2[150];
+    wire hit2_2 = !BPU_flush & (tag_2_2==ram2_tag2) & req_2 & ram2_data_block2[150];
     wire hit2 = hit1_2 | hit2_2;    //index2
 
     wire [127:0] hit1_data = {128{hit1_1}}&ram1_data_block1[127:0] | {128{hit2_1}}&ram2_data_block1[127:0];
@@ -88,7 +90,7 @@ module inst_cache
     integer i;
     always @(posedge clk)
     begin
-        if(rst)
+        if(rst | BPU_flush)
         begin
             addr_1_2 <= 32'b0;
             addr_2_2 <= 32'b0;
@@ -99,14 +101,15 @@ module inst_cache
             tag_2_2 <= 22'b0; 
 
             pred_addr_2 <= 32'b0;
-            pred_taken1_2 <= 1'b0;
-            pred_taken2_2 <= 1'b0;
+
+            pi_is_exception_2 <= 1'b0;
+            pi_exception_cause_2 <= 7'b0;
             for(i=0;i<64;i=i+1)
             begin
                 use_bit[i] <= 2'b10;
             end
         end
-        else if(!suspend)
+        else if(!suspend & !BPU_flush)
         begin
             addr_1_2 <= addr_1_1;
             addr_2_2 <= addr_2_1;
@@ -117,8 +120,9 @@ module inst_cache
             tag_2_2 <= tag_2_1;
 
             pred_addr_2 <= BPU_pred_addr;
-            pred_taken1_2 <= BPU_pred_taken1;
-            pred_taken2_2 <= BPU_pred_taken2;
+
+            pi_is_exception_2 <= pi_is_exception;
+            pi_exception_cause_2 <= pi_exception_cause;
         end
     end
 
@@ -152,14 +156,16 @@ module inst_cache
     );
 
     assign pred_addr = pred_addr_2;
-    assign pred_taken1 = pred_taken1_2;
-    assign pred_taken2 = pred_taken2_2;
 
     always @(*)
     begin
         inst_valid = hit1 & hit2;
         pc1 = addr_1_2;
         pc2 = addr_2_2;
+
+        is_exception_out = pi_is_exception_2;
+        exception_cause_out = pi_exception_cause_2;
+
         case(offset1_2)
         2'b00:inst_out1 = hit1_data[31:0];
         2'b01:inst_out1 = hit1_data[63:32];
@@ -183,10 +189,11 @@ module inst_cache
     begin
         index1_delay <= index1;
         index2_delay <= index2;
-        if(rst)
+        if(rst | BPU_flush)
         begin
             dealing1 <= 1'b0;
             dealing2 <= 1'b0;
+            cpu_ren <= 4'b0;
         end
         else
         begin
@@ -204,7 +211,7 @@ module inst_cache
                 dealing2 <= 1'b1;
             end
             else cpu_ren <= 4'b000;
-            if(dev_rvalid)
+            if(dev_rvalid & !BPU_flush)
             begin
                 if(dealing1)
                 begin 

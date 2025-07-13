@@ -7,18 +7,14 @@ module front
 
     input wire iuncache,
 
-    // 可能是 ctrl
-    input wire pause,         //暂停信号
-
-    // 来自 pc 的信号
-    input wire [1:0] pi_icache_is_exception,            //指令缓存异常信号
-    input wire [6:0] pi_icache_exception_cause[1:0],    //指令缓存异常原因
-    input wire [31:0] pc_for_buffer[1:0],               //pc给指令缓存的信号
-
     // 来自 icache 的信号
+    input wire pi_icache_is_exception,            //指令缓存异常信号
+    input wire [6:0] pi_icache_exception_cause,    //指令缓存异常原因
+    input wire [31:0] pc_for_buffer[1:0],               //pc给指令缓存的信号
+    input wire [31:0] pred_addr_for_buffer,
     input wire icache_pc_suspend,
     input wire [31:0] inst_for_buffer[1:0],
-    input wire [1:0] icache_fetch_en,       //指令缓存的使能信号
+    input wire icache_inst_valid,       //指令缓存的使能信号
 
     //*******************
     input wire [1:0] fb_flush,
@@ -30,24 +26,25 @@ module front
     
 
     //与icache的交互
+    output wire BPU_flush,
     output reg [31:0] pi_pc,                //前端给icache的pc地址
-    output reg [1:0] pi_inst_en,            //前端给icache的指令使能信号
+    output wire [31:0] BPU_pred_addr,
+    output wire BPU_pred_taken,
+    output wire inst_rreq_to_icache,            //前端给icache的指令使能信号
     output reg pi_is_exception,             //前端给icache的异常信号
     output reg [6:0] pi_exception_cause,    //前端给icache的异常原因
-    output reg [1:0] pi_fetch_en,           //前端给icache的指令缓存使能信号
 
     //和backend的交互
-    output wire [31:0] fb_pc_out[1:0],              //前端给后端的pc地址
-    output wire [31:0] fb_inst_out[1:0],            //前端给后端的指令
+    output wire [1:0][31:0] fb_pc_out              //前端给后端的pc地址
+    output wire [1:0][31:0] fb_inst_out,            //前端给后端的指令
     output wire fb_valid,                           //前端给后端的指令使能信号
     output wire [1:0] fb_pre_taken,
-    output wire [31:0] fb_pre_branch_addr[1:0],     //前端给后端的分支地址
-    output reg [1:0] fb_is_exception,               //前端给后端的
-    output reg [6:0] fb_exception_cause[1:0][1:0],  //前端给后端的异常原因
+    output wire [1:0][31:0] fb_pre_branch_addr,     //前端给后端的分支地址
+    output reg  [1:0] fb_is_exception,               //前端给后端的
+    output reg  [1:0][1:0][6:0] fb_exception_cause,  //前端给后端的异常原因
 
 
     //我新加的信号**************************
-    output wire inst_buffer_empty;          // 暂时不知道有什么用??
     input  wire [1:0]           ex_is_bj ,          // 两条指令是否是跳转指令
     input  wire [1:0] [31:0]    ex_pc ,             // ex 阶段的 pc
     input  wire [1:0]           ex_valid ,        
@@ -70,7 +67,6 @@ module front
     wire [96:0] data_out1;
     wire [96:0] data_out2;
     wire [1:0] pred_taken;
-    wire inst_valid;
     //***************************************
 
     assign fb_pre_taken[0] = data_out1[96];
@@ -89,8 +85,10 @@ module front
         pi_pc = pc_out;
         pi_is_exception = is_exception;
         pi_exception_cause = exception_cause;
-        pi_inst_en = {inst_en2, inst_en1};
     end
+
+    assign BPU_pred_addr = pre_addr;
+    assign BPU_pred_taken = pred_taken[0] | pred_taken[1];
 
     pc u_pc 
     (
@@ -98,17 +96,15 @@ module front
         .rst(cpu_rst),    
         .stall(stall),
         .iuncache(iuncache),
-        .flush(fb_flush[0]),
-        .new_pc(fb_new_pc),
+        .flush(fb_flush[0] | BPU_flush),
+        .new_pc(fb_new_pc),       //后端需要接一个信号选择器，该pc来源有二：ex阶段分支预测错误，并得到的真正目标pc；触发例外，且例外处理程序的末尾，需要回到程序断点继续执行
         .pause(fb_pause[0] | icache_pc_suspend),
         .pre_addr(pre_addr),  
-        .pred_taken(pred_taken),  
+        .pred_taken(pred_taken[0] | pred_taken[1]),  
         .pc_out(pc_out),
         .pc_is_exception(is_exception),
         .pc_exception_cause(exception_cause),
-        .inst_en_1(inst_en1),
-        .inst_en_2(inst_en2),
-        .if_valid(if_valid)
+        inst_rreq_to_icache(inst_rreq_to_icache)
     );
 
     bpu u_bpu
@@ -121,10 +117,8 @@ module front
         .pred_taken2(pred_taken[1]),
         .pred_addr(pre_addr),
 
-        .pred_error1(), //这是我当初设计给pc的，表示预测错误
-        .pred_error2(), //需要pc更新为新的取指地址，现在似乎被flush替代
+        .BPU_flush(),
 
-        .if_valid(if_valid),
         .ex_is_bj_1(ex_is_bj[0]),     //等后端给我的信号，ex阶段的指令是否是跳转指令
         .ex_pc_1(ex_pc[0]),
         .ex_valid1(ex_valid[0]),
@@ -137,7 +131,7 @@ module front
         .real_addr2(real_addr[1]),
         .pred_addr1(pred_addr[0]),
         .pred_addr2(pred_addr[1]),
-    )
+    );
 
     inst_buffer u_inst_buffer 
     (
@@ -145,23 +139,19 @@ module front
         .rst(cpu_rst),
         .flush(flush[1]),
         .get_data_req(get_data_req),   //给instbuffer这个信号instbuffer才会给后端输出inst（异步读）
-        .inst_valid(inst_valid),
+        .inst_valid(icache_inst_valid),
         .pc1(pc_for_buffer[0]),
         .pc2(pc_for_buffer[1]),
 
         .inst1(inst_for_buffer[0]),
         .inst2(inst_for_buffer[1]),
-        .pred_addr(pre_addr),
-        .pred_taken1(pred_taken[0]),
-        .pred_taken2(pred_taken[1]),
+        .pred_addr(),
 
         .data_out1(data_out1),
         .data_out1(data_out2),
         .data_valid(fb_valid),
 
-        .stall(stall),
-        .empty(inst_buffer_empty),
-        .full(buffer_full)
+        .stall(stall)
     );
 
 

@@ -8,7 +8,7 @@ module dcache
     input wire [31:0] addr,
     input wire [31:0] write_data,
     output reg [31:0] rdata,
-    output reg rdata_valid,
+    output reg rdata_valid,    // 输出给CPU的数据有效信号（高电平表示DCache已准备好数据）
     output reg write_finish,   // 输出给CPU的写响应（高电平表示DCache已完成写操作）
     //to write BUS
     input  wire         dev_wrdy,       // 主存/外设的写就绪信号（高电平表示主存/外设可接收DCache的写请求）

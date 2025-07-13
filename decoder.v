@@ -24,12 +24,8 @@ module decoder (
 
     // 输出给前端的取指请求信号
     output wire get_data_req,   
+    output wire pause_decoder,
 
-/**********************************
-    这个不知道有什么用
-    // to ctrl
-    output logic pause_decoder,
-***********************************/
 
     // 输出给 dispatch 的信号
     output reg  [1:0]  dispatch_inst_valid,
@@ -337,9 +333,8 @@ module decoder (
     end
 
 
-/********************************
-    // pasue request
+
     assign pause_decoder = full;
-********************************/
+
 
 endmodule

@@ -16,20 +16,18 @@ module pc
     input wire [1:0]  taken_sure, // 确定跳转的信号
 
     output reg [31:0]pc_out,
+    output wire inst_rreq_to_icache,
     output reg pc_is_exception,
-    output reg [6:0] pc_exception_cause,
-    output reg inst_en_1,   //指令使能信号
-    output reg inst_en_2
+    output reg [6:0] pc_exception_cause
+
 );
 
-    always @(*) begin
-        inst_en_1 = rst? 1'b0: 1'b1;
-        inst_en_2 = rst? 1'b0: 1'b1;
-    end
+
 
     //pc异常的情况
     wire pc_excp;
     assign pc_excp = (pc_out[1: 0] != 2'b00);
+    assign inst_rreq_to_icache = !rst & !stall & !pause; 
 
     always @(*) begin
         pc_is_exception = pc_excp;
@@ -47,24 +45,23 @@ module pc
             pc_4 <= new_pc;
             pc_8 <= new_pc;
         end
-        else if(|taken_sure) begin
-            pc_4 <= pre_addr;
-            pc_8 <= pre_addr;
-        end
         else if(pause) begin
             pc_4 <= pc_4;
             pc_8 <= pc_8;
         end
-        else begin
-            if (stall) begin
-                pc_4 <= pc_4;
-                pc_8 <= pc_8;
-            end
-            else begin
-                pc_4 <= pc_out + 32'h4;
-                pc_8 <= pc_out + 32'h8;
-            end
+        else if (stall) begin
+            pc_4 <= pc_4;
+            pc_8 <= pc_8;
         end
+        else if(|taken_sure) begin
+            pc_4 <= pre_addr;
+            pc_8 <= pre_addr;
+        end
+        else begin
+            pc_4 <= pc_out + 32'h4;
+            pc_8 <= pc_out + 32'h8;
+        end
+        
     end
     
     always @(*) begin

@@ -12,7 +12,7 @@ module backend (
     input wire [7:0] is_hwi,
 ******************************/
 
-    // 来自前端的信息
+    // 来自前端的信号
     input wire [1:0] [31:0] pc_i,
     input wire [1:0] [31:0] inst_i,
     input wire [1:0] valid_i,                           // 前端传递的数据有效信号
@@ -35,13 +35,13 @@ module backend (
     
 ******************************/
 
-    // 给前端的信号
+    // 输出给前端的信号
     output wire [1:0] ex_bpu_is_bj,     // 两条指令是否是跳转指令
     output wire [1:0] ex_pc,            // ex 阶段的 pc 
     output wire [1:0] ex_valid,
     output wire [1:0] ex_bpu_taken_or_not_actual,       // 两条指令实际是否跳转
-    output reg [1:0] [31:0] ex_bpu_branch_actual_addr,  // 两条指令实际跳转地址
-    output reg [1:0] [31:0] ex_bpu_branch_pred_addr,    // 两条指令预测跳转地址
+    output reg  [1:0] [31:0] ex_bpu_branch_actual_addr,  // 两条指令实际跳转地址
+    output reg  [1:0] [31:0] ex_bpu_branch_pred_addr,    // 两条指令预测跳转地址
     output wire get_data_req_o,     // 输出给前端的取指请求
 
     // 和tlb的接口
@@ -60,17 +60,17 @@ module backend (
     output wire [1:0] csr_datf,
     output wire [1:0] csr_datm,  
 
-    // 和 Dcache 的接口
-    input wire addr_ok_i,
-    input wire data_ok_i,
+    // dcache 返回的信号
     input wire [31:0] rdata_i,
-    input wire [31:0] physical_addr_i,
-
-    output wire valid_o,
-    output wire op_o,
-    output wire virtual_addr_o,
+    input wire rdata_valid_i,               // Dcache 输出的数据有效信号
+    input wire dcache_pause_i,              // （接Dcache的write_finish，如果未完成写操作，就暂停后续的写操作，直到写完）
+    input wire [31:0] physical_addr_i,          // 这个不知道接Dcahce的哪个信号
+    
+    // 输出给dcache的信号
+    output wire ren_o,
     output wire [3:0] wstrb_o,
-    output wire wdata,
+    output wire virtual_addr_o,
+    output wire wdata_o,
 
     // 从 ctrl 输出的信号
     output wire [7:0] flush_o,
@@ -125,6 +125,8 @@ module backend (
 
     assign ex_valid = valid_dispatch;
 
+    wire [63:0] cnt;
+
     // reg_files
     wire [1:0] reg1_read_en ;       // 寄存器读使能
     wire [1:0] reg2_read_en ;
@@ -144,6 +146,11 @@ module backend (
     wire [31:0] csr_read_data [1:0];    // csr 读数据
     wire [31:0] csr_write_data [1:0];   // csr 写数据
     wire is_llw_scw;                    // 是否是 llw/scw 指令
+    // csr to ctrl
+    wire [31:0] csr_eentry, //异常入口地址
+    wire [31:0] csr_era, //异常返回地址
+    wire [31:0] csr_crmd, //控制寄存器 
+    wire        csr_is_interrupt, //是否是中断
 
     // ctrl
     wire pause_buffer;
@@ -154,6 +161,15 @@ module backend (
     wire branch_flush;
     wire [31:0] branch_addr;
     wire ex_excep_flush;            // 执行阶段异常的 flush 信号
+    wire is_ertn_ctrl;
+    wire csr_is_exception, //是否是异常
+    wire [31:0] csr_exception_pc, //异常PC地址
+    wire [31:0] csr_exception_addr, //异常地址
+    wire [5:0]  csr_ecode, //异常ecode
+    wire [6:0]  csr_exception_cause, //异常原因
+    wire [8:0] csr_esubcode //异常子码
+
+
 
     // decoder
     wire [31:0] pc_decoder [1:0];
@@ -285,38 +301,39 @@ module backend (
         .rst(rst),
         .flush(flush_o[3]),
 
-        pc(pc_i),
-        inst(inst_i) ,
-        valid(valid_i),        
-        pretaken(pre_is_branch_taken_i),
-        pre_addr_in(pre_branch_addr_i) ,
-        is_exception(is_exception_i) ,
-        exception_cause(exception_cause_i) ,
-        invalid_en(invalid_en_dispatch),
+        .pc(pc_i),
+        .inst(inst_i) ,
+        .valid(valid_i),        
+        .pretaken(pre_is_branch_taken_i),
+        .pre_addr_in(pre_branch_addr_i) ,
+        .is_exception(is_exception_i) ,
+        .exception_cause(exception_cause_i) ,
+        .invalid_en(invalid_en_dispatch),
 
-        get_data_req(get_data_req_o),
-        dispatch_inst_valid(inst_valid_decoder), 
-        dispatch_pc_out(pc_decoder) ,
-        dispatch_exception_cause(exception_cause_decoder) , 
-        dispatch_is_exception(is_exception_decoder) ,
-        dispatch_inst_out(inst_decoder) ,
-        dispatch_aluop(aluop_decoder) ,
-        dispatch_alusel(alusel_decoder) ,
-        dispatch_imm(imm_decoder) ,
-        dispatch_reg1_read_en(reg_read_en_decoder[0]),  
-        dispatch_reg2_read_en(reg_read_en_decoder[1]),   
-        dispatch_reg1_read_addr(reg_read_addr_decoder[0]) ,
-        dispatch_reg2_read_addr(reg_read_addr_decoder[1]) ,
-        dispatch_reg_writen_en(reg_write_en_decoder),  
-        dispatch_reg_write_addr(reg_write_addr_decoder) ,
-        dispatch_id_pre_taken(pre_is_branch_taken_decoder),
-        dispatch_id_pre_addr(pre_branch_addr_decoder),
-        dispatch_is_privilege(is_privilege_decoder), 
-        dispatch_csr_read_en(csr_read_en_decoder), 
-        dispatch_csr_write_en(csr_write_en_decoder),
-        dispatch_csr_addr(csr_addr_decoder), 
-        dispatch_is_cnt(is_cnt_decoder), 
-        dispatch_invtlb_op(invtlb_op_decoder)  
+        .get_data_req(get_data_req_o),
+        .dispatch_inst_valid(inst_valid_decoder), 
+        .dispatch_pc_out(pc_decoder) ,
+        .dispatch_exception_cause(exception_cause_decoder) , 
+        .dispatch_is_exception(is_exception_decoder) ,
+        .dispatch_inst_out(inst_decoder) ,
+        .dispatch_aluop(aluop_decoder) ,
+        .dispatch_alusel(alusel_decoder) ,
+        .dispatch_imm(imm_decoder) ,
+        .dispatch_reg1_read_en(reg_read_en_decoder[0]),  
+        .dispatch_reg2_read_en(reg_read_en_decoder[1]),   
+        .dispatch_reg1_read_addr(reg_read_addr_decoder[0]) ,
+        .dispatch_reg2_read_addr(reg_read_addr_decoder[1]) ,
+        .dispatch_reg_writen_en(reg_write_en_decoder),  
+        .dispatch_reg_write_addr(reg_write_addr_decoder) ,
+        .dispatch_id_pre_taken(pre_is_branch_taken_decoder),
+        .dispatch_id_pre_addr(pre_branch_addr_decoder),
+        .dispatch_is_privilege(is_privilege_decoder), 
+        .dispatch_csr_read_en(csr_read_en_decoder), 
+        .dispatch_csr_write_en(csr_write_en_decoder),
+        .dispatch_csr_addr(csr_addr_decoder), 
+        .dispatch_is_cnt(is_cnt_decoder), 
+        .dispatch_invtlb_op(invtlb_op_decoder),
+        .pause_decoder(pause_decoder)
 
     );
 
@@ -419,7 +436,7 @@ module backend (
         .pause(flush_o[5]),
 
     // 来自stable counter的信号
-        .cnt_i(cnt_i), //暂时没有此信号
+        .cnt_i(cnt), //暂时没有此信号
 
     // 来自dispatch的数据
         .pc_i(pc_dispatch),
@@ -451,14 +468,11 @@ module backend (
         .pause_mem_i(pause_mem),
 
     // 和dcache的接口
-        .data_ok_i(data_ok_i),            
-        .rdata_i(rdata_i),            // 读DCache的结果
-        .physical_addr_i(physical_addr_i),    // 物理地址
-    
-        .valid_dache_o(valid_o),      
-        .op_o(op_o),           // 0表示读，1表示写
-        .virtual_addr_o(virtual_addr_o),
+        .dcache_pause_i(dcache_pause_i),    // 暂停dcache访问信号
+
+        .ren_o(),          
         .wstrb_o(wstrb_o),
+        .virtual_addr_o(virtual_addr_o),
         .wdata_o(wdata_o),
 
     // 前递给bpu的数据
@@ -532,9 +546,9 @@ module backend (
 
     //dcache的信号
         .dcache_read_data(rdata_i), 
-        .addr_ok(addr_ok_i),
-        .data_ok(data_ok_i), //数据访问完成信号
-        .dcache_P_addr(physical_addr_i),
+
+        .data_ok(rdata_valid_i),                //数据访问完成信号
+        .dcache_P_addr(physical_addr_i),        // 这个不知道接Dache的那个信号？？
     
     // 输出给dispatcher的信号
         .mem_pf_reg_write_en(reg_write_en_mem_pf), 
@@ -615,7 +629,70 @@ module backend (
     );
 
     ctrl u_ctrl (
+        .rst(rst),
 
+        .pause_buffer(pause_i),//从前端输入,不知道有没有
+        .pause_decode(pause_decoder),//从decoder输入,  暂时也没有
+        .pause_dispatch(pause_dispatch),//从dispatch输入
+        .pause_execute(pause_execute),//从execute输入
+        .pause_mem(pause_mem),//从mem输入
+
+        .branch_flush(branch_flush),//分支跳转刷新信号
+        .branch_target(branch_addr),//分支跳转地址，从execute阶段输入 
+        .ex_excp_flush(ex_excep_flush),//异常刷新信号,从execute阶段输入
+
+    //wb阶段输入wb
+        .reg_writr_en_i(reg_write_en_wb),//写回阶段刷新信号
+        .reg_writr_addr_i(reg_write_addr_wb),//写回阶段寄存器地址
+        .reg_writr_data_i(reg_write_data_wb),//写回阶段寄存器数据
+        .is_llw_scw_i(is_llw_scw_wb),//是否是 llw/scw 指令
+        .csr_write_en_i(csr_write_en_wb),//csr写使能信号
+        .csr_write_addr_i(csr_write_addr_wb),//csr写地址
+        .csr_write_data_i(csr_write_data_wb),//csr写数据
+
+    //从wb阶段输入commit
+        .is_exception_i(is_exception_wb),//是否有异常
+        .exception_cause_i(exception_cause_wb),//异常原因
+        .pc_i(pc_wb),
+        .mem_addr_i(addr_wb),
+        .is_idle_i(is_idle_wb),//是否处于空闲状态
+        .is_ertn_i(is_ertn_wb),//是否是异常返回指令
+        .is_privilege_i(is_privilege_wb),//是否是特权指令
+        .valid_i(valid_wb),//指令是否有效
+    //csr
+        .is_ertn_o(is_ertn_ctrl),//是否是异常返回指令
+    //
+        .flush(flush_o),//刷新信号
+        .pause(pause_o),//暂停信号
+
+/***************************************
+        .new_pc(new_pc),
+
+****************************************/
+
+    //to regfile
+        .reg_writr_en_o(reg_write_en),//写回阶段刷新信号
+        .reg_writr_addr_o(reg_write_addr),//写回阶段寄存器地址
+        .reg_writr_data_o(reg_write_data),//写回阶段寄存器数据
+
+    //to csr
+        .is_llw_scw_o(is_llw_scw_ctrl),//是否是 llw/scw 指令
+        .csr_write_en_o(csr_write_en),//csr写使能信号
+        .csr_write_addr_o(csr_write_addr),//csr写地址
+        .csr_write_data_o(csr_write_data)//csr写数据
+
+    //to csr_master
+        .csr_eentry_i(csr_eentry), //异常入口地址
+        .csr_era_i(csr_era), //异常返回地址
+        .csr_crmd_i(csr_crmd), //控制寄存器 
+        .csr_is_interrupt_i(csr_is_interrupt), //是否是中断
+    
+        .csr_is_exception_o(csr_is_exception), //是否是异常
+        .csr_exception_pc_o(csr_exception_pc), //异常PC地址
+        .csr_exception_addr_o(csr_exception_addr), //异常地址
+        .csr_ecode_o(csr_ecode), //异常ecode
+        .csr_exception_cause_o(csr_exception_cause), //异常原因
+        .csr_esubcode_o(csr_esubcode) //异常子码
     );
 
     reg_files u_reg_files (
@@ -636,7 +713,10 @@ module backend (
     );
 
     stable_counter u_stable_counter (
+        .clk(clk),
+        .rst(rst),
 
+        .cnt(cnt)
     );
 
 

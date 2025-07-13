@@ -43,13 +43,12 @@ module execute (
     input wire pause_mem_i,
 
     // 和dcache的接口
-    input wire data_ok_i, 
     input wire dache_pause_i,       // 写/读dache 暂停信号 （接dache的write_finish）          
-    output wire valid_dache_o,      
-    output wire [3:0] read_en_o,          // dache读使能信号
-    output wire [31:0] virtual_addr_o,
-    output wire [3:0] wstrb_o,
-    output wire [31:0] wdata_o,
+      
+    output wire [3:0] ren_o,            // dcache读使能信号
+    output wire [3:0] wstrb_o,              // dcache写使能信号
+    output wire [31:0] virtual_addr_o,      // dcache虚拟地址
+    output wire [31:0] wdata_o,             // dcache写数据
 
 
     // 输出给前端的信号
@@ -72,7 +71,7 @@ module execute (
     output wire [31:0] branch_target_o,
 
     // 输出给mem的数据
-    output reg [1:0] [1:0] valid_mem,
+    output reg [1:0] valid_mem,
 
     output reg [1:0] [31:0] pc_mem,
     output reg [1:0] [31:0] inst_mem,
@@ -149,11 +148,11 @@ module execute (
 
     wire [1:0] is_llw_scw;
 
-    assign valid_dache_o = |valid_o;
-    assign read_en_o = dache_pause_i ? 4'h0 : 4'hf
-    assign virtual_addr_o = dcache_pause_i ? 32'h0 : valid_o[0] ? virtual_addr[0] : virtual_addr[1];
-    assign wdata_o = dache_pause_i ? 32'b0 : valid_o[0] ? wdata[0] : wdata[1];
-    assign wstrb_o = dache_pause_i ? 4'h0  : valid_o[0] ? wstrb[0] : wstrb[1];
+    assign ren_o = dache_pause_i ? 4'h0 : 4'hf
+    assign wstrb_o = dache_pause_i ? 4'h0  : (valid_o[0] ? wstrb[0] : wstrb[1]);
+    assign virtual_addr_o = dcache_pause_i ? 32'h0 : (valid_o[0] ? virtual_addr[0]): virtual_addr[1];
+    assign wdata_o = dache_pause_i ? 32'b0 : (valid_o[0] ? wdata[0] : wdata[1]);
+
 
 
     alu u_alu_0 (
