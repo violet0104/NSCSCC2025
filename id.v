@@ -70,7 +70,7 @@ module id
     reg  [5:0]  id_invtlb_op ; //TLB无效操作    
     wire [5:0]  id_valid_vec;
 
-    id_1R_I26 u_did_1R_I26 (
+    id_1R_I26 u_id_1R_I26 (
         .pc(pc),
         .inst(inst),
 
@@ -96,7 +96,7 @@ module id
         .invtlb_op(id_invtlb_op[0])
     ); 
 
-    id_1RI21 u_id_1RI21 (
+    id_1RI20 u_id_1RI20 (
         .pc(pc),
         .inst(inst),
 

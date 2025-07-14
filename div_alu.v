@@ -1,6 +1,6 @@
 module div_alu (
     input wire clk,
-    input wire rstn,
+    input wire rst,
 
     input wire start,               // 除法运算开始信号
     input wire signed_op,           // 操作数有无符号选择（1表示有符号数，0表示无符号数）
@@ -30,7 +30,7 @@ module div_alu (
     // 除法器IP核实例化
     div_gen_0 u_divider_0 (
         .aclk(clk),
-        .aresetn(rstn),
+        .aresetn(~rst),
         .s_axis_dividend_tdata(s_axis_dividend),
         .s_axis_dividend_tvalid(valid_signed), 
         .s_axis_divisor_tdata(s_axis_divisor),

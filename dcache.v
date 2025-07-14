@@ -238,7 +238,7 @@ module dcache
 
     wire we1 = (dev_rvalid & (use_bit[index_2]==2'b10)) | (hit1 & is_store);
     wire we2 = (dev_rvalid & (use_bit[index_2]==2'b01)) | (hit2 & is_store);
-    cache_ram ram1
+    cache_ram u_cache_ram1
     (
         .clk(clk),
         .we(we1),
@@ -249,7 +249,7 @@ module dcache
         .data_out(data_block1)
     );
 
-    cache_ram ram2
+    cache_ram u_cache_ram2
     (
         .clk(clk),
         .we(we2),

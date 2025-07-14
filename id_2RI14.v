@@ -2,7 +2,7 @@
 `include "defines.vh"
 `include "csr_defines.vh"
 
-module decoder_2RI14
+module id_2RI14
 (
     input  wire [31:0] pc,
     input  wire [31:0] inst,

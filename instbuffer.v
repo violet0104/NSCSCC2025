@@ -31,7 +31,7 @@ module instbuffer
     wire push_data1 = {pred_addr,pc1,inst1,is_exception,exception_cause};
     wire push_data2 = {pred_addr+4,pc2,inst2,is_exception,exception_cause};
 
-    assign data_valid = !empty & get_data_req;
+    assign data_valid = !empty1 & !empty2 & get_data_req;
     assign stall = stall1 | full1;
 
     FIFO fifo1

@@ -67,7 +67,7 @@ module id_1RI20
                 imm = {si20, 12'b0}; // 将20位立即数左移12位    
                 inst_valid = 1'b1;
             end
-            `PCADDU12I: begin
+            `PCADDU12I_OPCODE: begin
                 aluop = `ALU_PCADDU12I;
                 alusel = `ALU_SEL_ARITHMETIC;
                 reg_writen_en = 1'b1;

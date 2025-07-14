@@ -2,7 +2,7 @@
 `include "defines.vh"
 `include "csr_defines.vh"
 
-module reg_file(
+module reg_files(
     input  wire clk,
     input  wire [1:0]  reg1_read_en, 
     input  wire [1:0]  reg2_read_en, //寄存器读使能信号

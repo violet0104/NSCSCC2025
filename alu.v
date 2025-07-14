@@ -14,8 +14,8 @@ module alu (
     input wire [31:0] pc_i,
     input wire [31:0] inst_i,
 
-    input wire [2:0] is_exception_i,
-    input wire [2:0] [6:0] exception_cause_i,
+    input wire [3:0] is_exception_i,
+    input wire [3:0] [6:0] exception_cause_i,
     input wire is_privilege_i,
     input wire valid_i,
 

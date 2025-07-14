@@ -97,7 +97,8 @@ module execute (
     output reg [31:0] inst1_mem,
     output reg [31:0] inst2_mem,
 
-    output reg [1:0] is_exception_mem,
+    output reg [1:0] is_exception_mem,      // 这个存在疑问？？
+
     output reg [1:0] [4:0] [6:0] exception_cause_mem,   // 暂时不知道怎么改
 
     output reg [7:0] aluop1_mem,

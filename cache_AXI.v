@@ -14,7 +14,7 @@ module cache_AXI
     input wire data_ren_i,
     input wire [31:0] data_araddr_i,
     output reg data_rvalid_o,
-    output reg data_rdata_o,
+    output reg [127:0] data_rdata_o,
 
     //dcache write
     input wire data_wen_i,
@@ -42,7 +42,7 @@ module cache_AXI
     input wire wdata_resp_i,  // 写响应信号
     output wire axi_wen_o,
     output wire [31:0] axi_waddr_o,
-    output wire [31:0] axi_wdata_o,
+    output reg [31:0] axi_wdata_o,
     output wire axi_wvalid_o,
     output wire axi_wlast_o,
     output wire [7:0] axi_wlen_o
@@ -77,7 +77,7 @@ module cache_AXI
             case(read_state)
             read_FREE:begin
                 if(data_ren_i) read_state <= read_DCACHE;
-                else if(inst_ren_i) read_state <= read_ICACHE
+                else if(inst_ren_i) read_state <= read_ICACHE;
             end
             read_ICACHE:begin
                 if(rdata_valid_i & read_count == 2'b11) read_state <= read_FREE;

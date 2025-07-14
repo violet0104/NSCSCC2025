@@ -46,7 +46,7 @@ wire [`BHT_IDX_W-1:0] index2 = {if_pc4[29:24]^if_pc4[23:18]^if_pc4[17:12]^if_pc4
 
 assign pred_taken1 = if_tag1 == tag[index1] & valid[index1] == 1'b1 & history[index1][1] == 1'b1;
 assign pred_taken2 = if_tag2 == tag[index2] & valid[index2] == 1'b1 & history[index2][1] == 1'b1;
-wire pred_addr = pred_taken1 ? addr[index1] : pred_taken2 ? addr[index2] : if_pc + 8;
+assign pred_addr = pred_taken1 ? addr[index1] : pred_taken2 ? addr[index2] : if_pc + 8;
 
 wire ex_tag1 = ex_pc_1[31:24];
 wire ex_tag2 = ex_pc_2[31:24];

@@ -1,4 +1,5 @@
 `timescale 1ns / 1ps
+
 module mycpu_top(
     input  wire        aclk,
     input  wire        aresetn,
@@ -44,8 +45,9 @@ module mycpu_top(
     input  wire [ 3:0] bid,
     input  wire [ 1:0] bresp,
     input  wire        bvalid,
-    output wire        bready,
+    output wire        bready
 
+/*****************************************
     output wire [31:0] debug_wb_pc,    
     output wire [ 3:0] debug_wb_rf_we,
     output wire [ 4:0] debug_wb_rf_wnum,
@@ -65,6 +67,7 @@ module mycpu_top(
     output [31:0] debug1_wb_rf_wdata,
     output [31:0] debug1_wb_inst
     `endif
+*******************************************/
 );
     wire rst;
     assign rst = ~aresetn;
@@ -103,7 +106,7 @@ module mycpu_top(
     wire [1:0] cache_brust_type;
     assign cache_brust_type = 2'b01;   
     wire [2:0] cache_brust_size;
-    assign cache_brust_size = 3'b010
+    assign cache_brust_size = 3'b010;
 
     //icache  与前端模块的交互信号**********************
     wire BPU_flush;
@@ -142,6 +145,8 @@ module mycpu_top(
     wire [31:0]real_addr[1:0];
     wire [31:0]pred_addr[1:0];
     wire get_data_req;
+    wire flush_o;
+    wire pause_o;
 
     // 后端给 dcache 的信号
     wire [3:0]  backend_dcache_ren;
@@ -170,10 +175,12 @@ module mycpu_top(
         // 来自 icache 的信号
         .pi_icache_is_exception(is_exception_for_buffer),      //从icache传回来的例外信息
         .pi_icache_exception_cause(exception_cause_for_buffer),
-        .pc_for_buffer(icache_pc),
+        .pc_for_buffer1(icache_pc[0]),
+        .pc_for_buffer2(icache_pc[1]),
         .pred_addr_for_buffer(pred_addr_for_buffer),
         .icache_pc_suspend(pc_suspend),
-        .inst_for_buffer(icache_inst),
+        .inst_for_buffer1(icache_inst[0]),
+        .inst_for_buffer2(icache_inst[1]),
         .icache_inst_valid(icache_inst_valid),
 
     // *******************
@@ -191,19 +198,25 @@ module mycpu_top(
 
         // 来自后端的信号
         .ex_is_bj(ex_is_bj),
-        .ex_pc(ex_pc),
+        .ex_pc1(ex_pc[0]),
+        .ex_pc2(ex_pc[1]),
         .ex_valid(ex_valid),
         .real_taken(real_taken),
-        .real_addr(real_addr),
-        .pred_addr(pred_addr),
+        .real_addr1(real_addr[0]),
+        .read_addr2(real_addr[1]),
+        .pred_addr1(pred_addr[0]),
+        .pred_addr2(pred_addr[1]),
         .get_data_req(get_data_req),
 
         // 输出给后端的信号
-        .fb_pc_out(fb_pc),
-        .fb_inst_out(fb_inst),
+        .fb_pc_out1(fb_pc[0]),
+        .fb_pc_out2(fb_pc[1]),
+        .fb_inst_out1(fb_inst[0]),
+        .fb_inst_out2(fb_inst[0]),
         .fb_valid(fb_valid),
         .fb_pre_taken(fb_pre_taken),
-        .fb_pre_branch_addr(fb_pre_branch_addr),
+        .fb_pre_branch_addr1(fb_pre_branch_addr[0]),
+        .fb_pre_branch_addr2(fb_pre_branch_addr[1]),
         .fb_is_exception(fb_is_exception),
         .fb_exception_cause(fb_exception_cause)
     );
@@ -214,11 +227,14 @@ module mycpu_top(
         .rst(rst),
         
         // 来自前端的信号
-        .pc_i(fb_pc),
-        .inst_i(fb_inst),
+        .pc_i1(fb_pc[0]),
+        .pc_i2(fb_pc[1]),
+        .inst_i1(fb_inst[0]),
+        .inst_i2(fb_inst[1]),
         .valid_i(fb_valid),
         .pre_is_branch_taken_i(fb_pre_taken),
-        .pre_branch_addr_i(fb_pre_branch_addr),
+        .pre_branch_addr_i1(fb_pre_branch_addr[0]),
+        .pre_branch_addr_i2(fb_pre_branch_addr[1]),
         .is_exception_i(fb_is_exception),
         .exception_cause_i(fb_exception_cause),
 
@@ -226,10 +242,12 @@ module mycpu_top(
     
         // 输出给前端的信号
         .ex_bpu_is_bj(ex_is_bj),
-        .ex_pc(ex_pc),
+        .ex_pc1(ex_pc[0]),
+        .ex_pc2(ex_pc[1]),
         .ex_valid(ex_valid),
         .ex_bpu_taken_or_not_actual(real_taken),
-        .ex_bpu_branch_pred_addr(pred_addr),
+        .ex_bpu_branch_pred_addr1(pred_addr[0]),
+        .ex_bpu_branch_pred_addr2(pred_addr[1]),
         .get_data_req_o(get_data_req),
 
 /*******************************
@@ -262,12 +280,11 @@ module mycpu_top(
         .dcache_pause_i(~dcache_backend_write_finish),
 
         // 从ctrl输出的信号（8位）
-        .flush_o(),
-        .pause_o(),
-    
+        .flush_o(flush_o),
+        .pause_o(pause_o)
     );
 
-    icache u_inst_cache
+    icache u_icache
     (
         .clk(aclk),
         .rst(rst),   
@@ -329,7 +346,7 @@ module mycpu_top(
         .clk(aclk),
         .rst(rst),
     //connected to cache_axi
-        .cache_ce(axi_ce),
+        .cache_ce(axi_ce_o),
         .cache_wen(axi_wen),         
         .cache_ren(axi_ren),         
         .cache_raddr(axi_raddr),
@@ -340,8 +357,8 @@ module mycpu_top(
         .cache_wlast(axi_wlast),      
         .wdata_resp_o(axi_wdata_resp),    
     
-        .cache_brust_type(cache_brust_type)  
-        .cache_brust_size(cache_brust_size)
+        .cache_brust_type(cache_brust_type),  
+        .cache_brust_size(cache_brust_size),
         .cacher_burst_length(axi_rlen),
         .cachew_burst_length(axi_wlen),
 
@@ -362,8 +379,6 @@ module mycpu_top(
         .rlast(rlast),           
         .rvalid(rvalid),       
         .rready(rready),         
-        .rdata_o, 
-        .rdata_valid_o,
     //AW写地址
         .awid(awid),     
         .awaddr(awaddr),  
@@ -413,10 +428,10 @@ module mycpu_top(
 
     //ready to cache
         .dev_rrdy_o(dev_rrdy_to_cache),
-        .dev_wrdy_o(),
+        .dev_wrdy_o(dev_wrdy_to_cache),
 
     //AXI communicate
-        .axi_ce_o(axi_ce),
+        .axi_ce_o(axi_ce_o),
         .axi_wsel_o(axi_wsel),   // 连接总线的wstrb
 
     //AXI read

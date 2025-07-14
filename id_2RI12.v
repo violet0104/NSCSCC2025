@@ -3,7 +3,7 @@
 `include "csr_defines.vh"
 
 
-module decoder_2RI12
+module id_2RI12
 (
     input  wire [31:0] pc,
     input  wire [31:0] inst,

@@ -10,10 +10,12 @@ module front
     // 来自 icache 的信号
     input wire pi_icache_is_exception,            //指令缓存异常信号
     input wire [6:0] pi_icache_exception_cause,    //指令缓存异常原因
-    input wire [31:0] pc_for_buffer[1:0],               //pc给指令缓存的信号
+    input wire [31:0] pc_for_buffer1,               //pc给指令缓存的信号
+    input wire [31:0] pc_for_buffer2,               
     input wire [31:0] pred_addr_for_buffer,
     input wire icache_pc_suspend,
-    input wire [31:0] inst_for_buffer[1:0],
+    input wire [31:0] inst_for_buffer1,
+    input wire [31:0] inst_for_buffer2,
     input wire icache_inst_valid,       //指令缓存的使能信号
 
     //*******************
@@ -107,10 +109,10 @@ module front
         .pc_out(pc_out),
         .pc_is_exception(is_exception),
         .pc_exception_cause(exception_cause),
-        inst_rreq_to_icache(inst_rreq_to_icache)
+        .inst_rreq_to_icache(inst_rreq_to_icache)
     );
 
-    bpu u_bpu
+    BPU u_BPU
     (
         .cpu_clk(cpu_clk),
         .cpu_rst(cpu_rst),    //low active???
@@ -136,18 +138,18 @@ module front
         .pred_addr2(pred_addr2)
     );
 
-    inst_buffer u_inst_buffer 
+    instbuffer u_instbuffer 
     (
         .clk(cpu_clk),
         .rst(cpu_rst),
         .flush(fb_flush | BPU_flush),
         .get_data_req(get_data_req),   //给instbuffer这个信号instbuffer才会给后端输出inst（异步读）
         .inst_valid(icache_inst_valid),
-        .pc1(pc_for_buffer[0]),
-        .pc2(pc_for_buffer[1]),
+        .pc1(pc_for_buffer1),
+        .pc2(pc_for_buffer2),
 
-        .inst1(inst_for_buffer[0]),
-        .inst2(inst_for_buffer[1]),
+        .inst1(inst_for_buffer1),
+        .inst2(inst_for_buffer2),
         .pred_addr(),
 
         .data_out1(data_out1),
