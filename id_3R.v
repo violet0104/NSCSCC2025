@@ -8,6 +8,11 @@ module id_3R
     input  wire [31:0] pc,
     input  wire [31:0] inst,
 
+    output reg  [2:0] is_exception,
+    output reg  [6:0] pc_exception_cause,
+    output reg  [6:0] instbuffer_exception_cause, 
+    output reg  [6:0] decoder_exception_cause,
+
     output reg  inst_valid,
     output reg  [31:0] pc_out,
     output reg  [31:0] inst_out,
@@ -26,8 +31,7 @@ module id_3R
     output reg  [13:0] csr_addr, //CSR
     output reg  is_cnt, //是否是计数器寄存器
     output reg  invtlb_op , //TLB无效操作
-    output reg  [2:0]is_exception,
-    output reg  [2:0][6:0]exception_cause
+    
 );
     reg [16:0] opcode;
     reg [4:0] rk;
@@ -42,6 +46,11 @@ module id_3R
         rd = inst[4:0];
         ui5 = inst[14:10];
 
+        is_exception = 3'b0;
+        pc_exception_cause          = `EXCEPTION_INE;
+        instbuffer_exception_cause  = `EXCEPTION_INE;
+        decoder_exception_cause     = `EXCEPTION_INE;
+        
         pc_out = pc;
         inst_out = inst;
         reg1_read_addr = rj;
@@ -51,8 +60,6 @@ module id_3R
         csr_write_en = 1'b0;
         csr_addr = 14'b0;
         is_cnt = 1'b0;
-        is_exception = 3'b0;
-        exception_cause = {3{`EXCEPTION_INE}};
     end
 
     always @(*) begin

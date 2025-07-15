@@ -21,8 +21,13 @@ module backend (
     input wire [1:0] pre_is_branch_taken_i,             // 前端传递的分支预测结果
     input wire [31:0] pre_branch_addr_i1,          // 前端传递的分支预测目标地址
     input wire [31:0] pre_branch_addr_i2,
-    input wire [1:0] [1:0] is_exception_i,              // 前端传递的异常标志
-    input wire [1:0] [1:0] [6:0] exception_cause_i,     // 异常原因
+
+    input wire [1:0] is_exception1_i,              // 前端传递的异常标志
+    input wire [1:0] is_exception2_i,
+    input wire [6:0] pc_exception_cause1_i,     // 异常原因
+    input wire [6:0] pc_exception_cause2_i,
+    input wire [6:0] instbuffer_exception_cause1_i,
+    input wire [6:0] instbuffer_exception_cause2_i,
 
     input wire bpu_flush,      // 分支预测错误，清空译码队列
 
@@ -36,11 +41,11 @@ module backend (
 ******************************/
 
     // 输出给前端的信号
-    output wire [1:0] ex_bpu_is_bj,     // 两条指令是否是跳转指令
+    output wire [1:0]  ex_bpu_is_bj,     // 两条指令是否是跳转指令
     output wire [31:0] ex_pc1,            // ex 阶段的 pc 
     output wire [31:0] ex_pc2,
-    output wire [1:0] ex_valid,
-    output wire [1:0] ex_bpu_taken_or_not_actual,       // 两条指令实际是否跳转
+    output wire [1:0]  ex_valid,
+    output wire [1:0]  ex_bpu_taken_or_not_actual,       // 两条指令实际是否跳转
     output reg  [31:0] ex_bpu_branch_actual_addr1,  // 两条指令实际跳转地址
     output reg  [31:0] ex_bpu_branch_actual_addr2,
     output reg  [31:0] ex_bpu_branch_pred_addr1,    // 两条指令预测跳转地址
@@ -177,8 +182,14 @@ module backend (
     // decoder
     wire [31:0] pc_decoder [1:0];
     wire [31:0] inst_decoder [1:0];
-    wire [2:0] is_exception_decoder;
-    wire [2:0][6:0] exception_cause_decoder [1:0];
+    wire [2:0]  is_exception_decoder1;
+    wire [2:0]  is_exception_decoder2;
+    wire [6:0] pc_exception_cause_decoder1 ;
+    wire [6:0] pc_exception_cause_decoder2 ;
+    wire [6:0] instbuffer_exception_cause_decoder1;
+    wire [6:0] instbuffer_exception_cause_decoder2;
+    wire [6:0] decoder_exception_cause_decoder1;
+    wire [6:0] decoder_exception_cause_decoder2;
     wire [1:0] inst_valid_decoder;
     wire [1:0] is_privilege_decoder;
     wire [1:0] is_cnt_decoder;
@@ -213,8 +224,16 @@ module backend (
     wire [31:0] pc_dispatch [1:0];
     wire [31:0] inst_dispatch [1:0];
     wire [1:0] valid_dispatch;
-    wire [3:0] is_exception_dispatch [1:0];
-    wire [3:0] [6:0] exception_cause_dispatch [1:0];
+    wire [3:0]  is_exception_dispatch1;
+    wire [3:0]  is_exception_dispatch2;
+    wire [6:0] pc_exception_cause_dispatch1 ;
+    wire [6:0] pc_exception_cause_dispatch2 ;
+    wire [6:0] instbuffer_exception_cause_dispatch1;
+    wire [6:0] instbuffer_exception_cause_dispatch2;
+    wire [6:0] decoder_exception_cause_dispatch1;
+    wire [6:0] decoder_exception_cause_dispatch2;
+    wire [6:0] dispatch_exception_cause_dispatch1;
+    wire [6:0] dispatch_exception_cause_dispatch2;
     wire [1:0] is_privilege_dispatch;
     wire [7:0] aluop_dispatch [1:0];
     wire [2:0] alusel_dispatch [1:0];
@@ -234,8 +253,18 @@ module backend (
     // execute
     wire [31:0] pc_execute [1:0];
     wire [31:0] inst_execute [1:0];
-    wire [1:0] is_exception_execute;
-    wire [4:0] [6:0] exception_cause_execute [1:0];
+    wire [4:0]  is_exception_execute1;
+    wire [4:0]  is_exception_execute2;
+    wire [6:0] pc_exception_cause_execute1 ;
+    wire [6:0] pc_exception_cause_execute2 ;
+    wire [6:0] instbuffer_exception_cause_execute1;
+    wire [6:0] instbuffer_exception_cause_execute2;
+    wire [6:0] decoder_exception_cause_execute1;
+    wire [6:0] decoder_exception_cause_execute2;
+    wire [6:0] dispatch_exception_cause_execute1;
+    wire [6:0] dispatch_exception_cause_execute2;
+    wire [6:0] execute_exception_cause_execute1;
+    wire [6:0] execute_exception_cause_execute2;
     wire [1:0] is_privilege_execute;
     wire [1:0] is_ertn_execute;
     wire [1:0] is_idle_execute;
@@ -254,8 +283,20 @@ module backend (
 
     // mem
     wire [31:0] pc_mem [1:0];
-    wire [5:0] is_exception_mem [1:0];
-    wire [5:0][6:0] exception_cause_mem [1:0];
+    wire [5:0]  is_exception_mem1;
+    wire [5:0]  is_exception_mem2;
+    wire [6:0] pc_exception_cause_mem1 ;
+    wire [6:0] pc_exception_cause_mem2 ;
+    wire [6:0] instbuffer_exception_cause_mem1;
+    wire [6:0] instbuffer_exception_cause_mem2;
+    wire [6:0] decoder_exception_cause_mem1;
+    wire [6:0] decoder_exception_cause_mem2;
+    wire [6:0] dispatch_exception_cause_mem1;
+    wire [6:0] dispatch_exception_cause_mem2;
+    wire [6:0] execute_exception_cause_mem1;
+    wire [6:0] execute_exception_cause_mem2;
+    wire [6:0] commit_exception_cause_mem1;
+    wire [6:0] commit_exception_cause_mem2;
     wire [1:0] is_privilege_mem;
     wire [1:0] is_ertn_mem;
     wire [1:0] is_idle_mem;
@@ -272,8 +313,20 @@ module backend (
 
     // wb
     wire [31:0] pc_wb [1:0];
-    wire [5:0] is_exception_wb [1:0];
-    wire [5:0][6:0] exception_cause_wb [1:0];
+    wire [5:0]  is_exception_wb1;
+    wire [5:0]  is_exception_wb2;
+    wire [6:0] pc_exception_cause_wb1 ;
+    wire [6:0] pc_exception_cause_wb2 ;
+    wire [6:0] instbuffer_exception_cause_wb1;
+    wire [6:0] instbuffer_exception_cause_wb2;
+    wire [6:0] decoder_exception_cause_wb1;
+    wire [6:0] decoder_exception_cause_wb2;
+    wire [6:0] dispatch_exception_cause_wb1;
+    wire [6:0] dispatch_exception_cause_wb2;
+    wire [6:0] execute_exception_cause_wb1;
+    wire [6:0] execute_exception_cause_wb2;
+    wire [6:0] commit_exception_cause_wb1;
+    wire [6:0] commit_exception_cause_wb2;
     wire [1:0] is_privilege_wb;
     wire [1:0] is_ertn_wb;
     wire [1:0] is_idle_wb;
@@ -313,16 +366,26 @@ module backend (
         .pretaken(pre_is_branch_taken_i),
         .pre_addr_in1(pre_branch_addr_i1) ,
         .pre_addr_in2(pre_branch_addr_i2) ,
-        .is_exception(is_exception_i) ,
-        .exception_cause(exception_cause_i) ,
+        .is_exception_in1(is_exception1_i) ,
+        .is_exception_in2(is_exception2_i) ,
+        .pc_exception_cause_in1(pc_exception_cause1_i) ,
+        .pc_exception_cause_in2(pc_exception_cause2_i) ,
+        .instbuffer_exception_cause_in1(instbuffer_exception_cause1_i) ,
+        .instbuffer_exception_cause_in2(instbuffer_exception_cause2_i) ,
         .invalid_en(invalid_en_dispatch),
 
         .get_data_req(get_data_req_o),
         .dispatch_inst_valid(inst_valid_decoder), 
         .dispatch_pc_out1(pc_decoder[0]) ,
         .dispatch_pc_out2(pc_decoder[1]) ,
-        .dispatch_exception_cause(exception_cause_decoder) , 
-        .dispatch_is_exception(is_exception_decoder) ,
+        .is_exception_o1(is_exception_decoder1) ,
+        .is_exception_o2(is_exception_decoder2) ,
+        .pc_exception_cause_o1(pc_exception_cause_decoder1) ,
+        .pc_exception_cause_o2(pc_exception_cause_decoder2) ,
+        .instbuffer_exception_cause_o1(instbuffer_exception_cause_decoder1) ,
+        .instbuffer_exception_cause_o2(instbuffer_exception_cause_decoder2) ,
+        .decoder_exception_cause_o1(decoder_exception_cause_decoder1) ,
+        .decoder_exception_cause_o2(decoder_exception_cause_decoder2) ,
         .dispatch_inst_out1(inst_decoder[0]) ,
         .dispatch_inst_out2(inst_decoder[1]) ,
         .dispatch_aluop1(aluop_decoder[0]) ,
@@ -377,8 +440,14 @@ module backend (
         .reg_read_addr_i2_2(reg2_read_addr_decoder[1]),
         .is_privilege_i(is_privilege_decoder), //两条指令的特权指令标志
         .is_cnt_i(is_cnt_decoder),       //两条指令的计数器指令标志
-        .is_exception_i(is_exception_decoder), //两条指令的异常标志
-        .exception_cause_i(exception_cause_decoder), //两条指令的异常原因,会变长
+        .is_exception_i1(is_exception_decoder1), //两条指令的异常标志
+        .is_exception_i2(is_exception_decoder2),
+        .pc_exception_cause_i1(pc_exception_cause_decoder1), //两条指令的异常原因,会变长
+        .pc_exception_cause_i2(pc_exception_cause_decoder2),
+        .instbuffer_exception_cause_i1(instbuffer_exception_cause_decoder1), //两条指令的异常原因,会变长
+        .instbuffer_exception_cause_i2(instbuffer_exception_cause_decoder2),
+        .decoder_exception_cause_i1(decoder_exception_cause_decoder1), //两条指令的异常原因,会变长
+        .decoder_exception_cause_i2(decoder_exception_cause_decoder2),
         .invtlb_op_i1(invtlb_op_decoder[0]),   //两条指令的分支指令标志
         .invtlb_op_i2(invtlb_op_decoder[1]),
         .reg_write_en_i(reg_write_en_decoder),    //目的寄存器写使能
@@ -424,9 +493,17 @@ module backend (
         .valid_o(valid_dispatch),
 
         .is_privilege_o(is_privilege_dispatch), //两条指令的特权指令标志
-        .is_exception_o1(is_exception_dispatch[0]), //两条指令的异常标志
-        .is_exception_o2(is_exception_dispatch[1]),
-        .exception_cause_o(exception_cause_dispatch), //两条指令的异常原因,会变长
+        .is_exception_o1(is_exception_dispatch1), //两条指令的异常标志
+        .is_exception_o2(is_exception_dispatch2),
+        .pc_exception_cause_o1(pc_exception_cause_dispatch1), 
+        .pc_exception_cause_o2(pc_exception_cause_dispatch2),
+        .instbuffer_exception_cause_o1(instbuffer_exception_cause_dispatch1),
+        .instbuffer_exception_cause_o2(instbuffer_exception_cause_dispatch2),
+        .decoder_exception_cause_o1(decoder_exception_cause_dispatch1), 
+        .decoder_exception_cause_o2(decoder_exception_cause_dispatch2),
+        .dispatch_exception_cause_o1(dispatch_exception_cause_dispatch1),
+        .dispatch_exception_cause_o2(dispatch_exception_cause_dispatch2),
+
         .invtlb_op_o1(invtlb_op_dispatch[0]),   //两条指令的分支指令标志
         .invtlb_op_o2(invtlb_op_dispatch[1]),
 
@@ -495,9 +572,17 @@ module backend (
         .inst2_i(inst_dispatch[1]),
         .valid_i(valid_dispatch),
 
-        .is_exception1_i(is_exception_dispatch[0]),
-        .is_exception2_i(is_exception_dispatch[1]),
-        .exception_cause_i(exception_cause_dispatch),
+        .is_exception1_i(is_exception_dispatch1), // 两条指令的异常标志
+        .is_exception2_i(is_exception_dispatch2),
+        .pc_exception_cause1_i(pc_exception_cause_dispatch1), 
+        .pc_exception_cause2_i(pc_exception_cause_dispatch2),
+        .instbuffer_exception_cause1_i(instbuffer_exception_cause_dispatch1),
+        .instbuffer_exception_cause2_i(instbuffer_exception_cause_dispatch2),
+        .decoder_exception_cause1_i(decoder_exception_cause_dispatch1),
+        .decoder_exception_cause2_i(decoder_exception_cause_dispatch2),
+        .dispatch_exception_cause1_i(dispatch_exception_cause_dispatch1),
+        .dispatch_exception_cause2_i(dispatch_exception_cause_dispatch2),
+
         .is_privilege_i(is_privilege_dispatch),
 
         .ex_bpu_is_bj(ex_bpu_is_bj),
@@ -569,8 +654,19 @@ module backend (
         .pc1_mem(pc_execute[1]),
         .inst1_mem(pc_execute[0]),
         .inst2_mem(pc_execute[1]),
-        .is_exception_mem(is_exception_execute),
-        .exception_cause_mem(exception_cause_execute),
+
+        .is_exception1_o(is_exception_execute1),
+        .is_exception2_o(is_exception_execute2),
+        .pc_exception_cause1_o(pc_exception_cause_execute1),
+        .pc_exception_cause2_o(pc_exception_cause_execute2),
+        .instbuffer_exception_cause1_o(instbuffer_exception_cause_execute1),
+        .instbuffer_exception_cause2_o(instbuffer_exception_cause_execute2),
+        .decoder_exception_cause1_o(decoder_exception_cause_execute1),
+        .decoder_exception_cause2_o(decoder_exception_cause_execute2),
+        .dispatch_exception_cause1_o(dispatch_exception_cause_execute1),
+        .dispatch_exception_cause2_o(dispatch_exception_cause_execute2),
+        .execute_exception_cause1_o(execute_exception_cause_execute1),
+        .execute_exception_cause2_o(execute_exception_cause_execute2),
 
         .is_privilege_mem(is_privilege_execute),
         .is_ertn_mem(is_ertn_execute),
@@ -611,8 +707,19 @@ module backend (
         .inst1(inst_execute[0]),
         .inst2(inst_execute[0]),
 
-        .is_exception(is_exception_execute),  
-        .exception_cause(exception_cause_execute), 
+        .is_exception1_i(is_exception_execute1),  
+        .is_exception2_i(is_exception_execute2),
+        .pc_exception_cause1_i(pc_exception_cause_execute1) ,
+        .pc_exception_cause2_i(pc_exception_cause_execute2) ,
+        .instbuffer_exception_cause1_i(instbuffer_exception_cause_execute1),
+        .instbuffer_exception_cause2_i(instbuffer_exception_cause_execute2),
+        .decoder_exception_cause1_i(decoder_exception_cause_execute1),
+        .decoder_exception_cause2_i(decoder_exception_cause_execute2),
+        .dispatch_exception_cause1_i(dispatch_exception_cause_execute1),
+        .dispatch_exception_cause2_i(dispatch_exception_cause_execute2),
+        .execute_exception_cause1_i(execute_exception_cause_execute1),
+        .execute_exception_cause2_i(execute_exception_cause_execute2),
+
         .is_privilege(is_privilege_execute), 
         .is_ertn(is_ertn_execute),
         .is_idle(is_idle_execute), 
@@ -667,8 +774,22 @@ module backend (
 
     //commit_ctrl的信号
         .commit_valid(valid_mem), //指令是否有效
-        .commit_is_exception(is_exception_mem),
-        .commit_exception_cause(exception_cause_mem), //异常原因
+
+        .is_exception1_o(is_exception_mem1),
+        .is_exception2_o(is_exception_mem2), 
+        .pc_exception_cause1_o(pc_exception_cause_mem1),
+        .pc_exception_cause2_o(pc_exception_cause_mem2),
+        .instbuffer_exception_cause1_o(instbuffer_exception_cause_mem1),
+        .instbuffer_exception_cause2_o(instbuffer_exception_cause_mem2),
+        .decoder_exception_cause1_o(decoder_exception_cause_mem1),
+        .decoder_exception_cause2_o(decoder_exception_cause_mem2),
+        .dispatch_exception_cause1_o(dispatch_exception_cause_mem1),
+        .dispatch_exception_cause2_o(dispatch_exception_cause_mem2),
+        .execute_exception_cause1_o(execute_exception_cause_mem1),
+        .execute_exception_cause2_o(execute_exception_cause_mem2),
+        .commit_exception_cause1_o(commit_exception_cause_mem1),
+        .commit_exception_cause2_o(commit_exception_cause_mem2),
+
         .commit_pc1(pc_mem[0]),
         .commit_pc2(pc_mem[1]),
         .commit_addr1(addr_mem[0]), //内存地址
@@ -697,8 +818,22 @@ module backend (
         .wb_is_llw_scw(is_llw_scw_mem), //是否是LLW/SCW指令
 
         .commit_valid(valid_mem), //指令是否有效
-        .commit_is_exception(is_exception_mem),
-        .commit_exception_cause(exception_cause_mem), //异常原因
+
+        .is_exception1_i(is_exception_mem1),
+        .is_exception2_i(is_exception_mem2),
+        .pc_exception_cause1_i(pc_exception_cause_mem1),
+        .pc_exception_cause2_i(pc_exception_cause_mem2),
+        .instbuffer_exception_cause1_i(instbuffer_exception_cause_mem1),
+        .instbuffer_exception_cause2_i(instbuffer_exception_cause_mem2),
+        .decoder_exception_cause1_i(decoder_exception_cause_mem1),
+        .decoder_exception_cause2_i(decoder_exception_cause_mem2),
+        .dispatch_exception_cause1_i(dispatch_exception_cause_mem1),
+        .dispatch_exception_cause2_i(dispatch_exception_cause_mem2),
+        .execute_exception_cause1_i(execute_exception_cause_mem1),
+        .execute_exception_cause2_i(execute_exception_cause_mem2),
+        .commit_exception_cause1_i(commit_exception_cause_mem1),
+        .commit_exception_cause2_i(commit_exception_cause_mem2),
+
         .commit_pc1(pc_mem[0]),
         .commit_pc2(pc_mem[1]),
         .commit_addr1(addr_mem[0]), //内存地址
@@ -729,8 +864,22 @@ module backend (
         .ctrl_is_llw_scw(is_llw_scw_wb), //是否是LLW/SCW指令
 
         .commit_valid_out(valid_wb), //指令是否有效
-        .commit_is_exception_out(is_exception_wb),
-        .commit_exception_cause_out(exception_cause_wb), //异常原因
+
+        .is_exception1_o(is_exception_wb1),
+        .is_exception2_o(is_exception_wb2),
+        .pc_exception_cause1_o(pc_exception_cause_wb1),
+        .pc_exception_cause2_o(pc_exception_cause_wb2),
+        .instbuffer_exception_cause1_o(instbuffer_exception_cause_wb1),
+        .instbuffer_exception_cause2_o(instbuffer_exception_cause_wb2),
+        .decoder_exception_cause1_o(decoder_exception_cause_wb1),
+        .decoder_exception_cause2_o(decoder_exception_cause_wb2),
+        .dispatch_exception_cause1_o(dispatch_exception_cause_wb1),
+        .dispatch_exception_cause2_o(dispatch_exception_cause_wb2),
+        .execute_exception_cause1_o(execute_exception_cause_wb1),
+        .execute_exception_cause2_o(execute_exception_cause_wb2),
+        .commit_exception_cause1_o(commit_exception_cause_wb1),
+        .commit_exception_cause2_o(commit_exception_cause_wb2),
+
         .commit_pc_out1(pc_wb[0]),
         .commit_pc_out2(pc_wb[1]),
         .commit_addr_out1(addr_wb[0]), //内存地址
@@ -768,8 +917,21 @@ module backend (
         .csr_write_data2_i(csr_write_data_wb[1]),
 
     //从wb阶段输入commit
-        .is_exception_i(is_exception_wb),//是否有异常
-        .exception_cause_i(exception_cause_wb),//异常原因
+        .is_exception1_i(is_exception_wb1),//是否有异常
+        .is_exception2_i(is_exception_wb2),
+        .pc_exception_cause1_i(pc_exception_cause_wb1),
+        .pc_exception_cause2_i(pc_exception_cause_wb2),
+        .instbuffer_exception_cause1_i(instbuffer_exception_cause_wb1),
+        .instbuffer_exception_cause2_i(instbuffer_exception_cause_wb2),
+        .decoder_exception_cause1_i(decoder_exception_cause_wb1),
+        .decoder_exception_cause2_i(decoder_exception_cause_wb2),
+        .dispatch_exception_cause1_i(dispatch_exception_cause_wb1),
+        .dispatch_exception_cause2_i(dispatch_exception_cause_wb2),
+        .execute_exception_cause1_i(execute_exception_cause_wb1),
+        .execute_exception_cause2_i(execute_exception_cause_wb2),
+        .commit_exception_cause1_i(commit_exception_cause_wb1),
+        .commit_exception_cause2_i(commit_exception_cause_wb2),
+
         .pc1_i(pc_wb[0]),
         .pc2_i(pc_wb[1]),
         .mem_addr1_i(addr_wb[0]),

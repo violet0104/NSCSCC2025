@@ -21,28 +21,42 @@ module wb
     input wire  [1:0]wb_is_llw_scw, //是否是LLW/SCW指令
 
     input wire  [1:0] commit_valid, //指令是否有效
-    input wire  [1:0][5:0]  commit_is_exception,
-    input wire  [1:0][5:0][6:0] commit_exception_cause, //异常原因
+    input wire  [5:0]  is_exception1_i,
+    input wire  [5:0]  is_exception2_i,
+    input wire  [6:0]  pc_exception_cause1_i,
+    input wire  [6:0]  pc_exception_cause2_i, 
+    input wire  [6:0]  instbuffer_exception_cause1_i,
+    input wire  [6:0]  instbuffer_exception_cause2_i,
+    input wire  [6:0]  decoder_exception_cause1_i,
+    input wire  [6:0]  decoder_exception_cause2_i,
+    input wire  [6:0]  dispatch_exception_cause1_i,
+    input wire  [6:0]  dispatch_exception_cause2_i,
+    input wire  [6:0]  execute_exception_cause1_i,
+    input wire  [6:0]  execute_exception_cause2_i,
+    input wire  [6:0]  commit_exception_cause1_i,
+    input wire  [6:0]  commit_exception_cause2_i,
+
+
     input wire  [31:0] commit_pc1,
     input wire  [31:0] commit_pc2,
     input wire  [31:0] commit_addr1, //内存地址
     input wire  [31:0] commit_addr2,
-    input wire  [1:0] commit_idle, //是否是空闲指令
-    input wire  [1:0] commit_ertn, //是否是异常返回指令
-    input wire  [1:0] commit_is_privilege, //特权指令
+    input wire  [1:0]  commit_idle, //是否是空闲指令
+    input wire  [1:0]  commit_ertn, //是否是异常返回指令
+    input wire  [1:0]  commit_is_privilege, //特权指令
 
     input wire pause_mem,
 
-    output reg [1:0] wb_pf_reg_write_en, //输出的寄存器写使能
-    output reg [4:0] wb_pf_reg_write_addr1, //输出的寄存器写地址
-    output reg [4:0] wb_pf_reg_write_addr2,
+    output reg [1:0]  wb_pf_reg_write_en, //输出的寄存器写使能
+    output reg [4:0]  wb_pf_reg_write_addr1, //输出的寄存器写地址
+    output reg [4:0]  wb_pf_reg_write_addr2,
     output reg [31:0] wb_pf_reg_write_data1,
     output reg [31:0] wb_pf_reg_write_data2, 
 
     // to ctrl
-    output reg  [1:0]ctrl_reg_write_en, 
-    output reg  [4:0] ctrl_reg_write_addr1,
-    output reg  [4:0] ctrl_reg_write_addr2,
+    output reg  [1:0]  ctrl_reg_write_en, 
+    output reg  [4:0]  ctrl_reg_write_addr1,
+    output reg  [4:0]  ctrl_reg_write_addr2,
     output reg  [31:0] ctrl_reg_write_data1,
     output reg  [31:0] ctrl_reg_write_data2,
 
@@ -51,11 +65,24 @@ module wb
     output reg  [13:0] ctrl_csr_addr2,
     output reg  [31:0] ctrl_csr_write_data1,
     output reg  [31:0] ctrl_csr_write_data2,
-    output reg  [1:0]ctrl_is_llw_scw, //是否是LLW/SCW指令
+    output reg  [1:0]  ctrl_is_llw_scw, //是否是LLW/SCW指令
 
-    output reg  [1:0] commit_valid_out, //指令是否有效
-    output reg  [1:0][5:0]  commit_is_exception_out,
-    output reg  [1:0][5:0][6:0] commit_exception_cause_out, //异常原因
+    output reg  [1:0]  commit_valid_out, //指令是否有效
+    output reg  [5:0]  is_exception1_o,
+    output reg  [5:0]  is_exception2_o,
+    output reg  [6:0]  pc_exception_cause1_o, //异常原因
+    output reg  [6:0]  pc_exception_cause2_o,
+    output reg  [6:0]  instbuffer_exception_cause1_o,
+    output reg  [6:0]  instbuffer_exception_cause2_o,
+    output reg  [6:0]  decoder_exception_cause1_o,
+    output reg  [6:0]  decoder_exception_cause2_o,
+    output reg  [6:0]  dispatch_exception_cause1_o,
+    output reg  [6:0]  dispatch_exception_cause2_o,
+    output reg  [6:0]  execute_exception_cause1_o,
+    output reg  [6:0]  execute_exception_cause2_o,
+    output reg  [6:0]  commit_exception_cause1_o,
+    output reg  [6:0]  commit_exception_cause2_o,
+
     output reg  [31:0] commit_pc_out1,
     output reg  [31:0] commit_pc_out2,
     output reg  [31:0] commit_addr_out1, //内存地址
@@ -128,10 +155,20 @@ module wb
             ctrl_is_llw_scw[1] <= 1'b0;
             commit_valid_out[0] <= 1'b0;
             commit_valid_out[1] <= 1'b0;
-            commit_is_exception_out[0] <= 1'b0;
-            commit_is_exception_out[1] <= 1'b0;
-            commit_exception_cause_out[0] <= 6'b0;
-            commit_exception_cause_out[1] <= 6'b0;
+            is_exception1_o <= 5'b0;
+            is_exception2_o <= 5'b0;
+            pc_exception_cause1_o <= 7'b0;
+            pc_exception_cause2_o <= 7'b0;
+            instbuffer_exception_cause1_o <= 7'b0;
+            instbuffer_exception_cause2_o <= 7'b0;
+            decoder_exception_cause1_o <= 7'b0;
+            decoder_exception_cause2_o <= 7'b0;
+            dispatch_exception_cause1_o <= 7'b0;
+            dispatch_exception_cause2_o <= 7'b0;
+            execute_exception_cause1_o <= 7'b0;
+            execute_exception_cause2_o <= 7'b0;
+            commit_exception_cause1_o <= 7'b0;
+            commit_exception_cause2_o <= 7'b0;
             commit_pc_out1 <= 32'b0;
             commit_pc_out2 <= 32'b0;
             commit_addr_out1 <= 32'b0;
@@ -160,10 +197,20 @@ module wb
             ctrl_is_llw_scw[1] <= wb_is_llw_scw[1];
             commit_valid_out[0] <= commit_valid[0];
             commit_valid_out[1] <= commit_valid[1];
-            commit_is_exception_out[0] <= commit_is_exception[0];
-            commit_is_exception_out[1] <= commit_is_exception[1];
-            commit_exception_cause_out[0] <= commit_exception_cause[0];
-            commit_exception_cause_out[1] <= commit_exception_cause[1];
+            is_exception1_o <= is_exception1_i;
+            is_exception2_o <= is_exception2_i;
+            pc_exception_cause1_o <= pc_exception_cause1_i;
+            pc_exception_cause2_o <= pc_exception_cause2_i;
+            instbuffer_exception_cause1_o <= instbuffer_exception_cause1_i;
+            instbuffer_exception_cause2_o <= instbuffer_exception_cause2_i;
+            decoder_exception_cause1_o <= decoder_exception_cause1_i;
+            decoder_exception_cause2_o <= decoder_exception_cause2_i;
+            dispatch_exception_cause1_o <= dispatch_exception_cause1_i;
+            dispatch_exception_cause2_o <= dispatch_exception_cause2_i;
+            execute_exception_cause1_o <= execute_exception_cause1_i;
+            execute_exception_cause2_o <= execute_exception_cause2_i;
+            commit_exception_cause1_o <= commit_exception_cause1_i;
+            commit_exception_cause2_o <= commit_exception_cause2_i;
             commit_pc_out1 <= commit_pc1;
             commit_pc_out2 <= commit_pc2;
             commit_addr_out1 <= commit_addr1;

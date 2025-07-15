@@ -119,8 +119,10 @@ module mycpu_top(
     wire icache_inst_valid;
     wire [31:0] inst_for_buffer [1:0];
     wire [31:0] pred_addr_for_buffer;
-    wire is_exception_for_buffer;
-    wire [6:0] exception_cause_for_buffer;
+    wire pi_icache_is_exception1;
+    wire pi_icache_is_exception2;
+    wire [6:0] pi_icache_exception_cause1;
+    wire [6:0] pi_icache_exception_cause2;
     wire pc_suspend;
     wire [31:0] icache_pc [1:0];
     wire [31:0] icache_inst [1:0];
@@ -133,8 +135,12 @@ module mycpu_top(
     wire fb_valid;
     wire [1:0]fb_pre_taken;
     wire [31:0]fb_pre_branch_addr[1:0];
-    wire [1:0]fb_is_exception;
-    wire [6:0]fb_exception_cause[1:0][1:0];
+    wire fb_is_exception1;
+    wire fb_is_exception2;
+    wire [6:0] fb_pc_exception_cause1;
+    wire [6:0] fb_pc_exception_cause2;
+    wire [6:0] fb_instbuffer_exception_cause1;
+    wire [6:0] fb_instbuffer_exception_cause2;
 
     // 后端给前端的信号
     wire iuncache;
@@ -173,8 +179,10 @@ module mycpu_top(
         .iuncache(iuncache),//不知道信号来源       //(别管iuncache信号)
 
         // 来自 icache 的信号
-        .pi_icache_is_exception(is_exception_for_buffer),      //从icache传回来的例外信息
-        .pi_icache_exception_cause(exception_cause_for_buffer),
+        .pi_icache_is_exception1(pi_icache_is_exception1),      //从icache传回来的例外信息
+        .pi_icache_is_exception2(pi_icache_is_exception2),
+        .pi_icache_exception_cause1(pi_icache_exception_cause1),  
+        .pi_icache_exception_cause2(pi_icache_exception_cause2),
         .pc_for_buffer1(icache_pc[0]),
         .pc_for_buffer2(icache_pc[1]),
         .pred_addr_for_buffer(pred_addr_for_buffer),
@@ -193,7 +201,7 @@ module mycpu_top(
         .pi_pc(inst_addr),
         .BPU_pred_addr(BPU_pred_addr),
         .inst_rreq_to_icache(inst_rreq),
-        .pi_is_exception(pi_exception_cause),
+        .pi_is_exception(pi_is_exception),
         .pi_exception_cause(pi_exception_cause),
 
         // 来自后端的信号
@@ -217,8 +225,12 @@ module mycpu_top(
         .fb_pre_taken(fb_pre_taken),
         .fb_pre_branch_addr1(fb_pre_branch_addr[0]),
         .fb_pre_branch_addr2(fb_pre_branch_addr[1]),
-        .fb_is_exception(fb_is_exception),
-        .fb_exception_cause(fb_exception_cause)
+        .fb_is_exception1(fb_is_exception1),
+        .fb_is_exception2(fb_is_exception2),
+        .fb_pc_exception_cause1(fb_pc_exception_cause1),
+        .fb_pc_exception_cause2(fb_pc_exception_cause2),
+        .fb_instbuffer_exception_cause1(fb_instbuffer_exception_cause1),
+        .fb_instbuffer_exception_cause2(fb_instbuffer_exception_cause2)
     );
 
 
@@ -235,8 +247,12 @@ module mycpu_top(
         .pre_is_branch_taken_i(fb_pre_taken),
         .pre_branch_addr_i1(fb_pre_branch_addr[0]),
         .pre_branch_addr_i2(fb_pre_branch_addr[1]),
-        .is_exception_i(fb_is_exception),
-        .exception_cause_i(fb_exception_cause),
+        .is_exception1_i(fb_is_exception1),
+        .is_exception2_i(fb_is_exception2),
+        .pc_exception_cause1_i(fb_pc_exception_cause1),
+        .pc_exception_cause2_i(fb_pc_exception_cause2),
+        .instbuffer_exception_cause1_i(fb_instbuffer_exception_cause1),
+        .instbuffer_exception_cause2_i(fb_instbuffer_exception_cause2),
 
         .bpu_flush(BPU_flush),   // 分支预测错误，清空译码队列
     
@@ -303,8 +319,10 @@ module mycpu_top(
         .inst_out2(icache_inst[1]),
         .pc1(icache_pc[0]),
         .pc2(icache_pc[1]),
-        .is_exception_out(is_exception_for_buffer),
-        .exception_cause_out(exception_cause_for_buffer),
+        .pc_is_exception_out1(pi_icache_is_exception1),
+        .pc_is_exception_out2(pi_icache_is_exception2), 
+        .pc_exception_cause_out1(pi_icache_exception_cause1),
+        .pc_exception_cause_out2(pi_icache_exception_cause2),
         .pc_suspend(pc_suspend), 
     // Interface to Read Bus
         .dev_rrdy(dev_rrdy_to_cache),       

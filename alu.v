@@ -15,7 +15,11 @@ module alu (
     input wire [31:0] inst_i,
 
     input wire [3:0] is_exception_i,
-    input wire [3:0] [6:0] exception_cause_i,
+    input wire [6:0] pc_exception_cause_i,
+    input wire [6:0] instbuffer_exception_cause_i,
+    input wire [6:0] decoder_exception_cause_i,
+    input wire [6:0] dispatch_exception_cause_i,
+
     input wire is_privilege_i,
     input wire valid_i,
 
@@ -64,8 +68,13 @@ module alu (
     output wire [31:0] pc_mem,
     output wire [31:0] inst_mem,
 
-    output wire [4:0] is_exception_mem,
-    output wire [4:0] [6:0] exception_cause_mem,
+    output wire [4:0] is_exception_o,
+    output wire [6:0] pc_exception_cause_o,
+    output wire [6:0] instbuffer_exception_cause_o,
+    output wire [6:0] decoder_exception_cause_o,
+    output wire [6:0] dispatch_exception_cause_o,
+    output wire [6:0] execute_exception_cause_o,
+    
     output wire is_privilege_mem,
     output wire is_ertn_mem,
     output wire is_idle_mem,
@@ -101,8 +110,13 @@ module alu (
 
     //异常处理
     reg ex_mem_exception;
-    assign is_exception_mem = {is_exception_i, ex_mem_exception};  
-    assign exception_cause_mem = {exception_cause_i, `EXCEPTION_ALE};
+    assign is_exception_o = {is_exception_i, ex_mem_exception};  
+    assign pc_exception_cause_o = pc_exception_cause_i;
+    assign instbuffer_exception_cause_o = instbuffer_exception_cause_i;
+    assign decoder_exception_cause_o = decoder_exception_cause_i;
+    assign dispatch_exception_cause_o = dispatch_exception_cause_i;
+    assign execute_exception_cause_o = `EXCEPTION_ALE;      // 执行阶段的异常原因
+
     
     // 预执行alu操作类型
     assign pre_ex_aluop_o = aluop_i;
@@ -302,7 +316,7 @@ module alu (
     assign virtual_addr_o = addr_mem;  // 输出给dcache的虚拟地址
 
     reg mem_is_valid;
-    assign valid_o = mem_is_valid && !flush && !pause_mem_i && !is_exception_mem;
+    assign valid_o = mem_is_valid && !flush && !pause_mem_i && !is_exception_o;
 
     always @(*) begin
         case (aluop_i)

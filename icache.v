@@ -3,14 +3,14 @@ module icache
 (
     input  wire         clk,
     input  wire         rst,       // low active
+    input  wire         BPU_flush,
     // Interface to CPU
     input  wire         inst_rreq,      // 来自CPU的取指请求
     input  wire [31:0]  inst_addr,      // 来自CPU的取指地址
-    input  wire         BPU_flush,
     input  wire [31:0]  BPU_pred_addr,
 
     input  wire         pi_is_exception,
-    input  wire         pi_exception_cause, 
+    input  wire [6:0]   pi_exception_cause, 
 
     output wire         pred_addr,
     output reg          inst_valid,     // 输出给CPU的指令有效信号（读指令命中）
@@ -18,8 +18,10 @@ module icache
     output reg  [31:0]  inst_out2,
     output reg  [31:0]  pc1,
     output reg  [31:0]  pc2,
-    output reg          is_exception_out,
-    output reg  [6:0]   exception_cause_out,
+    output reg          pc_is_exception_out1,
+    output reg          pc_is_exception_out2,
+    output reg  [6:0]   pc_exception_cause_out1,
+    output reg  [6:0]   pc_exception_cause_out2,
     output wire         pc_suspend,  
     // Interface to Read Bus
     input  wire         dev_rrdy,       // 主存就绪信号（高电平表示主存可接收ICache的读请求）
@@ -63,8 +65,8 @@ module icache
     reg [1:0] use_bit [63:0];
     wire [5:0] refill_index = dealing1 ? addr_1_2[9:4] : dealing2 ? addr_2_2[9:4] : 6'b0;
     wire [21:0] refill_tag = dealing1 ? addr_1_2[31:10] : dealing2 ? addr_2_2[31:10] : 22'b0;
-    wire we1 = (dev_rvalid==1) & (use_bit[refill_index]==2'b10)& !BPU_flush &req_2;
-    wire we2 = (dev_rvalid==1) & (use_bit[refill_index]==2'b01)& !BPU_flush &req_2;
+    wire we1 = (dev_rvalid==1) & (use_bit[refill_index]==2'b10)& !BPU_flush & req_2;
+    wire we2 = (dev_rvalid==1) & (use_bit[refill_index]==2'b01)& !BPU_flush & req_2;
     wire [150:0] refill_data = {{1'b1,refill_tag},dev_rdata};
 
     //hit第一个1代表ram1，第二个1代表index1
@@ -88,6 +90,18 @@ module icache
     assign pc_suspend = suspend;
 
     integer i;
+
+    always @(posedge clk)
+    begin
+        if(rst)
+        begin
+            for(i=0;i<64;i=i+1)
+            begin
+                use_bit[i] <= 2'b10;
+            end
+        end
+    end
+    
     always @(posedge clk)
     begin
         if(rst | BPU_flush)
@@ -104,10 +118,6 @@ module icache
 
             pi_is_exception_2 <= 1'b0;
             pi_exception_cause_2 <= 7'b0;
-            for(i=0;i<64;i=i+1)
-            begin
-                use_bit[i] <= 2'b10;
-            end
         end
         else if(!suspend & !BPU_flush)
         begin
@@ -129,7 +139,7 @@ module icache
     wire [5:0]index1 = (refill_1_2 | refill_2_2) ? addr_1_2[9:4] : index_1_1;
     wire [5:0]index2 = (refill_1_2 | refill_2_2) ? addr_2_2[9:4] : index_2_1;
 
-    cache_ram u_cache_ram1
+    cache_ram ram1
     (
         .clk(clk),
         .we(we1),
@@ -142,7 +152,7 @@ module icache
         .data_out2(ram1_data_block2)
     );
 
-    cache_ram u_cache_ram2
+    cache_ram ram2
     (
         .clk(clk),
         .we(we2),
@@ -163,8 +173,10 @@ module icache
         pc1 = addr_1_2;
         pc2 = addr_2_2;
 
-        is_exception_out = pi_is_exception_2;
-        exception_cause_out = pi_exception_cause_2;
+        pc_is_exception_out1 = pi_is_exception_2;
+        pc_is_exception_out2 = pi_is_exception_2;
+        pc_exception_cause_out1 = pi_exception_cause_2;
+        pc_exception_cause_out2 = pi_exception_cause_2;
 
         case(offset1_2)
         2'b00:inst_out1 = hit1_data[31:0];
@@ -189,6 +201,7 @@ module icache
     begin
         index1_delay <= index1;
         index2_delay <= index2;
+        cpu_raddr <= 32'b0;
         if(rst | BPU_flush)
         begin
             dealing1 <= 1'b0;
@@ -211,7 +224,7 @@ module icache
                 dealing2 <= 1'b1;
             end
             else cpu_ren <= 4'b000;
-            if(dev_rvalid & !BPU_flush)
+            if(dev_rvalid)
             begin
                 if(dealing1)
                 begin 

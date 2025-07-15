@@ -52,9 +52,21 @@ module ctrl
     input  wire [31:0]       csr_write_data2_i,//csr写数据
 
     //从wb阶段输入commit
-    input  wire [1:0] [5:0]  is_exception_i,//是否有异常
-    input  wire [5:0] [6:0]  exception_cause1_i,//异常原因
-    input  wire [5:0] [6:0]  exception_cause2_i,//异常原因
+    input wire  [5:0]  is_exception1_i,
+    input wire  [5:0]  is_exception2_i,
+    input wire  [6:0]  pc_exception_cause1_i,
+    input wire  [6:0]  pc_exception_cause2_i, 
+    input wire  [6:0]  instbuffer_exception_cause1_i,
+    input wire  [6:0]  instbuffer_exception_cause2_i,
+    input wire  [6:0]  decoder_exception_cause1_i,
+    input wire  [6:0]  decoder_exception_cause2_i,
+    input wire  [6:0]  dispatch_exception_cause1_i,
+    input wire  [6:0]  dispatch_exception_cause2_i,
+    input wire  [6:0]  execute_exception_cause1_i,
+    input wire  [6:0]  execute_exception_cause2_i,
+    input wire  [6:0]  commit_exception_cause1_i,
+    input wire  [6:0]  commit_exception_cause2_i,
+
     input  wire [31:0]       pc1_i,
     input  wire [31:0]       pc2_i,
     input  wire [31:0]       mem_addr1_i,
@@ -162,16 +174,34 @@ module ctrl
     assign csr_exception_addr_o = is_exception[0] ? mem_addr1_i : mem_addr2_i;
 
     //异常造成的原因
-    reg [6:0] exception_cause1;
-    reg [6:0] exception_cause2;
-    wire [5:0] inst_is_exception1 = is_exception_i[0];
-    wire [5:0] inst_is_exception2 = is_exception_i[1];
-    wire [5:0] [6:0] inst_exception_cause1 = exception_cause1_i; 
-    wire [5:0] [6:0] inst_exception_cause2 = exception_cause2_i; 
+    reg  [6:0] exception_cause1;
+    reg  [6:0] exception_cause2;
+
+    wire [5:0] inst_is_exception1;
+    wire [5:0] inst_is_exception2;
+
+    assign inst_is_exception1 = is_exception1_i;
+    assign inst_is_exception2 = is_exception2_i;
+
+    wire [6:0] inst_exception_cause1 [5:0]; 
+    wire [6:0] inst_exception_cause2 [5:0];
+    assign inst_exception_cause1 [0] = commit_exception_cause1_i;
+    assign inst_exception_cause1 [1] = execute_exception_cause1_i;
+    assign inst_exception_cause1 [2] = dispatch_exception_cause2_i;
+    assign inst_exception_cause1 [3] = decoder_exception_cause1_i;
+    assign inst_exception_cause1 [4] = instbuffer_exception_cause1_i; 
+    assign inst_exception_cause1 [5] = pc_exception_cause1_i;
+    assign inst_exception_cause2 [0] = commit_exception_cause2_i;
+    assign inst_exception_cause2 [1] = execute_exception_cause2_i;
+    assign inst_exception_cause2 [2] = dispatch_exception_cause2_i;
+    assign inst_exception_cause2 [3] = decoder_exception_cause2_i;
+    assign inst_exception_cause2 [4] = instbuffer_exception_cause2_i;
+    assign inst_exception_cause2 [5] = pc_exception_cause2_i;
+
     wire [6:0] excp_vec1;
     wire [6:0] excp_vec2;
-    assign excp_vec1 = {csr_is_interrupt_i, inst_exception_cause1};
-    assign excp_vec2 = {csr_is_interrupt_i, inst_exception_cause2};
+    assign excp_vec1 = {csr_is_interrupt_i, inst_is_exception1};
+    assign excp_vec2 = {csr_is_interrupt_i, inst_is_exception2};
 
     always @(*) begin
         case(excp_vec1) 

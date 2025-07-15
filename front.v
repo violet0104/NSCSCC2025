@@ -8,8 +8,10 @@ module front
     input wire iuncache,
 
     // 来自 icache 的信号
-    input wire pi_icache_is_exception,            //指令缓存异常信号
-    input wire [6:0] pi_icache_exception_cause,    //指令缓存异常原因
+    input wire       pi_icache_is_exception1,            //指令缓存异常信号
+    input wire       pi_icache_is_exception2,          
+    input wire [6:0] pi_icache_exception_cause1,    //指令缓存异常原因
+    input wire [6:0] pi_icache_exception_cause2,
     input wire [31:0] pc_for_buffer1,               //pc给指令缓存的信号
     input wire [31:0] pc_for_buffer2,               
     input wire [31:0] pred_addr_for_buffer,
@@ -39,11 +41,17 @@ module front
     output wire [31:0] fb_inst_out1,            //前端给后端的指令
     output wire [31:0] fb_inst_out2,           
     output wire fb_valid,                           //前端给后端的指令使能信号
-    output wire [1:0] fb_pre_taken,
     output wire [31:0] fb_pre_branch_addr1,         //前端给后端的分支地址
     output wire [31:0] fb_pre_branch_addr2,
-    output reg  [1:0] fb_is_exception,               //前端给后端的
-    output reg  [1:0][1:0][6:0] fb_exception_cause,  //前端给后端的异常原因（不知道怎么改？？）
+
+    output wire [1:0] fb_is_exception1,                 // 第一条指令是否异常
+    output wire [6:0] fb_pc_exception_cause1,           // 第一条指令在pc的异常原因
+    output wire [6:0] fb_instbuffer_exception_cause1,   // 第一条指令在instbuffer的异常原因
+    
+    output wire [1:0] fb_is_exception2,               
+    output wire [6:0] fb_pc_exception_cause2,
+    output wire [6:0] fb_instbuffer_exception_cause2,
+
 
 
     //我新加的信号**************************
@@ -74,15 +82,18 @@ module front
     wire [1:0] pred_taken;
     //***************************************
 
-    assign fb_pre_taken[0] = data_out1[96];
-    assign fb_pre_taken[1] = data_out2[96];
-    assign fb_pre_branch_addr1 = data_out1[95:64];
-    assign fb_pre_branch_addr2 = data_out2[95:64];
-    assign fb_pc_out1 = data_out1[63:32];
-    assign fb_pc_out2 = data_out2[63:32];
-    assign fb_inst_out1 = data_out1[31:0];
-    assign fb_inst_out2 = data_out2[31:0];
-
+    assign fb_pre_branch_addr1 = data_out1[103:72];
+    assign fb_pre_branch_addr2 = data_out2[103:72];
+    assign fb_pc_out1 = data_out1[71:40];
+    assign fb_pc_out2 = data_out2[71:40];
+    assign fb_inst_out1 = data_out1[39:8];
+    assign fb_inst_out2 = data_out2[39:8];
+    assign fb_is_exception1 = {data_out1[7], 1'b0};
+    assign fb_is_exception2 = {data_out2[7], 1'b0};
+    assign fb_pc_exception_cause1 = data_out1[6:0];
+    assign fb_pc_exception_cause2 = data_out2[6:0];
+    assign fb_instbuffer_exception_cause1 = 7'b1111111;
+    assign fb_instbuffer_exception_cause2 = 7'b1111111;
 
     //********************************
     always @(*) 
@@ -94,7 +105,9 @@ module front
 
     assign BPU_pred_addr = pre_addr;
     assign BPU_pred_taken = pred_taken[0] | pred_taken[1];
-
+    
+    wire stall;
+    
     pc u_pc 
     (
         .clk(cpu_clk),
@@ -150,9 +163,14 @@ module front
 
         .inst1(inst_for_buffer1),
         .inst2(inst_for_buffer2),
-        .pred_addr(),
+        .pred_addr(pred_addr_for_buffer),
 
+        .pc_is_exception_in1(pi_icache_is_exception1),
+        .pc_is_exception_in2(pi_icache_is_exception2),
+        .pc_exception_cause_in1(pi_icache_exception_cause1),
+        .pc_exception_cause_in2(pi_icache_exception_cause2),
         .data_out1(data_out1),
+
         .data_out1(data_out2),
         .data_valid(fb_valid),
 

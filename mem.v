@@ -12,8 +12,20 @@ module mem
     input  wire [31:0] pc2 ,
     input  wire [31:0] inst1,
     input  wire [31:0] inst2,
-    input  wire [1:0][4:0] is_exception,   //异常标志
-    input  wire [1:0][4:0][6:0] exception_cause, //异常原因
+
+    input  wire [4:0] is_exception1_i,   //异常标志
+    input  wire [4:0] is_exception2_i,   
+    input  wire [6:0] pc_exception_cause1_i, //异常原因
+    input  wire [6:0] pc_exception_cause2_i,
+    input  wire [6:0] instbuffer_exception_cause1_i,
+    input  wire [6:0] instbuffer_exception_cause2_i,
+    input  wire [6:0] decoder_exception_cause1_i,
+    input  wire [6:0] decoder_exception_cause2_i,
+    input  wire [6:0] dispatch_exception_cause1_i,
+    input  wire [6:0] dispatch_exception_cause2_i,
+    input  wire [6:0] execute_exception_cause1_i,
+    input  wire [6:0] execute_exception_cause2_i,
+
     input  wire [1:0]is_privilege, //特权指令标志
     input  wire [1:0]is_ertn, //是否是异常返回指令
     input  wire [1:0]is_idle, //是否是空闲指令
@@ -67,8 +79,21 @@ module mem
 
     //commit_ctrl的信号
     output wire  [1:0] commit_valid, //指令是否有效
-    output wire  [1:0][5:0]  commit_is_exception,
-    output wire  [1:0][5:0][6:0] commit_exception_cause, //异常原因
+    output wire  [5:0]  is_exception1_o,
+    output wire  [5:0]  is_exception2_o, 
+    output wire  [6:0]  pc_exception_cause1_o, 
+    output wire  [6:0]  pc_exception_cause2_o,
+    output wire  [6:0]  instbuffer_exception_cause1_o,
+    output wire  [6:0]  instbuffer_exception_cause2_o,
+    output wire  [6:0]  decoder_exception_cause1_o,
+    output wire  [6:0]  decoder_exception_cause2_o,
+    output wire  [6:0]  dispatch_exception_cause1_o,
+    output wire  [6:0]  dispatch_exception_cause2_o,
+    output wire  [6:0]  execute_exception_cause1_o,
+    output wire  [6:0]  execute_exception_cause2_o,
+    output wire  [6:0]  commit_exception_cause1_o,
+    output wire  [6:0]  commit_exception_cause2_o,
+
     output wire  [31:0] commit_pc1,
     output wire  [31:0] commit_pc2,
     output wire  [31:0] commit_addr1, //内存地址
@@ -123,16 +148,23 @@ module mem
     assign wb_csr_write_data1 = reg_write_data1;
     assign wb_csr_write_data2 = reg_write_data1;
 
-    wire [5:0] mem_is_exception[1:0];
-    wire [5:0] [6:0] mem_exception_cause [1:0];
 
-    assign mem_is_exception[0] = {is_exception[0],1'b0};
-    assign mem_is_exception[1] = {is_exception[1],1'b0};
-    assign mem_exception_cause[0] = {exception_cause[0],`EXCEPTION_NOP};
-    assign mem_exception_cause[1] = {exception_cause[1],`EXCEPTION_NOP};
+    assign is_exception1_o = {is_exception1_i,1'b0};
+    assign is_exception2_o = {is_exception2_i,1'b0};
+    assign pc_exception_cause1_o = pc_exception_cause1_i;
+    assign pc_exception_cause2_o = pc_exception_cause2_i;
+    assign instbuffer_exception_cause1_o = instbuffer_exception_cause1_i;
+    assign instbuffer_exception_cause2_o = instbuffer_exception_cause2_i;
+    assign decoder_exception_cause1_o = decoder_exception_cause1_i;
+    assign decoder_exception_cause2_o = decoder_exception_cause2_i;
+    assign dispatch_exception_cause1_o = dispatch_exception_cause1_i;
+    assign dispatch_exception_cause2_o = dispatch_exception_cause2_i;
+    assign execute_exception_cause1_o = execute_exception_cause1_i;
+    assign execute_exception_cause2_o = execute_exception_cause2_i;
+    assign commit_exception_cause1_o = `EXCEPTION_NOP;
+    assign commit_exception_cause2_o = `EXCEPTION_NOP;
 
-    assign commit_is_exception[0] = mem_is_exception[0];
-    assign commit_is_exception[1] = mem_is_exception[1];
+
     assign commit_pc1 = pc1;
     assign commit_pc2 = pc2;
     assign commit_addr1 = mem_addr1;
@@ -395,7 +427,7 @@ module mem
         endcase
     end
 
-    assign pause_mem = (pause_uncache[0] || pause_uncache[1]) && (is_exception[0] == 0 && is_exception[1] == 0);
+    assign pause_mem = (pause_uncache[0] || pause_uncache[1]) && (is_exception1_o == 0 && is_exception2_o == 0);
 /***************************************************************************8
     `ifdef DIFF
     always @(*) begin

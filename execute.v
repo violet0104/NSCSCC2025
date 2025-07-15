@@ -22,7 +22,15 @@ module execute (
 
     input wire [3:0] is_exception1_i,
     input wire [3:0] is_exception2_i,
-    input wire [6:0] exception_cause_i,     // 暂时不知道怎么改
+    input wire [6:0] pc_exception_cause1_i,     
+    input wire [6:0] pc_exception_cause2_i,      
+    input wire [6:0] instbuffer_exception_cause1_i,
+    input wire [6:0] instbuffer_exception_cause2_i,
+    input wire [6:0] decoder_exception_cause1_i,
+    input wire [6:0] decoder_exception_cause2_i,
+    input wire [6:0] dispatch_exception_cause1_i,
+    input wire [6:0] dispatch_exception_cause2_i,
+
     input wire [1:0] is_privilege_i,
 
     input wire [7:0] aluop1_i,
@@ -97,9 +105,19 @@ module execute (
     output reg [31:0] inst1_mem,
     output reg [31:0] inst2_mem,
 
-    output reg [1:0] is_exception_mem,      // 这个存在疑问？？
+    output reg [4:0] is_exception1_o,      
+    output reg [4:0] is_exception2_o, 
 
-    output reg [1:0] [4:0] [6:0] exception_cause_mem,   // 暂时不知道怎么改
+    output reg [6:0] pc_exception_cause1_o, 
+    output reg [6:0] pc_exception_cause2_o,
+    output reg [6:0] instbuffer_exception_cause1_o,
+    output reg [6:0] instbuffer_exception_cause2_o,
+    output reg [6:0] decoder_exception_cause1_o,
+    output reg [6:0] decoder_exception_cause2_o,
+    output reg [6:0] dispatch_exception_cause1_o,
+    output reg [6:0] dispatch_exception_cause2_o,
+    output reg [6:0] execute_exception_cause1_o,
+    output reg [6:0] execute_exception_cause2_o,
 
     output reg [7:0] aluop1_mem,
     output reg [7:0] aluop2_mem,
@@ -155,8 +173,20 @@ module execute (
     // to mem
     wire [31:0] pc [1:0];
     wire [31:0] inst [1:0];
-    wire [4:0] is_exception [1:0];
-    wire [4:0] [6:0] exception_cause [1:0];
+
+    wire [4:0] is_exception1;
+    wire [4:0] is_exception2;
+    wire [6:0] pc_exception_cause1;
+    wire [6:0] pc_exception_cause2;
+    wire [6:0] instbuffer_exception_cause1;
+    wire [6:0] instbuffer_exception_cause2;
+    wire [6:0] decoder_exception_cause1;
+    wire [6:0] decoder_exception_cause2;
+    wire [6:0] dispatch_exception_cause1;
+    wire [6:0] dispatch_exception_cause2;
+    wire [6:0] execute_exception_cause1;
+    wire [6:0] execute_exception_cause2;
+
     wire [1:0] is_privilege;
     wire is_ert [1:0];
     wire is_idle [1:0];
@@ -195,7 +225,11 @@ module execute (
         .inst_i(inst1_i),
 
         .is_exception_i(is_exception1_i),
-        .exception_cause_i(exception_cause_i[0]),
+        .pc_exception_cause_i(pc_exception_cause1_i),
+        .instbuffer_exception_cause_i(instbuffer_exception_cause1_i),
+        .decoder_exception_cause_i(decoder_exception_cause1_i),
+        .dispatch_exception_cause_i(dispatch_exception_cause1_i),
+
         .privilege_i(is_privilege_i[0]),
         .valid_i(valid_i[0]),
 
@@ -249,8 +283,14 @@ module execute (
         // to mem
         .pc_mem(pc[0]),
         .inst_mem(inst[0]),
-        .is_exception_mem(is_exception[0]),
-        .exception_cause_mem(exception_cause[0]),
+
+        .is_exception_o(is_exception1),
+        .pc_exception_cause_o(pc_exception_cause1),
+        .instbuffer_exception_cause_o(instbuffer_exception_cause1),
+        .decoder_exception_cause_o(decoder_exception_cause1),
+        .dispatch_exception_cause_o(dispatch_exception_cause1),
+        .execute_exception_cause_o(execute_exception_cause1),
+
         .is_privilege_mem(is_privilege[0]),
         .is_ertn_mem(is_ert[0]),
         .is_idle_mem(is_idle[0]),
@@ -278,7 +318,11 @@ module execute (
         .inst_i(inst2_i),
 
         .is_exception_i(is_exception2_i),
-        .exception_cause_i(exception_cause_i[1]),
+        .pc_exception_cause_i(pc_exception_cause2_i),
+        .instbuffer_exception_cause_i(instbuffer_exception_cause2_i),
+        .decoder_exception_cause_i(decoder_exception_cause2_i),
+        .dispatch_exception_cause_i(dispatch_exception_cause2_i),
+        
         .privilege_i(is_privilege_i[1]),
         .valid_i(valid_i[1]),
 
@@ -332,8 +376,14 @@ module execute (
         // to mem
         .pc_mem(pc[1]),
         .inst_mem(inst[1]),
-        .is_exception_mem(is_exception[1]),
-        .exception_cause_mem(exception_cause[1]),
+
+        .is_exception_o(is_exception2),
+        .pc_exception_cause_o(pc_exception_cause2),
+        .instbuffer_exception_cause_o(instbuffer_exception_cause2),
+        .decoder_exception_cause_o(decoder_exception_cause2),
+        .dispatch_exception_cause_o(dispatch_exception_cause2),
+        .execute_exception_cause_o(execute_exception_cause2),
+
         .is_privilege_mem(is_privilege[1]),
         .is_ertn_mem(is_ert[1]),
         .is_idle_mem(is_idle[1]),
@@ -410,10 +460,18 @@ module execute (
             pc2_mem <= 32'b0;
             inst1_mem <= 32'b0;
             inst2_mem <= 32'b0;
-            is_exception_mem[0] <= 5'b0;
-            is_exception_mem[1] <= 5'b0;
-            exception_cause_mem[0] <= 7'b0;     // 这个暂时不知道怎么改
-            exception_cause_mem[1] <= 7'b0;
+            is_exception1_o <= 5'b0;
+            is_exception2_o <= 5'b0;
+            pc_exception_cause1_o <= 7'b0;    
+            pc_exception_cause2_o <= 7'b0;
+            instbuffer_exception_cause1_o <= 7'b0;
+            instbuffer_exception_cause2_o <= 7'b0;
+            decoder_exception_cause1_o <= 7'b0;
+            decoder_exception_cause2_o <= 7'b0;
+            dispatch_exception_cause1_o <= 7'b0;
+            dispatch_exception_cause2_o <= 7'b0;
+            execute_exception_cause1_o <= 7'b0;
+            execute_exception_cause2_o <= 7'b0; 
             is_privilege_mem[0] <= 1'b0;
             is_privilege_mem[1] <= 1'b0;
             is_ertn_mem[0] <= 1'b0;
@@ -446,8 +504,12 @@ module execute (
             if (branch_flush_alu[0]) begin
                 pc1_mem <= pc[0];
                 inst1_mem <= inst[0];
-                is_exception_mem[0] <= is_exception[0];
-                exception_cause_mem[0] <= exception_cause[0];
+                is_exception1_o <= is_exception1;
+                pc_exception_cause1_o<= pc_exception_cause1;
+                instbuffer_exception_cause1_o <= instbuffer_exception_cause1;
+                decoder_exception_cause1_o <= decoder_exception_cause1;
+                dispatch_exception_cause1_o <= decoder_exception_cause1;
+                execute_exception_cause1_o <= execute_exception_cause1;
                 is_privilege_mem[0] <= is_privilege[0];
                 is_ertn_mem[0] <= aluop[0] == `ALU_ERTN;
                 is_idle_mem[0] <= aluop[0] == `ALU_IDLE;
@@ -465,9 +527,12 @@ module execute (
 
                 pc1_mem <= 32'b0;
                 inst1_mem <= 32'b0;
-                is_exception_mem[1] <= 5'b0;
-                is_exception_mem[1] <= 5'b0;
-                exception_cause_mem[1] <= 7'b0;
+                is_exception2_o <= 5'b0;
+                pc_exception_cause_o <= 7'b0;
+                instbuffer_exception_cause2_o <= 7'b0;
+                decoder_exception_cause2_o <= 7'b0;
+                dispatch_exception_cause2_o <= 7'b0;
+                execute_exception_cause2_o <= 7'b0;
                 is_privilege_mem[1] <= 1'b0;
                 is_ertn_mem[1] <= 1'b0;
                 is_idle_mem[1] <= 1'b0;
@@ -487,10 +552,18 @@ module execute (
                 pc2_mem <= pc[1];
                 inst1_mem <= inst[0];
                 inst2_mem <= inst[1];
-                is_exception_mem[0] <= is_exception[0];
-                is_exception_mem[1] <= is_exception[1];
-                exception_cause_mem[0] <= exception_cause[0];
-                exception_cause_mem[1] <= exception_cause[1];
+                is_exception1_o <= is_exception1;
+                is_exception2_o <= is_exception2;
+                pc_exception_cause_o <= pc_exception_cause1;
+                pc_exception_cause2_o <= pc_exception_cause2;
+                instbuffer_exception_cause1_o <= instbuffer_exception_cause1;
+                instbuffer_exception_cause2_o <= instbuffer_exception_cause2;
+                decoder_exception_cause1_o <= decoder_exception_cause1;
+                decoder_exception_cause2_o <= decoder_exception_cause2;
+                dispatch_exception_cause1_o <= dispatch_exception_cause1;
+                dispatch_exception_cause2_o <= dispatch_exception_cause2;
+                execute_exception_cause1_o <= execute_exception_cause1;
+                execute_exception_cause2_o <= execute_exception_cause2;
                 is_privilege_mem[0] <= is_privilege[0];
                 is_privilege_mem[1] <= is_privilege[1];
                 is_ertn_mem[0] <= aluop[0] == `ALU_ERTN;
@@ -525,10 +598,18 @@ module execute (
             pc2_mem <= pc2_mem;
             inst1_mem <= inst1_mem;
             inst2_mem <= inst2_mem;
-            is_exception_mem[0] <= is_exception_mem[0];
-            is_exception_mem[1] <= is_exception_mem[1];
-            exception_cause_mem[0] <= exception_cause_mem[0];
-            exception_cause_mem[1] <= exception_cause_mem[1];
+            is_exception1_o <= is_exception1_o;
+            is_exception2_o <= is_exception2_o;
+            pc_exception_cause1_o <= pc_exception_cause1_o;
+            pc_exception_cause2_o <= pc_exception_cause2_o;
+            instbuffer_exception_cause1_o <= instbuffer_exception_cause1_o;
+            instbuffer_exception_cause2_o <= instbuffer_exception_cause2_o;
+            decoder_exception_cause1_o <= decoder_exception_cause1_o;
+            decoder_exception_cause2_o <= decoder_exception_cause2_o;
+            dispatch_exception_cause1_o <= dispatch_exception_cause1_o;
+            dispatch_exception_cause2_o <= dispatch_exception_cause2_o;
+            execute_exception_cause1_o <= execute_exception_cause1_o;
+            execute_exception_cause2_o <= execute_exception_cause2_o;
             is_privilege_mem[0] <= is_privilege_mem[0];
             is_privilege_mem[1] <= is_privilege_mem[1];
             is_ertn_mem[0] <= is_ertn_mem[0];

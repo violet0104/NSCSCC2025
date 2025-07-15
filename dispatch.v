@@ -29,10 +29,17 @@ module dispatch
 
     input wire [1:0]  is_privilege_i, //两条指令的特权指令标志
     input wire [1:0]  is_cnt_i,       //两条指令的计数器指令标志
+
     input wire [2:0]  is_exception_i1, //第1条指令的异常标志
     input wire [2:0]  is_exception_i2, //第2条指令的异常标志
-    input wire [2:0] [6:0] exception_cause_i1, //第1条指令的异常原因
-    input wire [2:0] [6:0] exception_cause_i2, //第2条指令的异常原因
+    
+    input wire [6:0] pc_exception_cause_i1,
+    input wire [6:0] instbuffer_exception_cause_i1,
+    input wire [6:0] decoder_exception_cause_i1,
+    input wire [6:0] pc_exception_cause_i2,
+    input wire [6:0] instbuffer_exception_cause_i2,
+    input wire [6:0] decoder_exception_cause_i2,
+
     input wire [4:0]  invtlb_op_i1,   //第1条指令的分支指令标志
     input wire [4:0]  invtlb_op_i2,   //第2条指令的分支指令标志
 
@@ -82,9 +89,17 @@ module dispatch
 
     output reg [1:0]  is_privilege_o, //两条指令的特权指令标志
     output reg [3:0]  is_exception_o1, //第1条指令的异常标志
-    output reg [3:0]  is_exception_o2, //第2条指令的异常标志
-    output reg [3:0] [6:0] exception_cause_o1, //第1条指令的异常原因
-    output reg [3:0] [6:0] exception_cause_o2, //第2条指令的异常原因
+    output reg [3:0]  is_exception_o2, //第2条指令的异常标
+
+    output wire [6:0] pc_exception_cause_o1,
+    output wire [6:0] instbuffer_exception_cause_o1,
+    output wire [6:0] decoder_exception_cause_o1,
+    output wire [6:0] dispatch_exception_cause_o1,
+    output wire [6:0] pc_exception_cause_o2,
+    output wire [6:0] instbuffer_exception_cause_o2,
+    output wire [6:0] decoder_exception_cause_o2,
+    output wire [6:0] dispatch_exception_cause_o2,
+
     output reg [4:0]  invtlb_op_o1,   //第1条指令的分支指令标志
     output reg [4:0]  invtlb_op_o2,   //第2条指令的分支指令标志
 
@@ -165,8 +180,16 @@ module dispatch
     reg  [1:0]  is_privilege_temp; //临时寄存器，存储特权指令标志
     reg  [3:0]  is_exception1_temp; //第1条指令的异常标志
     reg  [3:0]  is_exception2_temp; //第2条指令的异常标志
-    reg  [3:0] [6:0] exception_cause1_temp; //第1条指令的异常原因
-    reg  [3:0] [6:0] exception_cause2_temp; //第2条指令的异常原因
+
+    reg  [6:0] pc_exception_cause1_temp; //第1条指令的异常原因
+    reg  [6:0] instbuffer_exception_cause1_temp; //第1条指令的异常原因
+    reg  [6:0] id_exception_cause1_temp; //第1条指令的异常原因
+    reg  [6:0] dispatch_exception_cause1_temp; //第1条指令的异常原因
+    reg  [6:0] pc_exception_cause2_temp; //第2条指令的异常原因
+    reg  [6:0] instbuffer_exception_cause2_temp; //第2条指令的异常原因
+    reg  [6:0] id_exception_cause2_temp; //第2条指令的异常原因
+    reg  [6:0] dispatch_exception_cause2_temp; //第2条指令的异常原因
+
     reg  [4:0]  invtlb_op1_temp;   //第1条指令的分支指令标志
     reg  [4:0]  invtlb_op2_temp;   //第2条指令的分支指令标志
     reg  [1:0]  csr_write_en_temp; //临时寄存器，存储csr写使能
@@ -211,8 +234,14 @@ module dispatch
         is_privilege_temp = is_privilege_i;
         is_exception1_temp = {is_exception_i1, 1'b0};
         is_exception2_temp = {is_exception_i2, 1'b0};
-        exception_cause1_temp = {exception_cause_i1, `EXCEPTION_NOP};
-        exception_cause2_temp = {exception_cause_i2, `EXCEPTION_NOP};
+        pc_exception_cause1_temp = pc_exception_cause_i1;
+        instbuffer_exception_cause1_temp = instbuffer_exception_cause_i1;
+        id_exception_cause1_temp = decoder_exception_cause_i1,;
+        dispatch_exception_cause1_temp = `EXCEPTION_NOP;
+        pc_exception_cause2_temp = pc_exception_cause_i2;
+        instbuffer_exception_cause2_temp = instbuffer_exception_cause_i2;
+        id_exception_cause2_temp = decoder_exception_cause_i2,;
+        dispatch_exception_cause2_temp = `EXCEPTION_NOP;
         invtlb_op1_temp = invtlb_op_i1;
         invtlb_op2_temp = invtlb_op_i2;
         csr_write_en_temp = csr_write_en_i;
@@ -415,8 +444,16 @@ module dispatch
     reg        ex_is_privilege2_temp; 
     reg [3:0]  ex_is_exception1_temp; 
     reg [3:0]  ex_is_exception2_temp; 
-    reg [3:0] [6:0] ex_exception_cause1_temp; 
-    reg [3:0] [6:0] ex_exception_cause2_temp; 
+
+    reg [6:0] ex_pc_exception_cause1_temp; 
+    reg [6:0] ex_instbuffer_exception_cause1_temp;
+    reg [6:0] ex_id_exception_cause1_temp;
+    reg [6:0] ex_dispatch_exception_cause1_temp;
+    reg [6:0] ex_pc_exception_cause2_temp;
+    reg [6:0] ex_instbuffer_exception_cause2_temp;
+    reg [6:0] ex_id_exception_cause2_temp;
+    reg [6:0] ex_dispatch_exception_cause2_temp;
+
     reg [4:0]  ex_invtlb_op1_temp;   
     reg [4:0]  ex_invtlb_op2_temp;   
     reg        ex_csr_write_en1_temp; 
@@ -443,7 +480,12 @@ module dispatch
             ex_reg_read_data1_2_temp = reg_read_data1_2_temp;
             ex_is_privilege1_temp = is_privilege_temp[0];
             ex_is_exception1_temp = is_exception1_temp;
-            ex_exception_cause1_temp = exception_cause1_temp;
+
+            ex_pc_exception_cause1_temp = pc_exception_cause1_temp;
+            ex_instbuffer_exception_cause1_temp = instbuffer_exception_cause1_temp;
+            ex_id_exception_cause1_temp = id_exception_cause1_temp;
+            ex_dispatch_exception_cause1_temp = dispatch_exception_cause1_temp;
+
             ex_invtlb_op1_temp = invtlb_op1_temp;
             ex_csr_write_en1_temp = csr_write_en_temp[0];
             ex_csr_addr1_temp = csr_addr1_temp;
@@ -463,7 +505,12 @@ module dispatch
             ex_reg_read_data1_2_temp = 32'b0;
             ex_is_privilege1_temp = 1'b0;
             ex_is_exception1_temp = 4'b0;
-            ex_exception_cause1_temp = 7'b0;
+
+            ex_pc_exception_cause1_temp = 7'b0;
+            ex_instbuffer_exception_cause1_temp = 7'b0;
+            ex_id_exception_cause1_temp = 7'b0;
+            ex_dispatch_exception_cause1_temp = 7'b0;
+
             ex_invtlb_op1_temp = 5'b0;
             ex_csr_write_en1_temp = 1'b0;
             ex_csr_addr1_temp = 14'b0;
@@ -483,7 +530,12 @@ module dispatch
             ex_reg_read_data2_2_temp = reg_read_data2_2_temp;
             ex_is_privilege2_temp = is_privilege_temp[1];
             ex_is_exception2_temp = is_exception2_temp;
-            ex_exception_cause2_temp = exception_cause2_temp;
+
+            ex_pc_exception_cause2_temp = pc_exception_cause2_temp;
+            ex_instbuffer_exception_cause2_temp = instbuffer_exception_cause2_temp;
+            ex_id_exception_cause2_temp = id_exception_cause2_temp;
+            ex_dispatch_exception_cause2_temp = dispatch_exception_cause2_temp;
+
             ex_invtlb_op2_temp = invtlb_op2_temp;
             ex_csr_write_en2_temp = csr_write_en_temp[1];
             ex_csr_addr2_temp = csr_addr2_temp;
@@ -503,7 +555,12 @@ module dispatch
             ex_reg_read_data2_2_temp = 32'b0;
             ex_is_privilege2_temp = 1'b0;
             ex_is_exception2_temp = 4'b0;
-            ex_exception_cause2_temp = 7'b0;
+
+            ex_pc_exception_cause2_temp = 7'b0;
+            ex_instbuffer_exception_cause2_temp = 7'b0;
+            ex_id_exception_cause2_temp = 7'b0;
+            ex_dispatch_exception_cause2_temp = 7'b0;
+
             ex_invtlb_op2_temp = 5'b0;
             ex_csr_write_en2_temp = 1'b0;
             ex_csr_addr2_temp = 14'b0;
@@ -537,8 +594,16 @@ module dispatch
             is_privilege_o <= 2'b0;
             is_exception_o1 <= 4'b0;
             is_exception_o2 <= 4'b0;
-            exception_cause_o1 <= 28'b0;
-            exception_cause_o2 <= 28'b0;
+
+            pc_exception_cause_o1 <= 7'b0;
+            instbuffer_exception_cause_o1 <= 7'b0;
+            decoder_exception_cause_o1, <= 7'b0;
+            dispatch_exception_cause_o1 <= 7'b0;
+            pc_exception_cause_o2 <= 7'b0;
+            instbuffer_exception_cause_o2 <= 7'b0;
+            decoder_exception_cause_o2, <= 7'b0;
+            dispatch_exception_cause_o2 <= 7'b0;
+
             invtlb_op_o1 <= 5'b0;
             invtlb_op_o2 <= 5'b0;
             csr_write_en_o <= 2'b0;
@@ -570,8 +635,16 @@ module dispatch
             is_privilege_o <= {ex_is_privilege2_temp, ex_is_privilege1_temp};
             is_exception_o1 <= ex_is_exception1_temp;
             is_exception_o2 <= ex_is_exception2_temp;
-            exception_cause_o1 <= ex_exception_cause1_temp;
-            exception_cause_o2 <= ex_exception_cause2_temp;
+
+            pc_exception_cause_o1 <= ex_pc_exception_cause1_temp;
+            instbuffer_exception_cause_o1 <= ex_instbuffer_exception_cause1_temp;
+            decoder_exception_cause_o1, <= ex_id_exception_cause1_temp;
+            dispatch_exception_cause_o1 <= ex_dispatch_exception_cause1_temp;
+            pc_exception_cause_o2 <= ex_pc_exception_cause2_temp;
+            instbuffer_exception_cause_o2 <= ex_instbuffer_exception_cause2_temp;
+            decoder_exception_cause_o2, <= ex_id_exception_cause2_temp;
+            dispatch_exception_cause_o2 <= ex_dispatch_exception_cause2_temp;
+
             invtlb_op_o1 <= ex_invtlb_op1_temp;
             invtlb_op_o2 <= ex_invtlb_op2_temp;
             csr_write_en_o <= {ex_csr_write_en2_temp, ex_csr_write_en1_temp};
@@ -586,6 +659,45 @@ module dispatch
         else begin
             //暂停时不做任何操作
             //保留所有输出不变
+            pc1_o <= pc1_o;
+            pc2_o <= pc2_o;
+            inst1_o <= inst1_o;
+            inst2_o <= inst2_o;
+            valid_o <= valid_o;
+            reg_write_en_o <= reg_write_en_o;
+            reg_write_addr_o1 <= reg_write_addr_o1;
+            reg_write_addr_o2 <= reg_write_addr_o2;
+            alu_op_o1 <= alu_op_o1;
+            alu_op_o2 <= alu_op_o2;
+            alu_sel_o1 <= alu_sel_o1;
+            alu_sel_o2 <= alu_sel_o2;
+            reg_read_data_o1_1 <= reg_read_data_o1_1;
+            reg_read_data_o1_2 <= reg_read_data_o1_2;
+            reg_read_data_o2_1 <= reg_read_data_o2_1;
+            reg_read_data_o2_2 <= reg_read_data_o2_2;
+            is_privilege_o <= is_privilege_o;
+            is_exception_o1 <= is_exception_o1;
+            is_exception_o2 <= is_exception_o2;
+
+            pc_exception_cause_o1 <= pc_exception_cause_o1;
+            instbuffer_exception_cause_o1 <= instbuffer_exception_cause_o1;
+            decoder_exception_cause_o1, <= decoder_exception_cause_o1;
+            dispatch_exception_cause_o1 <= dispatch_exception_cause_o1;
+            pc_exception_cause_o2 <= pc_exception_cause_o2;
+            instbuffer_exception_cause_o2 <= instbuffer_exception_cause_o2;
+            decoder_exception_cause_o2, <= decoder_exception_cause_o2;
+            dispatch_exception_cause_o2 <= dispatch_exception_cause_o2;
+            invtlb_op_o1 <= invtlb_op_o1;
+            invtlb_op_o2 <= invtlb_op_o2;
+            
+            csr_write_en_o <= csr_write_en_o;
+            csr_addr_o1 <= csr_addr_o1;
+            csr_addr_o2 <= csr_addr_o2;
+            csr_read_data_o1 <= csr_read_data_o1;
+            csr_read_data_o2 <= csr_read_data_o2;
+            pre_is_branch_taken_o <= pre_is_branch_taken_o;
+            pre_branch_addr_o1 <= pre_branch_addr_o1;
+            pre_branch_addr_o2 <= pre_branch_addr_o2;
         end
     end
     

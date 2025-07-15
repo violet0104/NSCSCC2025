@@ -8,7 +8,10 @@ module id_1R_I26
     input  wire [31:0] inst,
 
     output reg  [2:0] is_exception,
-    output reg  [2:0][6:0] exception_cause,
+    output reg  [6:0] pc_exception_cause,
+    output reg  [6:0] instbuffer_exception_cause, 
+    output reg  [6:0] decoder_exception_cause,
+
     output reg  inst_valid,
     output reg  [31:0] pc_out,
     output reg  [31:0] inst_out,
@@ -42,8 +45,12 @@ module id_1R_I26
     always @(*) begin
         pc_out = pc;
         inst_out = inst;
+
         is_exception = 3'b0;
-        exception_cause = {3{`EXCEPTION_INE}};
+        pc_exception_cause          = `EXCEPTION_INE;
+        instbuffer_exception_cause  = `EXCEPTION_INE;
+        decoder_exception_cause     = `EXCEPTION_INE;
+        
         reg1_read_en = 1'b0;
         reg2_read_en = 1'b0;
         reg1_read_addr = 5'b0;

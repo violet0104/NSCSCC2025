@@ -9,7 +9,10 @@ module id_2RI12
     input  wire [31:0] inst,
 
     output reg  [2:0] is_exception,
-    output reg  [2:0][6:0] exception_cause,
+    output reg  [6:0] pc_exception_cause,
+    output reg  [6:0] instbuffer_exception_cause, 
+    output reg  [6:0] decoder_exception_cause,
+
     output reg  inst_valid,
     output reg  [31:0] pc_out,
     output reg  [31:0] inst_out,
@@ -39,8 +42,12 @@ module id_2RI12
         opcode = inst[31:22];
         rj = inst[9:5];
         rd = inst[4:0];
+
         is_exception = 3'b0;
-        exception_cause = {3{`EXCEPTION_INE}};
+        pc_exception_cause          = `EXCEPTION_INE;
+        instbuffer_exception_cause  = `EXCEPTION_INE;
+        decoder_exception_cause     = `EXCEPTION_INE;
+        
         ui12 = inst[21:10];
         si12 = inst[21:10];
         pc_out = pc;

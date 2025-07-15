@@ -17,9 +17,15 @@ module decoder (
     input wire [1:0]  pretaken,                     // 前端传递的分支预测结果（是否跳转）
     input wire [31:0] pre_addr_in1 ,           // 前端传递的分支预测目标地址
     input wire [31:0] pre_addr_in2 ,
-    input wire [1:0] [1:0]  is_exception ,          // 前端传递的异常信号，is_exception[0]表示inst[0]是否异常，is_exception[1]表示inst[1]是否异常
-                                                    // is_exception[0][1]表示译码阶段第一条指令出现异常...... is_exception的位宽每经过一个阶段加一
-    input wire [1:0] [1:0] [6:0] exception_cause ,  // 7位宽的异常原因，在csr_defines里定义
+
+    input wire [1:0]  is_exception_in1 ,          // 第一条指令的异常信号
+    input wire [1:0]  is_exception_in2 ,          // 第二条指令的异常信号
+
+    input wire [6:0]  pc_exception_cause_in1 ,        // 异常原因
+    input wire [6:0]  pc_exception_cause_in2 ,        
+
+    input wire [6:0]  instbuffer_exception_cause_in1 ,   
+    input wire [6:0]  instbuffer_exception_cause_in2 ,
 
     // 来自 dispatch 的信号
     input wire [1:0] invalid_en,  // 无效信号
@@ -38,15 +44,21 @@ module decoder (
     output reg  [31:0] dispatch_inst_out1 ,
     output reg  [31:0] dispatch_inst_out2 ,
 
-    output reg  [1:0][2:0]  dispatch_is_exception ,         // 是否异常
-    output reg  [6:0][1:0][2:0]  dispatch_exception_cause , // 异常原因
+    output reg  [2:0]  is_exception_o1 ,            // 是否异常
+    output reg  [2:0]  is_exception_o2 ,         
+    output reg  [6:0]  pc_exception_cause_o1 ,         // 异常原因
+    output reg  [6:0]  pc_exception_cause_o2 ,
+    output reg  [6:0]  instbuffer_exception_cause_o1,
+    output reg  [6:0]  instbuffer_exception_cause_o2,
+    output reg  [6:0]  decoder_exception_cause_o1,
+    output reg  [6:0]  decoder_exception_cause_o2, 
 
-    output reg  [7:0]dispatch_aluop1 ,
-    output reg  [7:0]dispatch_aluop2 ,
-    output reg  [2:0]dispatch_alusel1 ,
-    output reg  [2:0]dispatch_alusel2 ,
-    output reg  [31:0]dispatch_imm1 ,
-    output reg  [31:0]dispatch_imm2 ,
+    output reg  [7:0]  dispatch_aluop1 ,
+    output reg  [7:0]  dispatch_aluop2 ,
+    output reg  [2:0]  dispatch_alusel1 ,
+    output reg  [2:0]  dispatch_alusel2 ,
+    output reg  [31:0] dispatch_imm1 ,
+    output reg  [31:0] dispatch_imm2 ,
 
     output reg  [1:0]  dispatch_reg1_read_en,           // 源寄存器1读使能
     output reg  [1:0]  dispatch_reg2_read_en,           // 源寄存器2读使能
@@ -79,8 +91,14 @@ module decoder (
     reg  [31:0] pc_out [1:0];
     reg  [31:0] inst_out [1:0];
 
-    reg  [2:0] is_exception_out [1:0];              //是否异常
-    reg  [2:0] [6:0]  exception_cause_out [1:0];    //异常原因
+    reg  [2:0] is_exception1;               //是否异常
+    reg  [2:0] is_exception2;              
+    reg  [6:0] pc_exception_cause1;         //异常原因
+    reg  [6:0] pc_exception_cause2;
+    reg  [6:0] instbuffer_exception_cause1; 
+    reg  [6:0] instbuffer_exception_cause2;
+    reg  [6:0] decoder_exception_cause1;
+    reg  [6:0] decoder_exception_cause2;
 
     reg  [7:0]  aluop [1:0];
     reg  [2:0]  alusel [1:0];
@@ -113,8 +131,10 @@ module decoder (
         .pc(pc1),
         .inst(inst1),
         
-        .is_exception(is_exception[0]),
-        .exception_cause(exception_cause[0]),
+        .is_exception(is_exception_in1),
+        .pc_exception_cause(pc_exception_cause_in1),
+        .instbuffer_exception_cause(instbuffer_exception_cause_in1),
+
 
         // 输出信号
         .inst_valid(inst_valid[0]),
@@ -123,8 +143,10 @@ module decoder (
         .pc_out(pc_out[0]),
         .inst_out(inst_out[0]),
 
-        .is_exception_out(is_exception_out[0]),
-        .exception_cause_out(exception_cause_out[0]),
+        .is_exception_out(is_exception1),
+        .pc_exception_cause_out(pc_exception_cause1),
+        .instbuffer_exception_cause_out(instbuffer_exception_cause1),
+        .decoder_exception_cause_out(decoder_exception_cause1),
 
         .aluop(aluop[0]),
         .alusel(alusel[0]),
@@ -157,8 +179,9 @@ module decoder (
         .pc(pc2),
         .inst(inst2),
         
-        .is_exception(is_exception[1]),
-        .exception_cause(exception_cause[1]),
+        .is_exception(is_exception_in2),
+        .pc_exception_cause(pc_exception_cause_in2),
+        .instbuffer_exception_cause(instbuffer_exception_cause_in2),
 
 
         .inst_valid(inst_valid[1]),
@@ -167,8 +190,10 @@ module decoder (
         .pc_out(pc_out[1]),
         .inst_out(inst_out[1]),
 
-        .is_exception_out(is_exception_out[1]),
-        .exception_cause_out(exception_cause_out[1]),
+        .is_exception_out(is_exception2),
+        .pc_exception_cause_out(pc_exception_cause2),
+        .instbuffer_exception_cause_out(instbuffer_exception_cause2),
+        .decoder_exception_cause_out(decoder_exception_cause2),
 
         .aluop(aluop[1]),
         .alusel(alusel[1]),
@@ -195,7 +220,9 @@ module decoder (
     // 入队数据，如果要添加信号，加信号加在最前面并且修改`DECODE_DATA_WIDTH的值
     wire [1:0] [`DECODE_DATA_WIDTH:0] enqueue_data;
     assign  enqueue_data[0] =  {
-                                exception_cause_out[0], // 205:185      // 这个不知道对不对
+                                decoder_exception_cause_out[0],     // 205:199     
+                                instbuffer_exception_cause_out[0],  // 198:192
+                                pc_exception_cause_out[0],          // 191:185      
                                 is_exception_out[0],    // 184:182
 
                                 invtlb_op[0],           // 181:177
@@ -224,7 +251,9 @@ module decoder (
                                 id_valid[0]};           // 0
 
     assign  enqueue_data[0] =  {
-                                exception_cause_out[1], // 205:185      // 这个不知道对不对
+                                decoder_exception_cause_out[1],     // 205:199     
+                                instbuffer_exception_cause_out[1],  // 198:192
+                                pc_exception_cause_out[1],          // 191:185    
                                 is_exception_out[1],    // 184:182
 
                                 invtlb_op[1],           // 181:177
@@ -335,13 +364,15 @@ module decoder (
         dispatch_invtlb_op1         =   dequeue_data1[181:177];
         dispatch_invtlb_op2         =   dequeue_data1[181:177];
         
-        dispatch_is_exception[0]    =   dequeue_data1[184:182];
-        dispatch_is_exception[1]    =   dequeue_data2[184:182];
-        dispatch_exception_cause[0] =   dequeue_data1[205:185];
-        dispatch_exception_cause[1] =   dequeue_data2[205:185];
+        dispatch_is_exception1      =   dequeue_data1[184:182];
+        dispatch_is_exception2      =   dequeue_data2[184:182];
+        pc_exception_cause_o1       =   dequeue_data1[191:185];
+        pc_exception_cause_o2       =   dequeue_data2[191:185];
+        instbuffer_exception_cause_o1   =   dequeue_data2[198:192];
+        instbuffer_exception_cause_o2   =   dequeue_data2[198:192];
+        decoder_exception_cause_o1      =   dequeue_data1[205:199];
+        decoder_exception_cause_o2      =   dequeue_data2[205:199];
     end
-
-
 
     assign pause_decoder = full;
 

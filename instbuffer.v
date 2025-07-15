@@ -11,10 +11,12 @@ module instbuffer
     input wire [31:0] inst2,
     input wire [31:0] pred_addr,
 
-    input wire is_exception,
-    input wire [6:0] exception_cause,
+    input wire  pc_exception_in1,
+    input wire  pc_exception_in2,
+    input wire [6:0] pc_exception_cause_in1,
+    input wire [6:0] pc_exception_cause_in2,
 
-    output wire [103:0] data_out1,
+    output wire [103:0] data_out1,      
     output wire [103:0] data_out2,
     output wire data_valid,
 
@@ -28,8 +30,8 @@ module instbuffer
     wire full2;
     wire empty2;
 
-    wire push_data1 = {pred_addr,pc1,inst1,is_exception,exception_cause};
-    wire push_data2 = {pred_addr+4,pc2,inst2,is_exception,exception_cause};
+    wire push_data1 = {pred_addr,  pc1,inst1,pc_is_exception_in1,pc_exception_cause_in1};
+    wire push_data2 = {pred_addr+4,pc2,inst2,pc_is_exception_in2,pc_exception_cause_in2};
 
     assign data_valid = !empty1 & !empty2 & get_data_req;
     assign stall = stall1 | full1;
