@@ -11,24 +11,14 @@ module dispatch
     input wire pause,
     input wire flush,
 
-    //数据信息
+
+    // 来自dispatch的输入信号
     input wire [31:0] pc1_i,      //指令地址
     input wire [31:0] pc2_i,      //指令地址
     
     input wire [31:0] inst1_i,    //指令编码
     input wire [31:0] inst2_i,    //指令编码
     input wire [1:0]  valid_i,   //指令有效标志
-
-    //读使能和地址要同时传输给寄存器堆和ex阶段
-    input wire [1:0]  reg_read_en_i1,     //第1条指令的两个源寄存器源寄存器读使能
-    input wire [1:0]  reg_read_en_i2,     //第2条指令的两个源寄存器源寄存器读使能   
-    input wire [4:0]  reg_read_addr_i1_1, //第1条指令的第1个源寄存器地址
-    input wire [4:0]  reg_read_addr_i1_2, //第1条指令的第2个源寄存器地址
-    input wire [4:0]  reg_read_addr_i2_1, //第2条指令的第1个源寄存器地址
-    input wire [4:0]  reg_read_addr_i2_2, //第2条指令的第2个源寄存器地址
-
-    input wire [1:0]  is_privilege_i, //两条指令的特权指令标志
-    input wire [1:0]  is_cnt_i,       //两条指令的计数器指令标志
 
     input wire [2:0]  is_exception_i1, //第1条指令的异常标志
     input wire [2:0]  is_exception_i2, //第2条指令的异常标志
@@ -40,21 +30,40 @@ module dispatch
     input wire [6:0] instbuffer_exception_cause_i2,
     input wire [6:0] decoder_exception_cause_i2,
 
-    input wire [4:0]  invtlb_op_i1,   //第1条指令的分支指令标志
-    input wire [4:0]  invtlb_op_i2,   //第2条指令的分支指令标志
+    input wire [1:0]  is_privilege_i, //两条指令的特权指令标志
+    input wire [1:0]  is_cnt_i,       //两条指令的计数器指令标志
 
-    input wire [1:0]  reg_write_en_i,    //两条指令目的寄存器写使能
-    input wire [4:0]  reg_write_addr_i1,  //指令1目的寄存器地址
-    input wire [4:0]  reg_write_addr_i2,  //指令2目的寄存器地址
-     
-    input wire [31:0] imm_i1,     //立即数值
-    input wire [31:0] imm_i2,     //立即数值
     input wire [7:0]  alu_op_i1,  //ALU操作码
     input wire [7:0]  alu_op_i2,  //ALU操作码
     input wire [2:0]  alu_sel_i1, //ALU功能选择
     input wire [2:0]  alu_sel_i2, //ALU功能选择
+    input wire [31:0] imm_i1,     //立即数值
+    input wire [31:0] imm_i2,     //立即数值
 
-    //前递数据
+    input wire [4:0]  invtlb_op_i1,   //第1条指令的分支指令标志
+    input wire [4:0]  invtlb_op_i2,   //第2条指令的分支指令标志
+
+    input wire [1:0]  reg_read_en_i1,     //第1条指令的两个源寄存器源寄存器读使能
+    input wire [1:0]  reg_read_en_i2,     //第2条指令的两个源寄存器源寄存器读使能   
+    input wire [4:0]  reg_read_addr_i1_1, //第1条指令的第1个源寄存器地址
+    input wire [4:0]  reg_read_addr_i1_2, //第1条指令的第2个源寄存器地址
+    input wire [4:0]  reg_read_addr_i2_1, //第2条指令的第1个源寄存器地址
+    input wire [4:0]  reg_read_addr_i2_2, //第2条指令的第2个源寄存器地址
+
+    input wire [1:0]  reg_write_en_i,    //两条指令目的寄存器写使能
+    input wire [4:0]  reg_write_addr_i1,  //指令1目的寄存器地址
+    input wire [4:0]  reg_write_addr_i2,  //指令2目的寄存器地址
+
+    input wire [1:0]   csr_read_en_i,   //csr读使能
+    input wire [13:0]  csr_addr_i1,     //第1条指令csr地址
+    input wire [13:0]  csr_addr_i2,     //第2条指令csr地址
+    input wire [1:0]   csr_write_en_i,  //csr写使能
+    input wire [1:0]   pre_is_branch_taken_i,//前一条指令是否是分支指令
+    input wire [31:0]  pre_branch_addr_i1, 
+    input wire [31:0]  pre_branch_addr_i2, 
+
+
+    // 来自ex和mem的前递数据
     input wire [1:0]   ex_pf_write_en,     //从ex阶段前递出来的使能
     input wire [4:0]   ex_pf_write_addr1,   //从ex阶段前递出来的地址
     input wire [4:0]   ex_pf_write_addr2,   //从ex阶段前递出来的地址
@@ -79,47 +88,60 @@ module dispatch
     //来自ex阶段的，可能由于乘除法等指令引起的暂停信号
     input wire         ex_pause,           //ex阶段的暂停信号
 
-    //输出
+
+    // 输出给execute的数据
     output reg [31:0] pc1_o,  
     output reg [31:0] pc2_o,  
     output reg [31:0] inst1_o,
     output reg [31:0] inst2_o,
     output reg [1:0]  valid_o,
 
-
-    output reg [1:0]  is_privilege_o, //两条指令的特权指令标志
     output reg [3:0]  is_exception_o1, //第1条指令的异常标志
     output reg [3:0]  is_exception_o2, //第2条指令的异常标
 
-    output wire [6:0] pc_exception_cause_o1,
-    output wire [6:0] instbuffer_exception_cause_o1,
-    output wire [6:0] decoder_exception_cause_o1,
-    output wire [6:0] dispatch_exception_cause_o1,
-    output wire [6:0] pc_exception_cause_o2,
-    output wire [6:0] instbuffer_exception_cause_o2,
-    output wire [6:0] decoder_exception_cause_o2,
-    output wire [6:0] dispatch_exception_cause_o2,
+    output reg [6:0] pc_exception_cause_o1,
+    output reg [6:0] instbuffer_exception_cause_o1,
+    output reg [6:0] decoder_exception_cause_o1,
+    output reg [6:0] dispatch_exception_cause_o1,
+    output reg [6:0] pc_exception_cause_o2,
+    output reg [6:0] instbuffer_exception_cause_o2,
+    output reg [6:0] decoder_exception_cause_o2,
+    output reg [6:0] dispatch_exception_cause_o2,
 
-    output reg [4:0]  invtlb_op_o1,   //第1条指令的分支指令标志
-    output reg [4:0]  invtlb_op_o2,   //第2条指令的分支指令标志
-
-    output reg [1:0]  reg_write_en_o,    //目的寄存器写使能
-    output reg [4:0]  reg_write_addr_o1,  //目的寄存器地址
-    output reg [4:0]  reg_write_addr_o2,  //目的寄存器地址
-    
-    output reg [31:0] reg_read_data_o1_1, //寄存器堆给出的第1条指令的第1个源操作数
-    output reg [31:0] reg_read_data_o1_2, //寄存器堆给出的第1条指令的第2个源操作数
-    output reg [31:0] reg_read_data_o2_1, //寄存器堆给出的第2条指令的第1个源操作数
-    output reg [31:0] reg_read_data_o2_2, //寄存器堆给出的第2条指令的第2个源操作数
+    output reg [1:0]  is_privilege_o, //两条指令的特权指令标志
 
     output reg [7:0]  alu_op_o1,
     output reg [7:0]  alu_op_o2,
     output reg [2:0]  alu_sel_o1,
     output reg [2:0]  alu_sel_o2,
 
+    output reg [31:0] reg_read_data_o1_1, //寄存器堆给出的第1条指令的第1个源操作数
+    output reg [31:0] reg_read_data_o1_2, //寄存器堆给出的第1条指令的第2个源操作数
+    output reg [31:0] reg_read_data_o2_1, //寄存器堆给出的第2条指令的第1个源操作数
+    output reg [31:0] reg_read_data_o2_2, //寄存器堆给出的第2条指令的第2个源操作数
+    
+    output reg [1:0]  reg_write_en_o,     //目的寄存器写使能
+    output reg [4:0]  reg_write_addr_o1,  //目的寄存器地址
+    output reg [4:0]  reg_write_addr_o2,  //目的寄存器地址
+
+    output reg [31:0]  csr_read_data_o1, //寄存器堆的csr读数据
+    output reg [31:0]  csr_read_data_o2, //寄存器堆的csr读数据
+    output reg [1:0]   csr_write_en_o, //寄存器堆的csr写使能
+    output reg [13:0]  csr_addr_o1,     //寄存器堆的csr地址
+    output reg [13:0]  csr_addr_o2,     //寄存器堆的csr地址
+    
+    output reg [4:0]  invtlb_op_o1,   //第1条指令的分支指令标志
+    output reg [4:0]  invtlb_op_o2,   //第2条指令的分支指令标志
+    
+    output reg [1:0]   pre_is_branch_taken_o, //前一条指令是否是分支指令
+    output reg [31:0]  pre_branch_addr_o1, //前一条指令的分支地址
+    output reg [31:0]  pre_branch_addr_o2,  //前一条指令的分支地址
+
+    
+    // 输出给 id 阶段的信号
     output wire [1:0] invalid_en, //指令发射控制信号
 
-    //与寄存器之间的输入与输出
+    //与寄存器的接口
     input wire [31:0] from_reg_read_data_i1_1, //寄存器给出的第1条指令的第1个源操作数
     input wire [31:0] from_reg_read_data_i1_2, //寄存器给出的第1条指令的第2个源操作数
     input wire [31:0] from_reg_read_data_i2_1, //寄存器给出的第2条指令的第1个源操作数
@@ -127,28 +149,14 @@ module dispatch
 
     output wire dispatch_pause ,//发射器暂停信号,当发生load-use冒险时需要暂停
 
-    //给csr模块的读使能和读地址
-    input wire [1:0]   csr_read_en_i,//csr读使能
-    input wire [13:0]  csr_addr_i1,   //第1条指令csr地址
-    input wire [13:0]  csr_addr_i2,   //第2条指令csr地址
-    input wire [1:0]   csr_write_en_i,//csr写使能
-    input wire [1:0]   pre_is_branch_taken_i,//前一条指令是否是分支指令
-    input wire [31:0]  pre_branch_addr_i1, 
-    input wire [31:0]  pre_branch_addr_i2, 
 
-    input wire [31:0]  csr_read_data_i1,//csr读数据
-    input wire [31:0]  csr_read_data_i2,//csr读数据
+    // 和csr的接口
+    input wire  [31:0]  csr_read_data_i1,   // csr读数据
+    input wire  [31:0]  csr_read_data_i2,   // csr读数据
 
-    output reg [1:0]   csr_write_en_o, //寄存器堆的csr写使能
-    output reg [13:0]  csr_addr_o1,     //寄存器堆的csr地址
-    output reg [13:0]  csr_addr_o2,     //寄存器堆的csr地址
-
-    output reg [31:0]  csr_read_data_o1, //寄存器堆的csr读数据
-    output reg [31:0]  csr_read_data_o2, //寄存器堆的csr读数据
-    
-    output reg [1:0]   pre_is_branch_taken_o, //前一条指令是否是分支指令
-    output reg [31:0]  pre_branch_addr_o1, //前一条指令的分支地址
-    output reg [31:0]  pre_branch_addr_o2  //前一条指令的分支地址
+    output wire [1:0]   csr_read_en_o,      // csr读使能
+    output wire [13:0]   csr_read_addr_o1,   // csr读地址
+    output wire [13:0]   csr_read_addr_o2   // csr读地址
 );
 
     wire [1:0] send_en;     //内部发射信号，给invalid_en赋值
@@ -236,11 +244,11 @@ module dispatch
         is_exception2_temp = {is_exception_i2, 1'b0};
         pc_exception_cause1_temp = pc_exception_cause_i1;
         instbuffer_exception_cause1_temp = instbuffer_exception_cause_i1;
-        id_exception_cause1_temp = decoder_exception_cause_i1,;
+        id_exception_cause1_temp = decoder_exception_cause_i1;
         dispatch_exception_cause1_temp = `EXCEPTION_NOP;
         pc_exception_cause2_temp = pc_exception_cause_i2;
         instbuffer_exception_cause2_temp = instbuffer_exception_cause_i2;
-        id_exception_cause2_temp = decoder_exception_cause_i2,;
+        id_exception_cause2_temp = decoder_exception_cause_i2;
         dispatch_exception_cause2_temp = `EXCEPTION_NOP;
         invtlb_op1_temp = invtlb_op_i1;
         invtlb_op2_temp = invtlb_op_i2;
@@ -373,6 +381,10 @@ module dispatch
             if(reg_read_en_i2[1]) reg_read_data2_2_temp = pc2_i;
         end
     end
+
+    assign csr_read_en_o = csr_read_en_i;
+    assign csr_read_addr_o1 = csr_addr_i1;
+    assign csr_read_addr_o2 = csr_addr_i2;
 
     //csr
     always @(*) begin
@@ -597,11 +609,11 @@ module dispatch
 
             pc_exception_cause_o1 <= 7'b0;
             instbuffer_exception_cause_o1 <= 7'b0;
-            decoder_exception_cause_o1, <= 7'b0;
+            decoder_exception_cause_o1 <= 7'b0;
             dispatch_exception_cause_o1 <= 7'b0;
             pc_exception_cause_o2 <= 7'b0;
             instbuffer_exception_cause_o2 <= 7'b0;
-            decoder_exception_cause_o2, <= 7'b0;
+            decoder_exception_cause_o2 <= 7'b0;
             dispatch_exception_cause_o2 <= 7'b0;
 
             invtlb_op_o1 <= 5'b0;
@@ -638,11 +650,11 @@ module dispatch
 
             pc_exception_cause_o1 <= ex_pc_exception_cause1_temp;
             instbuffer_exception_cause_o1 <= ex_instbuffer_exception_cause1_temp;
-            decoder_exception_cause_o1, <= ex_id_exception_cause1_temp;
+            decoder_exception_cause_o1  <= ex_id_exception_cause1_temp;
             dispatch_exception_cause_o1 <= ex_dispatch_exception_cause1_temp;
             pc_exception_cause_o2 <= ex_pc_exception_cause2_temp;
             instbuffer_exception_cause_o2 <= ex_instbuffer_exception_cause2_temp;
-            decoder_exception_cause_o2, <= ex_id_exception_cause2_temp;
+            decoder_exception_cause_o2  <= ex_id_exception_cause2_temp;
             dispatch_exception_cause_o2 <= ex_dispatch_exception_cause2_temp;
 
             invtlb_op_o1 <= ex_invtlb_op1_temp;
@@ -681,11 +693,11 @@ module dispatch
 
             pc_exception_cause_o1 <= pc_exception_cause_o1;
             instbuffer_exception_cause_o1 <= instbuffer_exception_cause_o1;
-            decoder_exception_cause_o1, <= decoder_exception_cause_o1;
+            decoder_exception_cause_o1  <= decoder_exception_cause_o1;
             dispatch_exception_cause_o1 <= dispatch_exception_cause_o1;
             pc_exception_cause_o2 <= pc_exception_cause_o2;
             instbuffer_exception_cause_o2 <= instbuffer_exception_cause_o2;
-            decoder_exception_cause_o2, <= decoder_exception_cause_o2;
+            decoder_exception_cause_o2  <= decoder_exception_cause_o2;
             dispatch_exception_cause_o2 <= dispatch_exception_cause_o2;
             invtlb_op_o1 <= invtlb_op_o1;
             invtlb_op_o2 <= invtlb_op_o2;

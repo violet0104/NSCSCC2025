@@ -77,8 +77,8 @@ module front
     //我新加的信号**********************************
     wire if_valid;
     wire instbuffer_stall;
-    wire [96:0] data_out1;
-    wire [96:0] data_out2;
+    wire [103:0] data_out1;
+    wire [103:0] data_out2;
     wire [1:0] pred_taken;
     //***************************************
 
@@ -128,7 +128,7 @@ module front
     BPU u_BPU
     (
         .cpu_clk(cpu_clk),
-        .cpu_rst(cpu_rst),    //low active???
+        .cpu_rstn(cpu_rst),    //low active???
         .if_pc(pc_out),
 
         .pred_taken1(pred_taken[0]),
@@ -171,7 +171,7 @@ module front
         .pc_exception_cause_in2(pi_icache_exception_cause2),
         .data_out1(data_out1),
 
-        .data_out1(data_out2),
+        .data_out2(data_out2),
         .data_valid(fb_valid),
 
         .stall(stall)

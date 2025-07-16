@@ -85,8 +85,7 @@ module decoder (
 );
 
     //内部信号
-    reg  [1:0]  inst_valid;  
-    reg  [1:0]  id_valid;       //ID阶段有效信号
+    wire  [1:0]  id_valid;       //ID阶段有效信号
 
     reg  [31:0] pc_out [1:0];
     reg  [31:0] inst_out [1:0];
@@ -119,7 +118,7 @@ module decoder (
     reg  [1:0]  csr_write_en;       // CSR写使能
     reg  [13:0] csr_addr [1:0];     // CSR
     reg  [1:0]  is_cnt;             // 是否是计数器
-    reg  [1:0]  invtlb_op ;         // TLB无效
+    reg  [4:0]  invtlb_op [1:0];         // TLB无效
 
     id u_id_0 (
         // 输入信号
@@ -137,7 +136,6 @@ module decoder (
 
 
         // 输出信号
-        .inst_valid(inst_valid[0]),
         .id_valid(id_valid[0]),
 
         .pc_out(pc_out[0]),
@@ -184,7 +182,6 @@ module decoder (
         .instbuffer_exception_cause(instbuffer_exception_cause_in2),
 
 
-        .inst_valid(inst_valid[1]),
         .id_valid(id_valid[1]),
 
         .pc_out(pc_out[1]),
@@ -199,31 +196,31 @@ module decoder (
         .alusel(alusel[1]),
         .imm(imm[1]),
 
-        .reg1_read_en(reg1_read_en[0]),   
-        .reg2_read_en(reg2_read_en[0]),   
-        .reg1_read_addr(reg1_read_addr[0]),
-        .reg2_read_addr(reg2_read_addr[0]),
-        .reg_writen_en (reg_writen_en[0]),  
-        .reg_write_addr(reg_write_addr[0]),  
+        .reg1_read_en(reg1_read_en[1]),   
+        .reg2_read_en(reg2_read_en[1]),   
+        .reg1_read_addr(reg1_read_addr[1]),
+        .reg2_read_addr(reg2_read_addr[1]),
+        .reg_writen_en (reg_writen_en[1]),  
+        .reg_write_addr(reg_write_addr[1]),  
 
-        .id_pre_taken(id_pre_taken[0]), 
-        .id_pre_addr(pre_addr[0]), 
+        .id_pre_taken(id_pre_taken[1]), 
+        .id_pre_addr(pre_addr[1]), 
         
-        .is_privilege(is_privilege[0]), 
-        .csr_read_en(csr_read_en[0]), 
-        .csr_write_en(csr_write_en[0]), 
-        .csr_addr(csr_addr[0]), 
-        .is_cnt(is_cnt[0]), 
-        .invtlb_op(invtlb_op[0]) 
+        .is_privilege(is_privilege[1]), 
+        .csr_read_en(csr_read_en[1]), 
+        .csr_write_en(csr_write_en[1]), 
+        .csr_addr(csr_addr[1]), 
+        .is_cnt(is_cnt[1]), 
+        .invtlb_op(invtlb_op[1]) 
     );
     
     // 入队数据，如果要添加信号，加信号加在最前面并且修改`DECODE_DATA_WIDTH的值
-    wire [1:0] [`DECODE_DATA_WIDTH:0] enqueue_data;
+    wire [`DECODE_DATA_WIDTH:0] enqueue_data [1:0];
     assign  enqueue_data[0] =  {
-                                decoder_exception_cause_out[0],     // 205:199     
-                                instbuffer_exception_cause_out[0],  // 198:192
-                                pc_exception_cause_out[0],          // 191:185      
-                                is_exception_out[0],    // 184:182
+                                decoder_exception_cause1,     // 205:199     
+                                instbuffer_exception_cause1,  // 198:192
+                                pc_exception_cause1,          // 191:185      
+                                is_exception1,    // 184:182
 
                                 invtlb_op[0],           // 181:177
                                 is_cnt[0],              // 176
@@ -250,11 +247,11 @@ module decoder (
 
                                 id_valid[0]};           // 0
 
-    assign  enqueue_data[0] =  {
-                                decoder_exception_cause_out[1],     // 205:199     
-                                instbuffer_exception_cause_out[1],  // 198:192
-                                pc_exception_cause_out[1],          // 191:185    
-                                is_exception_out[1],    // 184:182
+    assign  enqueue_data[1] =  {
+                                decoder_exception_cause2,     // 205:199     
+                                instbuffer_exception_cause2,  // 198:192
+                                pc_exception_cause2,          // 191:185    
+                                is_exception2,    // 184:182
 
                                 invtlb_op[1],           // 181:177
                                 is_cnt[1],              // 176
@@ -282,7 +279,7 @@ module decoder (
                                 id_valid[1]};           // 0      
 
     // 出队数据
-    wire  [1:0] [`DECODE_DATA_WIDTH:0] dequeue_data;
+    wire [`DECODE_DATA_WIDTH:0] dequeue_data [1:0];
 
     wire fifo_rst;
     assign fifo_rst = rst || flush;
@@ -297,10 +294,12 @@ module decoder (
         .flush(flush),
 
         .enqueue_en(enqueue_en),
-        .enqueue_data(enqueue_data),
+        .enqueue_data1(enqueue_data[0]),
+        .enqueue_data2(enqueue_data[1]),
 
         .invalid_en(invalid_en),
-        .dequeue_data(dequeue_data),
+        .dequeue_data1(dequeue_data[0]),
+        .dequeue_data2(dequeue_data[1]),
 
         .get_data_req(get_data_req_o),
         .full(full),
@@ -337,16 +336,16 @@ module decoder (
         dispatch_imm2               =   dequeue_data2[107:76];
         dispatch_reg1_read_en[0]    =   dequeue_data1[108];   
         dispatch_reg1_read_en[1]    =   dequeue_data2[108];   
-        dispatch_reg2_read_en[0]    =   dequeue_data2[109];   
+        dispatch_reg2_read_en[0]    =   dequeue_data1[109];   
         dispatch_reg2_read_en[1]    =   dequeue_data2[109];   
         dispatch_reg1_read_addr1    =   dequeue_data1[114:110];
-        dispatch_reg1_read_addr2    =   dequeue_data1[114:110];
-        dispatch_reg2_read_addr1    =   dequeue_data2[119:115];
+        dispatch_reg1_read_addr2    =   dequeue_data2[114:110];
+        dispatch_reg2_read_addr1    =   dequeue_data1[119:115];
         dispatch_reg2_read_addr2    =   dequeue_data2[119:115];
         dispatch_reg_writen_en[0]   =   dequeue_data1[120];
         dispatch_reg_writen_en[1]   =   dequeue_data2[120];  
         dispatch_reg_write_addr1    =   dequeue_data1[125:121];
-        dispatch_reg_write_addr2    =   dequeue_data1[125:121];
+        dispatch_reg_write_addr2    =   dequeue_data2[125:121];
         dispatch_id_pre_taken[0]    =   dequeue_data1[126];
         dispatch_id_pre_taken[1]    =   dequeue_data2[126];
         dispatch_id_pre_addr1       =   dequeue_data1[158:127];
@@ -362,13 +361,13 @@ module decoder (
         dispatch_is_cnt[0]          =   dequeue_data1[176];
         dispatch_is_cnt[1]          =   dequeue_data2[176];
         dispatch_invtlb_op1         =   dequeue_data1[181:177];
-        dispatch_invtlb_op2         =   dequeue_data1[181:177];
+        dispatch_invtlb_op2         =   dequeue_data2[181:177];
         
-        dispatch_is_exception1      =   dequeue_data1[184:182];
-        dispatch_is_exception2      =   dequeue_data2[184:182];
-        pc_exception_cause_o1       =   dequeue_data1[191:185];
-        pc_exception_cause_o2       =   dequeue_data2[191:185];
-        instbuffer_exception_cause_o1   =   dequeue_data2[198:192];
+        is_exception_o1                 =   dequeue_data1[184:182];
+        is_exception_o2                 =   dequeue_data2[184:182];
+        pc_exception_cause_o1           =   dequeue_data1[191:185];
+        pc_exception_cause_o2           =   dequeue_data2[191:185];
+        instbuffer_exception_cause_o1   =   dequeue_data1[198:192];
         instbuffer_exception_cause_o2   =   dequeue_data2[198:192];
         decoder_exception_cause_o1      =   dequeue_data1[205:199];
         decoder_exception_cause_o2      =   dequeue_data2[205:199];

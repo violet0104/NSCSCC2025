@@ -169,4 +169,4 @@
 // 数据长度
 `define DEPTH 8                 // 队列深度
 `define DATA_WIDTH 97           // 前端传递的数据宽度   
-`define DECODE_DATA_WIDTH 32    // 解码数据宽度 (?? 还未确定长度)
+`define DECODE_DATA_WIDTH 205    // 解码数据宽度 (?? 还未确定长度)

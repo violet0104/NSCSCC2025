@@ -2,12 +2,15 @@ module csr (
     input wire clk,
     input wire rst,
 
-    //dispatch发来的
+    // 和dispatch的接口
     input wire [1:0]  csr_read_en_i,
     input wire [13:0] csr_read_addr_i1,
     input wire [13:0] csr_read_addr_i2,
+    
+    output reg [31:0] csr_read_data_o1,
+    output reg [31:0] csr_read_data_o2,
 
-    //wb发来的
+    // 来自wb的信号
     input wire        is_llw_scw_i,
     input wire        csr_write_en_i,
     input wire [13:0] csr_write_addr_i,
@@ -41,17 +44,19 @@ module csr (
     output wire [1:0]  csr_plv_o,
     output wire [1:0]  csr_datf_o,
     output wire [1:0]  csr_datm_o,
-    //
-
+    
+    
+    // from outer（不知道是什么）
     input wire        is_ipi, //接0
     input wire [7:0]  is_hwi,//mytop输入的
 
-    //csr_slave
+
+    // 和ctrl的接口
     input wire        is_exception_i, //是否是异常
+    input wire [6:0]  exception_cause_i, //异常原因
     input wire [31:0] exception_pc_i, //异常PC地址
     input wire [31:0] exception_addr_i, //异常地址
     input wire [5:0]  ecode_i, //异常ecode
-    input wire [6:0]  exception_cause_i, //异常原因
     input wire [8:0]  esubcode_i, //异常子码
     input wire        is_ertn_i,
     input wire        is_inst_tlb_exception_i, //是否是指令TLB异常
@@ -61,13 +66,7 @@ module csr (
     output wire [31:0] era_o, //异常返回地址
     output wire [31:0] crmd_o, //控制寄存器 
     output wire        is_interrupt_o, //是否是中断
-    output wire [31:0] tlbrentry_o,
-
-    
-
-    //发给dispatch
-    output reg [31:0] csr_read_data_o1,
-    output reg [31:0] csr_read_data_o2
+    output wire [31:0] tlbrentry_o
 );
     
     reg [31:0] crmd; 

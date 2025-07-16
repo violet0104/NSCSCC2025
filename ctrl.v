@@ -39,11 +39,11 @@ module ctrl
     input  wire        ex_excp_flush,//异常刷新信号,从execute阶段输入
 
     //wb阶段输入wb
-    input  wire [1:0]        reg_writr_en_i,//写回阶段刷新信号
-    input  wire [4:0]        reg_writr_addr1_i,//写回阶段寄存器地址
-    input  wire [4:0]        reg_writr_addr2_i,//写回阶段寄存器地址
-    input  wire [31:0]       reg_writr_data1_i,//写回阶段寄存器数据
-    input  wire [31:0]       reg_writr_data2_i,//写回阶段寄存器数据
+    input  wire [1:0]        reg_write_en_i,//写回阶段刷新信号
+    input  wire [4:0]        reg_write_addr1_i,//写回阶段寄存器地址
+    input  wire [4:0]        reg_write_addr2_i,//写回阶段寄存器地址
+    input  wire [31:0]       reg_write_data1_i,//写回阶段寄存器数据
+    input  wire [31:0]       reg_write_data2_i,//写回阶段寄存器数据
     input  wire [1:0]        is_llw_scw_i,//是否是 llw/scw 指令
     input  wire [1:0]        csr_write_en_i,//csr写使能信号
     input  wire [13:0]       csr_write_addr1_i,//csr写地址
@@ -83,11 +83,11 @@ module ctrl
     output wire [31:0] new_pc,//新的PC地址
 
     //to regfile
-    output reg  [1:0]  reg_writr_en_o,//写回阶段刷新信号
-    output reg  [4:0]  reg_writr_addr1_o,//写回阶段寄存器地址
-    output reg  [4:0]  reg_writr_addr2_o,//写回阶段寄存器地址
-    output reg  [31:0] reg_writr_data1_o,//写回阶段寄存器数据
-    output reg  [31:0] reg_writr_data2_o,//写回阶段寄存器数据
+    output reg  [1:0]  reg_write_en_o,//写回阶段刷新信号
+    output reg  [4:0]  reg_write_addr1_o,//写回阶段寄存器地址
+    output reg  [4:0]  reg_write_addr2_o,//写回阶段寄存器地址
+    output reg  [31:0] reg_write_data1_o,//写回阶段寄存器数据
+    output reg  [31:0] reg_write_data2_o,//写回阶段寄存器数据
 
     //to csr
     output wire is_llw_scw_o,//是否是 llw/scw 指令
@@ -95,7 +95,7 @@ module ctrl
     output wire [13:0] csr_write_addr_o,//csr写地址
     output wire [31:0] csr_write_data_o,//csr写数据
 
-    //to csr_master
+    // with csr
     input wire [31:0] csr_eentry_i, //异常入口地址
     input wire [31:0] csr_era_i, //异常返回地址
     input wire [31:0] csr_crmd_i, //控制寄存器 
@@ -122,8 +122,8 @@ module ctrl
     assign new_pc = (|is_exception) ? csr_eentry_i : (ertn_flush ? csr_era_i : (refetch_flush ? refetch_target : branch_target));
 
     always @(*) begin
-        is_exception[0] = !rst && valid_i[0] && (is_exception_i[0] != 6'b0 || csr_is_interrupt_i);
-        is_exception[1] = !rst && valid_i[1] && (is_exception_i[1] != 6'b0 || csr_is_interrupt_i);
+        is_exception[0] = !rst && valid_i[0] && (is_exception1_i != 6'b0 || csr_is_interrupt_i);
+        is_exception[1] = !rst && valid_i[1] && (is_exception2_i != 6'b0 || csr_is_interrupt_i);
     end
 
     assign csr_is_exception_o = |is_exception;
@@ -143,24 +143,24 @@ module ctrl
     };
 
     always @(*) begin
-        reg_writr_addr1_o = reg_writr_addr1_i;
-        reg_writr_addr2_o = reg_writr_addr2_i;
-        reg_writr_data1_o = reg_writr_data1_i;
-        reg_writr_data2_o = reg_writr_data2_i;
+        reg_write_addr1_o = reg_write_addr1_i;
+        reg_write_addr2_o = reg_write_addr2_i;
+        reg_write_data1_o = reg_write_data1_i;
+        reg_write_data2_o = reg_write_data2_i;
     end
 
-    wire [1:0] reg_writr_en_out;
-    assign reg_writr_en_out[0] = (is_exception[0] || pause[7]) ? 1'b0 : reg_writr_en_i[0];
-    assign reg_writr_en_out[1] = (|is_exception || pause[7]) ? 1'b0 : reg_writr_en_i[1];
+    wire [1:0] reg_write_en_out;
+    assign reg_write_en_out[0] = (is_exception[0] || pause[7]) ? 1'b0 : reg_write_en_i[0];
+    assign reg_write_en_out[1] = (|is_exception || pause[7]) ? 1'b0 : reg_write_en_i[1];
 
     always @(*) begin
-        if(reg_writr_addr1_i == reg_writr_addr2_i) begin
-            reg_writr_en_o[0] = 1'b0;
-            reg_writr_en_o[1] = reg_writr_en_out[1];
+        if(reg_write_addr1_i == reg_write_addr2_i) begin
+            reg_write_en_o[0] = 1'b0;
+            reg_write_en_o[1] = reg_write_en_out[1];
         end
         else begin
-            reg_writr_en_o[0] = reg_writr_en_out[0];
-            reg_writr_en_o[1] = reg_writr_en_out[1];
+            reg_write_en_o[0] = reg_write_en_out[0];
+            reg_write_en_o[1] = reg_write_en_out[1];
         end
     end
 

@@ -17,8 +17,7 @@ module id
     input wire [6:0] instbuffer_exception_cause,
 
 
-    output reg  inst_valid,
-    output reg  id_valid_out,
+    output reg  id_valid,
 
     output reg  [31:0] pc_out,
     output reg  [31:0] inst_out,
@@ -50,20 +49,16 @@ module id
     output reg  invtlb_op           //TLB无效操作
 
 );
-    reg  [5:0]  id_valid;  //这个6位的向量表示哪个解码器的输出是有效的
+    wire [5:0] id_valid_o;
     reg  [31:0] id_pc_out[5:0];
 
     reg  [2:0]  id_is_exception[5:0];           //是否异常
-    reg  [6:0]  id_pc_exception_cause1[5:0];    //异常原因
-    reg  [6:0]  id_pc_exception_cause2[5:0]; 
-    reg  [6:0]  id_instbuffer_exception_cause1[5:0]; 
-    reg  [6:0]  id_instbuffer_exception_cause2[5:0];
-    reg  [6:0]  id_decoder_exception_cause1[5:0];
-    reg  [6:0]  id_decoder_exception_cause2[5:0];
+    reg  [6:0]  id_pc_exception_cause[5:0];    //异常原因 
+    reg  [6:0]  id_instbuffer_exception_cause[5:0]; 
+    reg  [6:0]  id_decoder_exception_cause[5:0];
 
     reg  [31:0] id_inst_out[5:0];
     reg  [5:0]  id_reg_writen_en; 
-    reg  [5:0]  id_is_privilege;
     reg  [7:0]  id_aluop[5:0];
     reg  [2:0]  id_alusel[5:0];
     reg  [31:0] id_imm[5:0];
@@ -72,24 +67,25 @@ module id
     reg  [4:0]  id_reg1_read_addr[5:0];
     reg  [4:0]  id_reg2_read_addr[5:0];
     reg  [4:0]  id_reg_write_addr[5:0];
-    reg  [5:0]  is_privilege; //特权指令标志
+    reg  [5:0]  id_is_privilege; //特权指令标志
     reg  [5:0]  id_csr_read_en; //CSR寄存器读使能
     reg  [5:0]  id_csr_write_en; //CSR寄存器写使能
     reg  [13:0] id_csr_addr[5:0]; //CSR
     reg  [5:0]  id_is_cnt; //是否是计数器寄存器
-    reg  [5:0]  id_invtlb_op ; //TLB无效操作    
-    wire [5:0]  id_valid_vec;
+    reg  [5:0]  id_invtlb_op ; //TLB无效操作  
+
+    wire [5:0]  id_valid_vec;       //这个6位的向量表示哪个解码器的输出是有效的
 
     id_1R_I26 u_id_1R_I26 (
         .pc(pc),
         .inst(inst),
 
-        .inst_valid(id_valid[0]),
+        .inst_valid(id_valid_vec[0]),
         .pc_out(id_pc_out[0]),
         .is_exception(id_is_exception[0]),
-        .pc_exception_cause(id_pc_exception_cause1[0]),
-        .instbuffer_exception_cause(id_instbuffer_exception_cause1[0]),
-        .decoder_exception_cause(id_decoder_exception_cause1[0]),
+        .pc_exception_cause(id_pc_exception_cause[0]),
+        .instbuffer_exception_cause(id_instbuffer_exception_cause[0]),
+        .decoder_exception_cause(id_decoder_exception_cause[0]),
         .inst_out(id_inst_out[0]),
         .reg_writen_en(id_reg_writen_en[0]), 
         .aluop(id_aluop[0]),
@@ -112,7 +108,7 @@ module id
         .pc(pc),
         .inst(inst),
 
-        .inst_valid(id_valid[1]),
+        .inst_valid(id_valid_vec[1]),
         .pc_out(id_pc_out[1]),
         .is_exception(id_is_exception[1]),
         .pc_exception_cause(id_pc_exception_cause[1]),
@@ -140,7 +136,7 @@ module id
         .pc(pc),
         .inst(inst),
 
-        .inst_valid(id_valid[2]),
+        .inst_valid(id_valid_vec[2]),
         .pc_out(id_pc_out[2]),
         .is_exception(id_is_exception[2]),
         .pc_exception_cause(id_pc_exception_cause[2]),
@@ -168,14 +164,14 @@ module id
         .pc(pc),
         .inst(inst),
 
-        .inst_valid(id_valid[3]),
+        .inst_valid(id_valid_vec[3]),
         .pc_out(id_pc_out[3]),
         .is_exception(id_is_exception[3]),
         .pc_exception_cause(id_pc_exception_cause[3]),
         .instbuffer_exception_cause(id_instbuffer_exception_cause[3]),
         .decoder_exception_cause(id_decoder_exception_cause[3]),
         .inst_out(id_inst_out[3]),
-        .reg_writen_en(id_reg_writen_en[3]),
+        .reg_write_en(id_reg_writen_en[3]),
         .aluop(id_aluop[3]),
         .alusel(id_alusel[3]),
         .imm(id_imm[3]),
@@ -196,7 +192,7 @@ module id
         .pc(pc),
         .inst(inst),
 
-        .inst_valid(id_valid[4]),
+        .inst_valid(id_valid_vec[4]),
         .pc_out(id_pc_out[4]),
         .is_exception(id_is_exception[4]),
         .pc_exception_cause(id_pc_exception_cause[4]),
@@ -224,14 +220,14 @@ module id
         .pc(pc),
         .inst(inst),
 
-        .inst_valid(id_valid[5]),
+        .inst_valid(id_valid_vec[5]),
         .pc_out(id_pc_out[5]),
         .is_exception(id_is_exception[5]),
         .pc_exception_cause(id_pc_exception_cause[5]),
         .instbuffer_exception_cause(id_instbuffer_exception_cause[5]),
         .decoder_exception_cause(id_decoder_exception_cause[5]),
         .inst_out(id_inst_out[5]),
-        .reg_writen_en(id_reg_writen_en[5]), 
+        .reg_write_en(id_reg_writen_en[5]), 
         .aluop(id_aluop[5]),
         .alusel(id_alusel[5]),
         .imm(id_imm[5]),
@@ -267,9 +263,8 @@ module id
 
 
     always  @(*) begin
-        case(id_valid)
+        case(id_valid_vec)
             6'b000001: begin
-                inst_valid = id_valid[0];
                 pc_out = id_pc_out[0];
                 is_exception_out = id_is_exception[0];
                 pc_exception_cause_out = id_pc_exception_cause[0];
@@ -293,7 +288,6 @@ module id
                 invtlb_op = id_invtlb_op[0];
             end
             6'b000010: begin
-                inst_valid = id_valid[1];
                 pc_out = id_pc_out[1];
                 is_exception_out = id_is_exception[1];
                 pc_exception_cause_out = id_pc_exception_cause[1];
@@ -317,10 +311,9 @@ module id
                 invtlb_op = id_invtlb_op[1];
             end
             6'b000100: begin
-                inst_valid = id_valid[2];
                 pc_out = id_pc_out[2];
                 is_exception_out = id_is_exception[2];
-                pc_xception_cause_out = pc_id_exception_cause[2];
+                pc_exception_cause_out = id_pc_exception_cause[2];
                 instbuffer_exception_cause_out = id_instbuffer_exception_cause[2];
                 decoder_exception_cause_out = id_decoder_exception_cause[2];
                 inst_out = id_inst_out[2];
@@ -341,7 +334,6 @@ module id
                 invtlb_op = id_invtlb_op[2];
             end
             6'b001000: begin
-                inst_valid = id_valid[3];
                 pc_out = id_pc_out[3];
                 is_exception_out = id_is_exception[3];
                 pc_exception_cause_out = id_pc_exception_cause[3];
@@ -365,7 +357,6 @@ module id
                 invtlb_op = id_invtlb_op[3];
             end
             6'b010000: begin
-                inst_valid = id_valid[4];
                 pc_out = id_pc_out[4];
                 is_exception_out = id_is_exception[4];
                 pc_exception_cause_out = id_pc_exception_cause[4];
@@ -389,7 +380,6 @@ module id
                 invtlb_op = id_invtlb_op[4];
             end
             6'b100000: begin
-                inst_valid = id_valid[5];
                 pc_out = id_pc_out[5];
                 is_exception_out = {is_exception,sys_exception | brk_exception};
                 pc_exception_cause_out = pc_exception_cause;  
@@ -413,7 +403,6 @@ module id
                 invtlb_op = id_invtlb_op[5];
             end
             default: begin
-                inst_valid = 1'b0;
                 pc_out = pc;
                 is_exception_out = {is_exception, 1'b1};
                 pc_exception_cause_out = pc_exception_cause;  

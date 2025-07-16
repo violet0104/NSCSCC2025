@@ -5,6 +5,7 @@ module axi_interface
     //connected to cache_axi
     input wire cache_ce,
     input wire cache_wen,          //来自cache_axi的写使能，生成逻辑为cache_axi中write状态不为write_FREE
+    input wire [3:0] cache_wsel,   //连接cache axi的axi_wsel_o
     input wire cache_ren,          //来自cache_axi的读使能，生成逻辑为cache_axi中read状态不为read_FREE
     input wire [31:0] cache_raddr,
     input wire [31:0] cache_waddr,
@@ -14,10 +15,10 @@ module axi_interface
     input wire cache_wlast,       //指示这是最后的32位数据
     output wire wdata_resp_o,     //写响应，连接cache_axi,在该信号为1时，cache_axi中的write计数器在clk上升沿自增
     
-    input wire [1:0] cache_brust_type  //由于icache和dcache数据块大小相同，固定为递增地址模式，即2'b01
-    input wire [2:0] cache_brust_size  //每次传输的数据包的大小，固定为32b，即该值固定为3'b010
-    input wire [7:0] cacher_burst_length //与cache块大小有关，若为128位，则该值为3，若为256位，则该值为7，连接cache_axi的axi_wlen_o
-    input wire [7:0] cachew_burst_length //同上一行的注释，连接cache_axi的axi_rlen_o
+    input wire [1:0] cache_brust_type,  //由于icache和dcache数据块大小相同，固定为递增地址模式，即2'b01
+    input wire [2:0] cache_brust_size,  //每次传输的数据包的大小，固定为32b，即该值固定为3'b010
+    input wire [7:0] cacher_burst_length, //与cache块大小有关，若为128位，则该值为3，若为256位，则该值为7，连接cache_axi的axi_wlen_o
+    input wire [7:0] cachew_burst_length, //同上一行的注释，连接cache_axi的axi_rlen_o
 
     //conneceed to AXI :AR,R,AW,W,B (详见实验4：AXI总线接口设计-实验原理)
     //AR读地址
@@ -92,9 +93,9 @@ module axi_interface
     assign wdata_resp_o = (w_state == WREADY) ? wready : 1'b0;
 
     //状态机
-    always @(posedge clk or negedge rst)
+    always @(posedge clk)
     begin
-        if(!rst)
+        if(rst)
         begin
             r_state <= AXI_IDLE;
             w_state <= AXI_IDLE;
@@ -107,12 +108,12 @@ module axi_interface
     end
 
     //读状态机
-    always @(posedge clk or negedge rst)
+    always @(*)
     begin
         case(r_state)
         AXI_IDLE:begin
-            if(cache_ce & cache_ren & !(cache_raddr == awaddr && wnext_state != AXI_IDLE))
-                r_next_state = ARREARY;
+            if(cache_ce & cache_ren & !(cache_raddr == awaddr && w_next_state != AXI_IDLE))
+                r_next_state = ARREADY;
             else 
                 r_next_state = AXI_IDLE;
         end
@@ -132,7 +133,7 @@ module axi_interface
         endcase
     end
     //写状态机
-    always @(posedge clk or negedge rst)
+    always @(*)
     begin
         case(w_state)
         AXI_IDLE:begin
@@ -163,9 +164,9 @@ module axi_interface
         endcase
     end
 
-    always @(posedge clk or negedge rst)
+    always @(posedge clk)
     begin
-        if(!rst)
+        if(rst)
         begin
             araddr <= 32'b0;
             arlen <= 8'b0;
@@ -194,7 +195,7 @@ module axi_interface
                 rready <= 1'b0;
                 rdata_o <= 32'b0;
                 rdata_valid_o <= 1'b0;
-                if(cache_ce && cache_ren && !(cache_raddr == awaddr && wnext_state != AXI_IDLE))
+                if(cache_ce && cache_ren && !(cache_raddr == awaddr && w_next_state != AXI_IDLE))
                 begin
                     arlen <= cacher_burst_length;
                     arsize <= cache_brust_size;

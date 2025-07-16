@@ -139,7 +139,7 @@ module icache
     wire [5:0]index1 = (refill_1_2 | refill_2_2) ? addr_1_2[9:4] : index_1_1;
     wire [5:0]index2 = (refill_1_2 | refill_2_2) ? addr_2_2[9:4] : index_2_1;
 
-    cache_ram ram1
+    icache_ram ram1
     (
         .clk(clk),
         .we(we1),
@@ -152,7 +152,7 @@ module icache
         .data_out2(ram1_data_block2)
     );
 
-    cache_ram ram2
+    icache_ram ram2
     (
         .clk(clk),
         .we(we2),

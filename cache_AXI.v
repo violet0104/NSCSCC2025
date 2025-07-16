@@ -8,7 +8,6 @@ module cache_AXI
     input wire [31:0] inst_araddr_i,
     output reg inst_rvalid_o,
     output reg [127:0] inst_rdata_o,
-    
 
     //dcache read
     input wire data_ren_i,
@@ -17,14 +16,26 @@ module cache_AXI
     output reg [127:0] data_rdata_o,
 
     //dcache write
-    input wire data_wen_i,
+    input wire [3:0] data_wen_i,
     input wire [127:0] data_wdata_i,
     input wire [31:0] data_awaddr_i,
     output reg data_bvalid_o,
 
-    //ready to cache
+    //ready to dcache
     output wire dev_rrdy_o,
     output wire dev_wrdy_o,
+
+    //duncache read channel
+    input wire duncache_ren_i,
+    input wire [31:0] duncache_raddr_i,
+    output reg duncache_rvalid_o,
+    output reg [31:0] duncache_rdata_o,
+
+    //duncache write channel
+    input wire [3:0] duncache_wen_i,
+    input wire [31:0] duncache_wdata_i,
+    input wire [31:0] duncache_waddr_i,
+    output reg duncache_write_resp,  //dcache中的duncache_write_finish
 
     //AXI communicate
     output wire axi_ce_o,
@@ -42,7 +53,7 @@ module cache_AXI
     input wire wdata_resp_i,  // 写响应信号
     output wire axi_wen_o,
     output wire [31:0] axi_waddr_o,
-    output reg [31:0] axi_wdata_o,
+    output wire [31:0] axi_wdata_o,
     output wire axi_wvalid_o,
     output wire axi_wlast_o,
     output wire [7:0] axi_wlen_o
@@ -51,9 +62,11 @@ module cache_AXI
     localparam  read_FREE = 2'b00;
     localparam  read_ICACHE = 2'b01;
     localparam  read_DCACHE = 2'b10;
+    localparam  read_UNCACHE = 2'b11;
 
     localparam  write_FREE = 2'b00;
     localparam  write_BUSY = 2'b01;
+    localparam  write_UNCACHE = 2'b10;
 
     reg [1:0] read_state;
     reg [1:0] write_state;
@@ -61,14 +74,13 @@ module cache_AXI
     reg [1:0] write_count;
 
     assign axi_ce_o = rst ? 1'b1 : 1'b0;
-
     assign dev_rrdy_o = read_state == read_FREE;
     assign dev_wrdy_o = write_state == write_FREE;
 
     //read state machine
-    always @(posedge clk or negedge rst)
+    always @(posedge clk)
     begin
-        if(!rst)
+        if(rst)
         begin
             read_state <= read_FREE;
         end
@@ -76,7 +88,8 @@ module cache_AXI
         begin
             case(read_state)
             read_FREE:begin
-                if(data_ren_i) read_state <= read_DCACHE;
+                if(duncache_ren_i) read_state <= read_UNCACHE;
+                else if(data_ren_i) read_state <= read_DCACHE;
                 else if(inst_ren_i) read_state <= read_ICACHE;
             end
             read_ICACHE:begin
@@ -85,13 +98,16 @@ module cache_AXI
             read_DCACHE:begin
                 if(rdata_valid_i & read_count == 2'b11) read_state <= read_FREE;
             end
+            read_UNCACHE:begin
+                if(rdata_valid_i) read_state <= read_FREE;
+            end
             endcase
         end
     end 
     //write state machine
-    always @(posedge clk or negedge rst)
+    always @(posedge clk)
     begin
-        if(!rst)
+        if(rst)
         begin
             write_state <= write_FREE;
         end
@@ -99,19 +115,23 @@ module cache_AXI
         begin
             case(write_state)
             write_FREE:begin
-                if(data_ren_i) write_state <= write_BUSY;
+                if(|duncache_wen_i) write_state <= write_UNCACHE;
+                else if(|data_wen_i) write_state <= write_BUSY;
             end
             write_BUSY:begin
                 if(wdata_resp_i & write_count == 2'b11) write_state <= write_FREE;
+            end
+            write_UNCACHE:begin
+                if(wdata_resp_i) write_state <= write_FREE;
             end
             endcase
         end
     end
 
     //read and write counter
-    always @(posedge clk or negedge rst)
+    always @(posedge clk)
     begin
-        if(!rst)
+        if(rst)
         begin
             read_count <= 2'b0;
             write_count <= 2'b0;
@@ -131,12 +151,13 @@ module cache_AXI
 
     assign axi_ren_o = read_state != read_FREE;
     assign axi_rready_o = axi_ren_o;
-    assign axi_raddr_o = (read_state == read_DCACHE) ? {data_araddr_i[31:5],5'b0} :
-                         (read_state == read_ICACHE) ? {inst_araddr_i[31:5],5'b0} : 32'b0;
+    assign axi_raddr_o = (read_state == read_UNCACHE) ? duncache_raddr_i :
+                         (read_state == read_DCACHE) ? {data_araddr_i[31:4],4'b0} :
+                         (read_state == read_ICACHE) ? {inst_araddr_i[31:4],4'b0} : 32'b0;
 
-    always @(posedge clk or negedge rst)
+    always @(posedge clk)
     begin
-        if(!rst)
+        if(rst)
         begin
             inst_rvalid_o <= 1'b0;
             data_rvalid_o <= 1'b0;
@@ -151,12 +172,16 @@ module cache_AXI
                 data_rvalid_o <= 1'b1;
             else
                 data_rvalid_o <= 1'b0;
+            if(read_state == read_UNCACHE & rdata_valid_i)
+                duncache_rvalid_o <= 1'b1;
+            else 
+                duncache_rvalid_o <= 1'b0;
         end
     end
     //connected to the data block of icache or dcache
-    always @(posedge clk or negedge rst)
+    always @(posedge clk)
     begin
-        if(!rst)
+        if(rst)
         begin
             inst_rdata_o <= 128'b0;
         end
@@ -171,9 +196,9 @@ module cache_AXI
         end
     end
 
-    always @(posedge clk or negedge rst)
+    always @(posedge clk)
     begin
-        if(!rst)
+        if(rst)
         begin
             data_rdata_o <= 128'b0;
         end
@@ -187,32 +212,56 @@ module cache_AXI
             endcase
         end
     end
+    //duncache 
+    always @(posedge clk)
+    begin
+        if(rst)
+            duncache_rdata_o <= 32'b0;
+        else
+        begin
+            if(rdata_valid_i & read_state == read_UNCACHE)
+                duncache_rdata_o <= rdata_i;
+        end
+    end
 
     //AXI
     assign axi_wen_o = write_state != write_FREE; //一直维持直到从设备接受完成
     assign axi_wvalid_o = write_state != write_FREE; //这个信号和上面的信号重合了，连接到后面的axi_interface,但axi_interface中也没有用到这个信号，意义不明
-    assign axi_wlen_o = 8'h7;
-    assign axi_rlen_o = 8'h7;
-    assign axi_wsel_o = 4'b1111;
-    assign axi_waddr_o = {data_awaddr_i[31:5],5'b0};
+    assign axi_wlen_o = (write_state == write_UNCACHE) ? 8'h0 : 8'h3;
+    assign axi_rlen_o = (read_state == read_UNCACHE ) ? 8'h0 : 8'h3;
+    assign axi_wsel_o = (write_state == write_UNCACHE) ? duncache_wen_i : 4'b1111;
+    assign axi_waddr_o = {data_awaddr_i[31:4],4'b0};
     assign axi_wlast_o = (write_state == write_BUSY) & write_count == 2'b11;
 
-    always @(posedge clk or negedge rst)
+    always @(posedge clk)
     begin
-        if(!rst)
+        if(rst)
+        begin
             data_bvalid_o <= 1'b0;
+            duncache_write_resp <= 1'b0;
+        end
         else 
-            data_bvalid_o <= write_state == write_BUSY & wdata_resp_i &write_count == 2'b11;
+        begin
+            data_bvalid_o <= (write_state == write_BUSY) & wdata_resp_i & (write_count == 2'b11);
+            duncache_write_resp <= (write_state == write_UNCACHE) & wdata_resp_i;
+        end
     end
 
     always @(*)
     begin
-        case(write_count)
-        2'b00:axi_wdata_o = data_wdata_i[31:0];
-        2'b00:axi_wdata_o = data_wdata_i[63:32];
-        2'b00:axi_wdata_o = data_wdata_i[95:64];
-        2'b00:axi_wdata_o = data_wdata_i[127:96];
-        default:axi_wdata_o = 32'b0;
+        if(write_state == write_UNCACHE)
+        begin
+            axi_wdata_o = duncache_wdata_i;
+        end
+        else
+        begin
+            case(write_count)
+            2'b00:axi_wdata_o = data_wdata_i[31:0];
+            2'b01:axi_wdata_o = data_wdata_i[63:32];
+            2'b10:axi_wdata_o = data_wdata_i[95:64];
+            2'b11:axi_wdata_o = data_wdata_i[127:96];
+            default:axi_wdata_o = 32'b0;
         endcase
+        end
     end
 endmodule

@@ -136,29 +136,27 @@ module backend (
     wire [63:0] cnt;
 
     // reg_files
-    wire [1:0] reg1_read_en ;       // 寄存器读使能
-    wire [1:0] reg2_read_en ;
-    wire [1:0] reg_write_en;            // 寄存器写使能
-    wire [4:0] reg1_read_addr [1:0];     // 寄存器读地址
-    wire [4:0] reg2_read_addr [1:0];
-    wire [4:0] reg_write_addr [1:0];    // 寄存器写地址
     wire [31:0] reg1_read_data [1:0];    // 寄存器读数据
     wire [31:0] reg2_read_data [1:0];
+    wire [1:0] reg_write_en;            // 寄存器写使能
+    wire [4:0] reg_write_addr [1:0];    // 寄存器写地址
     wire [31:0] reg_write_data [1:0];   // 寄存器写数据
 
     // csr
     wire [1:0] csr_read_en;             // csr 读使能
     wire [1:0] csr_write_en;            // csr 写使能
     wire [13:0] csr_read_addr [1:0];    // csr 读地址
-    wire [13:0] csr_write_addr ;   // csr 写地址
+    wire [13:0] csr_write_addr ;        // csr 写地址
     wire [31:0] csr_read_data [1:0];    // csr 读数据
-    wire [31:0] csr_write_data ;   // csr 写数据
-    wire is_llw_scw_ctrl;                    // 是否是 llw/scw 指令
+    wire [31:0] csr_write_data ;        // csr 写数据
+    wire is_llw_scw_ctrl;               // 是否是 llw/scw 指令
     // csr to ctrl
-    wire [31:0] csr_eentry; //异常入口地址
-    wire [31:0] csr_era; //异常返回地址
-    wire [31:0] csr_crmd; //控制寄存器 
-    wire        csr_is_interrupt; //是否是中断
+    wire [31:0] csr_eentry;         //异常入口地址
+    wire [31:0] csr_era;            //异常返回地址
+    wire [31:0] csr_crmd;           //控制寄存器 
+    wire [31:0] csr_tlbrentry;
+    wire csr_is_interrupt;
+
 
     // ctrl
     wire pause_buffer;
@@ -169,14 +167,16 @@ module backend (
     wire branch_flush;
     wire [31:0] branch_addr;
     wire ex_excep_flush;            // 执行阶段异常的 flush 信号
-    wire is_ertn_ctrl;
+
     wire csr_is_exception; //是否是异常
+    wire [6:0]  csr_exception_cause; //异常原因
     wire [31:0] csr_exception_pc; //异常PC地址
     wire [31:0] csr_exception_addr; //异常地址
     wire [5:0]  csr_ecode; //异常ecode
-    wire [6:0]  csr_exception_cause; //异常原因
     wire [8:0] csr_esubcode; //异常子码
-
+    wire csr_is_ertn;
+    wire csr_is_tlb_exception;
+    wire csr_is_inst_tlb_exception;
 
 
     // decoder
@@ -190,7 +190,6 @@ module backend (
     wire [6:0] instbuffer_exception_cause_decoder2;
     wire [6:0] decoder_exception_cause_decoder1;
     wire [6:0] decoder_exception_cause_decoder2;
-    wire [1:0] inst_valid_decoder;
     wire [1:0] is_privilege_decoder;
     wire [1:0] is_cnt_decoder;
     wire [1:0] valid_decoder;
@@ -375,7 +374,6 @@ module backend (
         .invalid_en(invalid_en_dispatch),
 
         .get_data_req(get_data_req_o),
-        .dispatch_inst_valid(inst_valid_decoder), 
         .dispatch_pc_out1(pc_decoder[0]) ,
         .dispatch_pc_out2(pc_decoder[1]) ,
         .is_exception_o1(is_exception_decoder1) ,
@@ -398,8 +396,8 @@ module backend (
         .dispatch_reg2_read_en(reg_read_en_decoder[1]),   
         .dispatch_reg1_read_addr1(reg1_read_addr_decoder[0]) ,
         .dispatch_reg1_read_addr2(reg1_read_addr_decoder[1]),
-        .dispatch_reg2_read_addr(reg2_read_addr_decoder[0]) ,
-        .dispatch_reg2_read_addr(reg2_read_addr_decoder[1]),
+        .dispatch_reg2_read_addr1(reg2_read_addr_decoder[0]) ,
+        .dispatch_reg2_read_addr2(reg2_read_addr_decoder[1]),
         .dispatch_reg_writen_en(reg_write_en_decoder),  
         .dispatch_reg_write_addr1(reg_write_addr_decoder[0]) ,
         .dispatch_reg_write_addr2(reg_write_addr_decoder[1]),
@@ -427,19 +425,14 @@ module backend (
         .pause(pause_o[4]),
         .flush(flush_o[4]),
 
+    // 来自dispatch的信号
         .pc1_i(pc_decoder[0]),      //指令地址
         .pc2_i(pc_decoder[1]),
+
         .inst1_i(inst_decoder[0]),    //指令编码
         .inst2_i(inst_decoder[1]),
         .valid_i(valid_decoder),   //指令有效标志
-        .reg_read_en_i1(reg_read_en_decoder[0]),     //第0条指令的两个源寄存器源寄存器读使能
-        .reg_read_en_i2(reg_read_en_decoder[1]),     //第1条指令的两个源寄存器源寄存器读使能   
-        .reg_read_addr_i1_1(reg1_read_addr_decoder[0]),   //第0条指令的两个源寄存器地址
-        .reg_read_addr_i1_2(reg1_read_addr_decoder[1]),
-        .reg_read_addr_i2_1(reg2_read_addr_decoder[0]),   //第1条指令的两个源寄存器地址
-        .reg_read_addr_i2_2(reg2_read_addr_decoder[1]),
-        .is_privilege_i(is_privilege_decoder), //两条指令的特权指令标志
-        .is_cnt_i(is_cnt_decoder),       //两条指令的计数器指令标志
+
         .is_exception_i1(is_exception_decoder1), //两条指令的异常标志
         .is_exception_i2(is_exception_decoder2),
         .pc_exception_cause_i1(pc_exception_cause_decoder1), //两条指令的异常原因,会变长
@@ -448,19 +441,41 @@ module backend (
         .instbuffer_exception_cause_i2(instbuffer_exception_cause_decoder2),
         .decoder_exception_cause_i1(decoder_exception_cause_decoder1), //两条指令的异常原因,会变长
         .decoder_exception_cause_i2(decoder_exception_cause_decoder2),
-        .invtlb_op_i1(invtlb_op_decoder[0]),   //两条指令的分支指令标志
-        .invtlb_op_i2(invtlb_op_decoder[1]),
-        .reg_write_en_i(reg_write_en_decoder),    //目的寄存器写使能
-        .reg_write_addr_i1(reg_write_addr_decoder[0]),  //目的寄存器地址
-        .reg_write_addr_i2(reg_write_addr_decoder[1]),
-        .imm_i1(imm_decoder[0]),     //立即数值
-        .imm_i2(imm_decoder[1]),
+
+        .is_privilege_i(is_privilege_decoder), //两条指令的特权指令标志
+        .is_cnt_i(is_cnt_decoder),       //两条指令的计数器指令标志
+
         .alu_op_i1(aluop_decoder[0]),  //ALU操作码
         .alu_op_i2(aluop_decoder[1]),
         .alu_sel_i1(alusel_decoder[0]), //ALU功能选择
         .alu_sel_i2(alusel_decoder[1]),
+        .imm_i1(imm_decoder[0]),     //立即数值
+        .imm_i2(imm_decoder[1]),
 
-    //前递数据
+        .invtlb_op_i1(invtlb_op_decoder[0]),   //两条指令的分支指令标志
+        .invtlb_op_i2(invtlb_op_decoder[1]),
+        
+        .reg_read_en_i1(reg_read_en_decoder[0]),     //第0条指令的两个源寄存器源寄存器读使能
+        .reg_read_en_i2(reg_read_en_decoder[1]),     //第1条指令的两个源寄存器源寄存器读使能   
+        .reg_read_addr_i1_1(reg1_read_addr_decoder[0]),  
+        .reg_read_addr_i1_2(reg1_read_addr_decoder[1]),
+        .reg_read_addr_i2_1(reg2_read_addr_decoder[0]),   
+        .reg_read_addr_i2_2(reg2_read_addr_decoder[1]),
+        
+        .reg_write_en_i(reg_write_en_decoder),    //目的寄存器写使能
+        .reg_write_addr_i1(reg_write_addr_decoder[0]),  //目的寄存器地址
+        .reg_write_addr_i2(reg_write_addr_decoder[1]),
+
+        .csr_read_en_i(csr_read_en_decoder),//csr写使能
+        .csr_addr_i1(csr_addr_decoder[0]),
+        .csr_addr_i2(csr_addr_decoder[1]),
+        .csr_write_en_i(csr_write_en_decoder),//csr写数据
+        .pre_is_branch_taken_i(pre_is_branch_taken_decoder),// //前一条指令是否是分支指令
+        .pre_branch_addr_i1(pre_branch_addr_decoder[0]), //前一条指令的分支地址
+        .pre_branch_addr_i2(pre_branch_addr_decoder[1]),
+
+
+        // 来自ex和mem的前递数据
         .ex_pf_write_en(reg_write_en_ex_pf),     //从ex阶段前递出来的使能
         .ex_pf_write_addr1(reg_write_addr_ex_pf[0]),   //从ex阶段前递出来的地址
         .ex_pf_write_addr2(reg_write_addr_ex_pf[1]),
@@ -479,22 +494,23 @@ module backend (
         .wb_pf_write_data1(reg_write_data_wb_pf[0]),
         .wb_pf_write_data2(reg_write_data_wb_pf[1]),   //从wb阶段前递出来的数据
 
-    //来自ex阶段的，用于判断ex运行的指令是否是load指令
+        //来自ex阶段的，用于判断ex运行的指令是否是load指令
         .ex_pre_aluop1(pre_ex_aluop[0]),       //ex阶段的load指令标志
         .ex_pre_aluop2(pre_ex_aluop[1]),
 
-    //来自ex阶段的，可能由于乘除法等指令引起的暂停信号
+        //来自ex阶段的，可能由于乘除法等指令引起的暂停信号
         .ex_pause(pause_execute),           //ex阶段的暂停信号
 
-        .pc_o1(pc_dispatch[0]),  
-        .pc_o2(pc_dispatch[1]),
-        .inst_o1(inst_dispatch[0]),
-        .inst_o2(inst_dispatch[1]),
+        // 输出给execute的数据
+        .pc1_o(pc_dispatch[0]),  
+        .pc2_o(pc_dispatch[1]),
+        .inst1_o(inst_dispatch[0]),
+        .inst2_o(inst_dispatch[1]),
         .valid_o(valid_dispatch),
 
-        .is_privilege_o(is_privilege_dispatch), //两条指令的特权指令标志
         .is_exception_o1(is_exception_dispatch1), //两条指令的异常标志
         .is_exception_o2(is_exception_dispatch2),
+
         .pc_exception_cause_o1(pc_exception_cause_dispatch1), 
         .pc_exception_cause_o2(pc_exception_cause_dispatch2),
         .instbuffer_exception_cause_o1(instbuffer_exception_cause_dispatch1),
@@ -504,53 +520,55 @@ module backend (
         .dispatch_exception_cause_o1(dispatch_exception_cause_dispatch1),
         .dispatch_exception_cause_o2(dispatch_exception_cause_dispatch2),
 
-        .invtlb_op_o1(invtlb_op_dispatch[0]),   //两条指令的分支指令标志
-        .invtlb_op_o2(invtlb_op_dispatch[1]),
-
-        .reg_write_en_o(reg_write_en_dispatch),    //目的寄存器写使能
-        .reg_write_addr_o1(reg_write_addr_dispatch[0]),  //目的寄存器地址
-        .reg_write_addr_o2(reg_write_addr_dispatch[1]),
-    
-        .reg_read_data_o1_1(reg_data0_dispatch[0]), //寄存器堆给出的第0条指令的两个源操作数
-        .reg_read_data_o1_2(reg_data0_dispatch[1]),
-        .reg_read_data_o2_1(reg_data1_dispatch[0]), //寄存器堆给出的第1条指令的两个源操作数
-        .reg_read_data_o2_2(reg_data1_dispatch[1]),
+        .is_privilege_o(is_privilege_dispatch), //两条指令的特权指令标志
 
         .alu_op_o1(aluop_dispatch[0]),
         .alu_op_o2(aluop_dispatch[1]),
         .alu_sel_o1(alusel_dispatch[0]),
         .alu_sel_o2(alusel_dispatch[1]),
 
-        .invalid_en(invalid_en_dispatch), //指令发射控制信号
+        .reg_read_data_o1_1(reg_data0_dispatch[0]), //寄存器堆给出的第0条指令的两个源操作数
+        .reg_read_data_o1_2(reg_data0_dispatch[1]),
+        .reg_read_data_o2_1(reg_data1_dispatch[0]), //寄存器堆给出的第1条指令的两个源操作数
+        .reg_read_data_o2_2(reg_data1_dispatch[1]),
 
-        .from_reg_read_data_i1_1(reg1_read_data[0]),
-        .from_reg_read_data_i1_2(reg1_read_data[1]),
-        .from_reg_read_data_i2_1(reg2_read_data[0]),       
-        .from_reg_read_data_i2_2(reg2_read_data[1]),
+        .reg_write_en_o(reg_write_en_dispatch),    //目的寄存器写使能
+        .reg_write_addr_o1(reg_write_addr_dispatch[0]),  //目的寄存器地址
+        .reg_write_addr_o2(reg_write_addr_dispatch[1]),
 
-        .dispatch_pause(pause_dispatch),
-
-        .csr_read_en_i(csr_read_en_decoder),//csr写使能
-        .csr_addr_i1(csr_addr_decoder[0]),
-        .csr_addr_i2(csr_addr_decoder[1]),
-        .csr_write_en_i(csr_write_en_decoder),//csr写数据
-        .pre_is_branch_taken_i(pre_is_branch_taken_decoder),// //前一条指令是否是分支指令
-        .pre_branch_addr_i1(pre_branch_addr_decoder[0]), //前一条指令的分支地址
-        .pre_branch_addr_i2(pre_branch_addr_decoder[1]),
-        .csr_read_data_i1(csr_read_data[0]),
-        .csr_read_data_i2(csr_read_data[1]),
-
+        .csr_read_data_o1(csr_read_data_dispatch[0]), 
+        .csr_read_data_o2(csr_read_data_dispatch[1]),
         .csr_write_en_o(csr_write_en_dispatch), //寄存器堆的csr读使能
         .csr_addr_o1(csr_addr_dispatch[0]),
         .csr_addr_o2(csr_addr_dispatch[1]),
 
-        .csr_read_data_o1(csr_read_data_dispatch[0]), 
-        .csr_read_data_o2(csr_read_data_dispatch[1]),
-    
+        .invtlb_op_o1(invtlb_op_dispatch[0]),   //两条指令的分支指令标志
+        .invtlb_op_o2(invtlb_op_dispatch[1]),
+
         .pre_is_branch_taken_o(pre_is_branch_taken_dispatch), //前一条指令是否是分支指令
         .pre_branch_addr_o1(pre_branch_addr_dispatch[0]),
-        .pre_branch_addr_o2(pre_branch_addr_dispatch[1])
+        .pre_branch_addr_o2(pre_branch_addr_dispatch[1]),
 
+
+         // 输出给 id 阶段的信号
+        .invalid_en(invalid_en_dispatch), //指令发射控制信号
+
+        // 与寄存器的接口
+        .from_reg_read_data_i1_1(reg1_read_data[0]),
+        .from_reg_read_data_i1_2(reg2_read_data[0]),
+        .from_reg_read_data_i2_1(reg1_read_data[1]),       
+        .from_reg_read_data_i2_2(reg2_read_data[1]),
+
+        .dispatch_pause(pause_dispatch),    //发射器暂停信号,当发生load-use冒险时需要暂停
+
+        // 和csr的接口
+        // 输入
+        .csr_read_data_i1(csr_read_data[0]),
+        .csr_read_data_i2(csr_read_data[1]),
+        // 输出
+        .csr_read_en_o(csr_read_en),
+        .csr_read_addr_o1(csr_read_addr[0]),
+        .csr_read_addr_o2(csr_read_addr[1])
 
     );
 
@@ -563,7 +581,7 @@ module backend (
         .pause(flush_o[5]),
 
     // 来自stable counter的信号
-        .cnt_i(cnt), //暂时没有此信号
+        .cnt_i(cnt), 
 
     // 来自dispatch的数据
         .pc1_i(pc_dispatch[0]),
@@ -585,17 +603,16 @@ module backend (
 
         .is_privilege_i(is_privilege_dispatch),
 
-        .ex_bpu_is_bj(ex_bpu_is_bj),
         .aluop1_i(aluop_dispatch[0]),
         .aluop2_i(aluop_dispatch[0]),
         .alusel1_i(alusel_dispatch[1]),
         .alusel2_i(alusel_dispatch[1]),
 
 
-        .reg_data1_i_1(reg_data0_dispatch[0]),
-        .reg_data1_i_2(reg_data0_dispatch[1]),
-        .reg_data2_i_1(reg_data1_dispatch[0]),
-        .reg_data2_i_2(reg_data1_dispatch[1]),
+        .reg_data1_1_i(reg_data0_dispatch[0]),
+        .reg_data1_2_i(reg_data0_dispatch[1]),
+        .reg_data2_1_i(reg_data1_dispatch[0]),
+        .reg_data2_2_i(reg_data1_dispatch[1]),
         .reg_write_en_i(reg_write_en_dispatch),                // 寄存器写使能
         .reg_write_addr1_i(reg_write_addr_dispatch[0]),        // 寄存器写地址
         .reg_write_addr2_i(reg_write_addr_dispatch[1]),
@@ -628,7 +645,7 @@ module backend (
     // 和dcache的接口
         .dcache_pause_i(dcache_pause_i),    // 暂停dcache访问信号
 
-        .ren_o(),          
+        .ren_o(ren_o),          
         .wstrb_o(wstrb_o),
         .virtual_addr_o(virtual_addr_o),
         .wdata_o(wdata_o),
@@ -636,7 +653,7 @@ module backend (
 
     // 前递给dispatch的数据
         .pre_ex_aluop1_o(pre_ex_aluop[0]),
-        .pre_ex_aluop1_o(pre_ex_aluop[1]),
+        .pre_ex_aluop2_o(pre_ex_aluop[1]),
         .reg_write_en_o(reg_write_en_ex_pf),
         .reg_write_addr1_o(reg_write_addr_ex_pf[0]),
         .reg_write_addr2_o(reg_write_addr_ex_pf[1]),
@@ -651,7 +668,7 @@ module backend (
 
     // 输出给mem的数据
         .pc1_mem(pc_execute[0]),
-        .pc1_mem(pc_execute[1]),
+        .pc2_mem(pc_execute[1]),
         .inst1_mem(pc_execute[0]),
         .inst2_mem(pc_execute[1]),
 
@@ -677,7 +694,7 @@ module backend (
         .reg_write_addr1_mem(reg_write_addr_execute[0]),
         .reg_write_addr2_mem(reg_write_addr_execute[1]),
         .reg_write_data1_mem(reg_write_data_execute[0]), 
-        .reg_write_data1_mem(reg_write_data_execute[1]),
+        .reg_write_data2_mem(reg_write_data_execute[1]),
 
         .aluop1_mem(aluop_execute[0]),
         .aluop2_mem(aluop_execute[1]),
@@ -753,7 +770,7 @@ module backend (
         .mem_pf_reg_write_addr1(reg_write_addr_mem_pf[0]),
         .mem_pf_reg_write_addr2(reg_write_addr_mem_pf[1]),
         .mem_pf_reg_write_data1(reg_write_data_mem_pf[0]),
-        .mem_pf_reg_write_data1(reg_write_data_mem_pf[1]),
+        .mem_pf_reg_write_data2(reg_write_data_mem_pf[1]),
 
     // 输出给ctrl的信号
         .pause_mem(pause_mem), //通知暂停内存访问信号
@@ -904,11 +921,11 @@ module backend (
         .ex_excp_flush(ex_excep_flush),//异常刷新信号,从execute阶段输入
 
     //wb阶段输入wb
-        .reg_writr_en_i(reg_write_en_wb),//写回阶段刷新信号
-        .reg_writr_addr1_i(reg_write_addr_wb[0]),//写回阶段寄存器地址
-        .reg_writr_addr2_i(reg_write_addr_wb[1]),
-        .reg_writr_data1_i(reg_write_data_wb[0]),//写回阶段寄存器数据
-        .reg_writr_data2_i(reg_write_data_wb[1]),
+        .reg_write_en_i(reg_write_en_wb),//写回阶段刷新信号
+        .reg_write_addr1_i(reg_write_addr_wb[0]),//写回阶段寄存器地址
+        .reg_write_addr2_i(reg_write_addr_wb[1]),
+        .reg_write_data1_i(reg_write_data_wb[0]),//写回阶段寄存器数据
+        .reg_write_data2_i(reg_write_data_wb[1]),
         .is_llw_scw_i(is_llw_scw_wb),//是否是 llw/scw 指令
         .csr_write_en_i(csr_write_en_wb),//csr写使能信号
         .csr_write_addr1_i(csr_write_addr_wb[0]),//csr写地址
@@ -941,7 +958,7 @@ module backend (
         .is_privilege_i(is_privilege_wb),//是否是特权指令
         .valid_i(valid_wb),//指令是否有效
     //csr
-        .is_ertn_o(is_ertn_ctrl),//是否是异常返回指令
+        .is_ertn_o(csr_is_ertn),//是否是异常返回指令
     //
         .flush(flush_o),//刷新信号
         .pause(pause_o),//暂停信号
@@ -952,11 +969,11 @@ module backend (
 ****************************************/
 
     //to regfile
-        .reg_writr_en_o(reg_write_en),//写回阶段刷新信号
-        .reg_writr_addr1_o(reg_write_addr[0]),//写回阶段寄存器地址
-        .reg_writr_addr2_o(reg_write_addr[1]),
-        .reg_writr_data1_o(reg_write_data[0]),//写回阶段寄存器数据
-        .reg_writr_data2_o(reg_write_data[1]),
+        .reg_write_en_o(reg_write_en),//写回阶段刷新信号
+        .reg_write_addr1_o(reg_write_addr[0]),//写回阶段寄存器地址
+        .reg_write_addr2_o(reg_write_addr[1]),
+        .reg_write_data1_o(reg_write_data[0]),//写回阶段寄存器数据
+        .reg_write_data2_o(reg_write_data[1]),
 
     //to csr
         .is_llw_scw_o(is_llw_scw_ctrl),//是否是 llw/scw 指令
@@ -964,7 +981,7 @@ module backend (
         .csr_write_addr_o(csr_write_addr),//csr写地址
         .csr_write_data_o(csr_write_data),//csr写数据
 
-    //to csr_master
+    // with csr
         .csr_eentry_i(csr_eentry), //异常入口地址
         .csr_era_i(csr_era), //异常返回地址
         .csr_crmd_i(csr_crmd), //控制寄存器 
@@ -979,17 +996,19 @@ module backend (
     );
 
     reg_files u_reg_files (
+        // 输入
         .clk(clk),
-        .reg1_read_en(reg1_read_en), 
-        .reg2_read_en(reg2_read_en), //寄存器读使能信号
-        .reg1_read_addr1(reg1_read_addr[0]), 
-        .reg1_read_addr2(reg1_read_addr[1]), 
-        .reg2_read_addr1(reg2_read_addr[0]), //寄存器读地址
-        .reg2_read_addr2(reg2_read_addr[1]),
+        .reg1_read_en(reg_read_en_decoder[0]), 
+        .reg2_read_en(reg_read_en_decoder[1]), //寄存器读使能信号
+        .reg1_read_addr1(reg1_read_addr_decoder[0]), 
+        .reg1_read_addr2(reg1_read_addr_decoder[1]), 
+        .reg2_read_addr1(reg2_read_addr_decoder[0]), //寄存器读地址
+        .reg2_read_addr2(reg2_read_addr_decoder[1]),
         .reg_write_data1(reg_write_data[0]), 
         .reg_write_data2(reg_write_data[1]),
         .reg_write_en(reg_write_en), //寄存器写使能信号
 
+        // 输出
         .reg1_read_data1(reg1_read_data[0]),  //寄存器读数据
         .reg1_read_data2(reg1_read_data[1]), 
         .reg2_read_data1(reg2_read_data[0]),   //寄存器读数据
@@ -997,7 +1016,76 @@ module backend (
     );
 
     csr u_csr (
+        .clk(clk),
+        .rst(rst),
 
+        // 和dispatch的接口
+        // 输入
+        .csr_read_en_i(csr_read_en),
+        .csr_read_addr_i1(csr_read_addr[0]),
+        .csr_read_addr_i2(csr_read_addr[1]),
+        // 输出
+        .csr_read_data_o1(csr_read_data[0]),
+        .csr_read_data_o2(csr_read_data[1]),
+
+        // 来自wb的信号
+        .is_llw_scw_i(is_llw_scw_ctrl),
+        .csr_write_en_i(csr_write_en),
+        .csr_write_addr_i(csr_write_addr),
+        .csr_write_data_i(csr_write_data),
+
+        //tlb相关输入
+        .search_tlb_found_i(0),
+        .search_tlb_index_i(0),
+        .tlbrd_valid_i(0),
+        .tlbehi_out_i(0),
+        .tlbelo0_out_i(0),
+        .tlbelo1_out_i(0),
+        .tlbidx_out_i(0),
+        .asid_out_i(0),
+        .tlbsrch_ret_i(0),
+        .tlbrd_ret_i(0),
+
+        //tlb相关输出
+        .tlbidx_o(tlbidx),  //7.5.1TLB索引寄存器，包含[4:0]为index,[29:24]为PS，[31]为NE
+        .tlbehi_o(tlbehi),  //7.5.2TLB表项高位，包含[31:13]为VPPN
+        .tlbelo0_o(tlbelo0),   //7.5.3TLB表项低位，包含写入TLB表项的内容
+        .tlbelo1_o(tlbelo1),
+        .asid_o(asid),  //7.5.4ASID的低9位
+        //TLBFILL和TLBWR指令
+        .ecode_o(ecode),//7.5.1对于NE变量的描述中讲到，CSR.ESTAT.Ecode   (大概使能信号，若为111111则写使能，否则根据tlbindex_in.NE判断是否写使能？
+        //CSR信号
+        .csr_dmw0_o(csr_dmw0),//dmw0，有效位是[27:25]，可能会作为最后转换出来的地址的最高三位
+        .csr_dmw1_o(csr_dmw1),//dmw1，有效位是[27:25]，可能会作为最后转换出来的地址的最高三位
+        .csr_da_o(csr_da),
+        .csr_pg_o(csr_pg),
+        .csr_plv_o(csr_plv),
+        .csr_datf_o(csr_datf),
+        .csr_datm_o(csr_datm),
+    
+    
+        // from outer（不知道是什么）
+        .is_ipi(0), //接0
+        .is_hwi(),//mytop输入的
+
+
+        // 和ctrl的接口
+        // 输入
+        .is_exception_i(csr_is_exception), //是否是异常
+        .exception_cause_i(csr_exception_cause), //异常原因
+        .exception_pc_i(csr_exception_pc), //异常PC地址
+        .exception_addr_i(csr_exception_addr), //异常地址
+        .ecode_i(csr_ecode), //异常ecode
+        .esubcode_i(csr_esubcode), //异常子码
+        .is_ertn_i(csr_is_ertn),
+        .is_inst_tlb_exception_i(csr_is_inst_tlb_exception), //是否是指令TLB异常
+        .is_tlb_exception_i(csr_is_tlb_exception),
+        // 输出
+        .eentry_o(csr_eentry), //异常入口地址
+        .era_o(csr_era), //异常返回地址
+        .crmd_o(csr_crmd), //控制寄存器 
+        .is_interrupt_o(csr_is_interrupt), //是否是中断
+        .tlbrentry_o(csr_tlbrentry)
     );
 
     stable_counter u_stable_counter (

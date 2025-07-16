@@ -10,7 +10,7 @@ module stable_counter
     reg cnt_en;
     wire cnt_end;
 
-    assign cnt_end = cnt_en & (cnt == '1);
+    assign cnt_end = cnt_en & (cnt == 1);
 
     always @(*) begin
         if (rst) begin

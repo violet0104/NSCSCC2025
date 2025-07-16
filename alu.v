@@ -164,8 +164,8 @@ module alu (
         .rst(rst),
         .start(start_mul),
         .signed_op(signed_mul),
-        .data1(mul_data1),
-        .data2(mul_data2),
+        .reg1(mul_data1),
+        .reg2(mul_data2),
         .done(mul_done),
         .result(mul_result)
     );
@@ -369,7 +369,7 @@ module alu (
 
             `ALU_STH: begin
                 mem_is_valid = 1'b1;
-                case (ex_o.mem_addr[1: 0])
+                case (addr_mem[1: 0])
                     2'b00: begin
                         wstrb_o = 4'b0011;
                         wdata_o = {16'b0, reg_data2[15: 0]};
@@ -394,7 +394,7 @@ module alu (
             end
 
             `ALU_STW: begin
-                ex_mem_exception = (ex_o.mem_addr[1: 0] != 2'b00);
+                ex_mem_exception = (addr_mem[1: 0] != 2'b00);
                 mem_is_valid = 1'b1;
                 wdata_o = reg_data2;
                 wstrb_o = 4'b1111;
@@ -435,7 +435,7 @@ module alu (
             csr_write_data_mem = 32'b1;
             is_llw_scw_mem = 1'b1;
         end
-        else if (ex_i.aluop == `ALU_SCW && LLbit) begin
+        else if (aluop_i == `ALU_SCW && LLbit) begin
             csr_write_en_mem = 1'b1;
             csr_addr_mem = `CSR_LLBCTL;
             csr_write_data_mem = 32'b0;

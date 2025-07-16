@@ -27,13 +27,12 @@ module dcache
     output wire uncache_ren,
     output wire [31:0] uncache_raddr,
 
+    input wire uncache_write_finish,
     output wire [3:0] uncache_wen,   //考虑不将该信号做成仅持续一个clk，而是在cache-axi中处理成一个clk长度的信号输出给总线
     output wire [31:0] uncache_wdata,
     output wire [31:0] uncache_waddr
 );
-//我的想法是dcache不接受来自cache axi的单个周期的写完成/读完成信号
-//而是通过两个持续的dev-wrdy和dev-rrdy来表示此时dcache可输出写信号或读信号
-//上面这两个信号应该由cache-axi的read和write状态来直接生成
+
 
     localparam IDLE = 3'b000;
     localparam ASKMEM = 3'b001;
@@ -104,7 +103,7 @@ module dcache
 
     integer i;
 
-    always @(posedge clk or negedge rst) 
+    always @(posedge clk) 
     begin
         if (rst) state <= IDLE;
         else state <= next_state;
@@ -117,7 +116,7 @@ module dcache
             if(uncache_2) next_state = UNCACHE;
             else if(write_dirty) next_state = DIRTY_WRITE;
             else if(ask_mem) next_state = ASKMEM;
-            else next_state <= IDLE;
+            else next_state = IDLE;
         end
         ASKMEM:begin
             if(dev_rvalid) next_state = REFILL;
@@ -135,10 +134,10 @@ module dcache
         end
         UNCACHE:begin
             if(uncache_rvalid) next_state = IDLE;
-            else if(|uncache_wen) next_state = IDLE;
+            else if(uncache_write_finish) next_state = IDLE;
             else next_state = UNCACHE;
         end
-        default:next_state <= IDLE;
+        default:next_state = IDLE;
         endcase
     end
 
@@ -159,11 +158,13 @@ module dcache
             cpu_raddr <= 32'b0;
             cpu_wdata <= 128'b0;
             dealing <= 1'b0;
+
             for(i=0;i<64;i=i+1)
             begin
                 dirty[i] <= 2'b00;
                 use_bit[i] <= 2'b10;
             end
+
         end
         else if((state == IDLE | state == RETURN) & (req_2 & hit | !req_2) & (next_state != UNCACHE))  //可能要补充state == `RETURN
         begin
@@ -173,6 +174,11 @@ module dcache
             wen_2 <= wen;
             ren_2 <= ren;
             index_2 <= index_1;
+            if(hit & is_store) 
+            begin
+                if(hit1) dirty[index_2][0] <= 1'b1;
+                else dirty[index_2][1] <= 1'b1;
+            end
         end
         else if(state == DIRTY_WRITE)   //这段后面可改case
         begin
@@ -208,7 +214,6 @@ module dcache
             end
             if(dev_rvalid)
             begin
-                use_bit[index_2] <= ~use_bit[index_2];
                 dealing <= 1'b0;
             end
         end
@@ -219,14 +224,10 @@ module dcache
                 uncache_2 <= 1'b0;
                 ren_2 <= 1'b0;
             end
-            else if(|uncache_wen)
+            if(uncache_write_finish)
             begin
-                paddr_2 <= vaddr_1;                         //此处的虚拟地址向物理地址的转换需要补充
-                uncache_2 <= vaddr_1[31:16] == 16'hbfaf & (ren | (|wen));     //将要访问外设
-                w_data_2 <= write_data;
-                wen_2 <= wen;
-                ren_2 <= ren;
-                index_2 <= index_1;
+                uncache_2 <= 1'b0;
+                wen_2 <= 4'b0;
             end
         end
     end
@@ -266,8 +267,6 @@ module dcache
             if(is_store) 
             begin
                 write_finish <= 1'b1;
-                if(hit1) dirty[index_2][0] <= 1'b1;
-                else dirty[index_2][1] <= 1'b1;
             end
             if(hit1) use_bit[index_2] <= 2'b01;
             else use_bit[index_2] <= 2'b10;
@@ -281,7 +280,7 @@ module dcache
 
     wire we1 = (dev_rvalid & (use_bit[index_2]==2'b10)) | (hit1 & is_store);
     wire we2 = (dev_rvalid & (use_bit[index_2]==2'b01)) | (hit2 & is_store);
-    cache_ram ram1
+    dcache_ram ram1
     (
         .clk(clk),
         .we(we1),
@@ -292,7 +291,7 @@ module dcache
         .data_out(data_block1)
     );
 
-    cache_ram ram2
+    dcache_ram ram2
     (
         .clk(clk),
         .we(we2),

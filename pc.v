@@ -13,7 +13,7 @@ module pc
     input wire [31:0] new_pc, //跳转后更新的pc
     input wire pause,     //暂停信号
     input wire [31:0] pre_addr, //预测的分支地址
-    input wire [1:0]  taken_sure, // 确定跳转的信号
+    input wire pred_taken, // 确定跳转的信号
 
     output reg [31:0]pc_out,
     output wire inst_rreq_to_icache,
@@ -21,9 +21,6 @@ module pc
     output reg [6:0] pc_exception_cause
 
 );
-
-
-
     //pc异常的情况
     wire pc_excp;
     assign pc_excp = (pc_out[1: 0] != 2'b00);
@@ -53,7 +50,7 @@ module pc
             pc_4 <= pc_4;
             pc_8 <= pc_8;
         end
-        else if(|taken_sure) begin
+        else if(pred_taken) begin
             pc_4 <= pre_addr;
             pc_8 <= pre_addr;
         end

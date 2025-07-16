@@ -80,7 +80,7 @@ module mycpu_top(
     wire [31:0] dcache_araddr;
     wire dcache_rvalid;
     wire dcache_rdata;
-    wire dcache_wen;
+    wire [3:0] dcache_wen;
     wire [127:0] dcache_wdata;
     wire [31:0] dcache_awaddr;
     wire dcache_bvalid;
@@ -168,8 +168,16 @@ module mycpu_top(
     // dcache-AXI 给的 cache 接口信号
     wire dev_rrdy_to_cache;
     wire dev_wrdy_to_cache;
-    
 
+    wire duncache_rvalid;
+    wire [31:0] duncache_rdata;
+    wire [3:0] duncache_ren;
+    wire [31:0] duncache_raddr;
+
+    wire duncache_write_finish;
+    wire [3:0] duncache_wen;
+    wire [31:0] duncache_wdata;
+    wire [31:0] duncache_waddr;
 
     front u_front(
         // 输入
@@ -211,7 +219,7 @@ module mycpu_top(
         .ex_valid(ex_valid),
         .real_taken(real_taken),
         .real_addr1(real_addr[0]),
-        .read_addr2(real_addr[1]),
+        .real_addr2(real_addr[1]),
         .pred_addr1(pred_addr[0]),
         .pred_addr2(pred_addr[1]),
         .get_data_req(get_data_req),
@@ -222,7 +230,7 @@ module mycpu_top(
         .fb_inst_out1(fb_inst[0]),
         .fb_inst_out2(fb_inst[0]),
         .fb_valid(fb_valid),
-        .fb_pre_taken(fb_pre_taken),
+        .BPU_pred_taken(fb_pre_taken),
         .fb_pre_branch_addr1(fb_pre_branch_addr[0]),
         .fb_pre_branch_addr2(fb_pre_branch_addr[1]),
         .fb_is_exception1(fb_is_exception1),
@@ -339,7 +347,7 @@ module mycpu_top(
         // 来自后端的信号
         .ren(backend_dcache_ren),
         .wen(backend_dcache_wen),
-        .addr(backend_dcache_addr),
+        .vaddr(backend_dcache_addr),
         .write_data(backend_dcache_write_data),
 
         // 输出给后端的信号
@@ -357,7 +365,17 @@ module mycpu_top(
         .cpu_ren(dcache_ren),        
         .cpu_raddr(dcache_araddr),      
         .dev_rvalid(dcache_rvalid),     
-        .dev_rdata(dcache_rdata)      
+        .dev_rdata(dcache_rdata),
+    //duncache to cache_axi
+        .uncache_rvalid(duncache_rvalid),
+        .uncache_rdata(duncache_rdata),
+        .uncache_ren(duncache_ren),
+        .uncache_raddr(duncache_raddr),
+
+        .uncache_write_finish(duncache_write_finish),
+        .uncache_wen(duncache_wen),
+        .uncache_wdata(duncache_wdata),
+        .uncache_waddr(duncache_waddr)      
     );
 
     axi_interface u_axi_interface(
@@ -365,7 +383,8 @@ module mycpu_top(
         .rst(rst),
     //connected to cache_axi
         .cache_ce(axi_ce_o),
-        .cache_wen(axi_wen),         
+        .cache_wen(axi_wen),   
+        .cache_wsel(axi_wsel),      
         .cache_ren(axi_ren),         
         .cache_raddr(axi_raddr),
         .cache_waddr(axi_waddr),
@@ -447,6 +466,17 @@ module mycpu_top(
     //ready to cache
         .dev_rrdy_o(dev_rrdy_to_cache),
         .dev_wrdy_o(dev_wrdy_to_cache),
+
+    //uncache to dcache
+        .duncache_ren_i(duncache_ren),
+        .duncache_raddr_i(duncache_raddr),
+        .duncache_rvalid_o(duncache_rvalid),
+        .duncache_rdata_o(duncache_rdata),
+
+        .duncache_wen_i(duncache_wen),
+        .duncache_wdata_i(duncache_wdata),
+        .duncache_waddr_i(duncache_waddr),
+        .duncache_write_resp(duncache_write_finish),
 
     //AXI communicate
         .axi_ce_o(axi_ce_o),

@@ -11,8 +11,8 @@ module instbuffer
     input wire [31:0] inst2,
     input wire [31:0] pred_addr,
 
-    input wire  pc_exception_in1,
-    input wire  pc_exception_in2,
+    input wire  pc_is_exception_in1,
+    input wire  pc_is_exception_in2,
     input wire [6:0] pc_exception_cause_in1,
     input wire [6:0] pc_exception_cause_in2,
 
@@ -26,7 +26,6 @@ module instbuffer
     wire full1;
     wire empty1;
     wire stall2;
-    wire empty2;
     wire full2;
     wire empty2;
 

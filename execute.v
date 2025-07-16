@@ -162,8 +162,8 @@ module execute (
     wire [1:0] is_preld_alu;
     wire [1:0] hint_alu;
     wire [31:0] addr_alu;
+    wire [1:0] valid_o;
 
-    wire [1:0] valid;
     wire [1:0] op;
     wire addr_ok;
     wire [31:0] virtual_addr [1:0];
@@ -171,6 +171,7 @@ module execute (
     wire [3:0] wstrb [1:0];
 
     // to mem
+    wire [1:0] valid_mem_o;
     wire [31:0] pc [1:0];
     wire [31:0] inst [1:0];
 
@@ -190,7 +191,6 @@ module execute (
     wire [1:0] is_privilege;
     wire is_ert [1:0];
     wire is_idle [1:0];
-    wire [1:0] valid_o;
 
     wire [1:0] reg_write_en;
     wire [4:0] reg_write_addr [1:0];
@@ -230,7 +230,7 @@ module execute (
         .decoder_exception_cause_i(decoder_exception_cause1_i),
         .dispatch_exception_cause_i(dispatch_exception_cause1_i),
 
-        .privilege_i(is_privilege_i[0]),
+        .is_privilege_i(is_privilege_i[0]),
         .valid_i(valid_i[0]),
 
         .aluop_i(aluop1_i),
@@ -267,19 +267,19 @@ module execute (
 
         // to ctrl
         .pause_alu_o(pause_alu[0]),
-        .branch_flush_alu_o(branch_flush_alu[0]),
-        .branch_target_addr_alu_o(branch_target_addr_alu[0]),
+        .branch_flush_o(branch_flush_alu[0]),
+        .branch_target_addr_o(branch_target_addr_alu[0]),
         
         // to dispatch
         .pre_ex_aluop_o(pre_ex_aluop1_o),
         
-        // to Cache
+        // to Cache*********************这一块都没有****************************************
         .is_cacop_o(is_cacop_alu[0]),
         .cacop_code_o(cacop_code_alu[0]),
         .is_preld_o(is_preld_alu[0]),
         .hint_o(hint_alu[0]),
         .addr_o(addr_alu[0]),
-
+        //*******************************************************************************
         // to mem
         .pc_mem(pc[0]),
         .inst_mem(inst[0]),
@@ -294,7 +294,7 @@ module execute (
         .is_privilege_mem(is_privilege[0]),
         .is_ertn_mem(is_ert[0]),
         .is_idle_mem(is_idle[0]),
-        .valid_mem(valid_o[0]),
+        .valid_mem(valid_mem_o[0]),
         .reg_write_en_mem(reg_write_en[0]),
         .reg_write_addr_mem(reg_write_addr[0]),
         .reg_write_data_mem(reg_write_data[0]),
@@ -323,7 +323,7 @@ module execute (
         .decoder_exception_cause_i(decoder_exception_cause2_i),
         .dispatch_exception_cause_i(dispatch_exception_cause2_i),
         
-        .privilege_i(is_privilege_i[1]),
+        .is_privilege_i(is_privilege_i[1]),
         .valid_i(valid_i[1]),
 
         .aluop_i(aluop2_i),
@@ -360,19 +360,21 @@ module execute (
 
         // to ctrl
         .pause_alu_o(pause_alu[1]),
-        .branch_flush_alu_o(branch_flush_alu[1]),
-        .branch_target_addr_alu_o(branch_target_addr_alu[1]),
+        .branch_flush_o(branch_flush_alu[1]),
+        .branch_target_addr_o(branch_target_addr_alu[1]),
         
         // to dispatch
         .pre_ex_aluop_o(pre_ex_aluop2_o),
         
-        // to Cache
+        // to Cache*****这块没写***********************************************************
+
         .is_cacop_o(is_cacop_alu[1]),
         .cacop_code_o(cacop_code_alu[1]),
         .is_preld_o(is_preld_alu[1]),
         .hint_o(hint_alu[1]),
         .addr_o(addr_alu[1]),
 
+        //***************************************************************************
         // to mem
         .pc_mem(pc[1]),
         .inst_mem(inst[1]),
@@ -387,7 +389,7 @@ module execute (
         .is_privilege_mem(is_privilege[1]),
         .is_ertn_mem(is_ert[1]),
         .is_idle_mem(is_idle[1]),
-        .valid_mem(valid_o[1]),
+        .valid_mem(valid_mem_o[1]),
         .reg_write_en_mem(reg_write_en[1]),
         .reg_write_addr_mem(reg_write_addr[1]),
         .reg_write_data_mem(reg_write_data[1]),
@@ -445,7 +447,7 @@ module execute (
     end
 *********************************************************************/
 
-    assign ex_excp_flush_o = (is_exception[0] != 0 || is_exception[1] != 0 
+    assign ex_excp_flush_o = (is_exception1 != 0 || is_exception2 != 0 
                             || csr_write_en[0] || csr_write_en[1]
                             || aluop[0] == `ALU_ERTN || aluop[1] == `ALU_ERTN) 
                             && !pause_ex_o && !pause_mem_i;
@@ -513,7 +515,7 @@ module execute (
                 is_privilege_mem[0] <= is_privilege[0];
                 is_ertn_mem[0] <= aluop[0] == `ALU_ERTN;
                 is_idle_mem[0] <= aluop[0] == `ALU_IDLE;
-                valid_mem[0] <= valid_o[0];
+                valid_mem[0] <= valid_mem_o[0];
                 reg_write_en_mem[0] <= reg_write_en[0];
                 reg_write_addr1_mem <= reg_write_addr[0];
                 reg_write_data1_mem <= reg_write_data[0];
@@ -528,7 +530,7 @@ module execute (
                 pc1_mem <= 32'b0;
                 inst1_mem <= 32'b0;
                 is_exception2_o <= 5'b0;
-                pc_exception_cause_o <= 7'b0;
+                pc_exception_cause2_o <= 7'b0;
                 instbuffer_exception_cause2_o <= 7'b0;
                 decoder_exception_cause2_o <= 7'b0;
                 dispatch_exception_cause2_o <= 7'b0;
@@ -554,7 +556,7 @@ module execute (
                 inst2_mem <= inst[1];
                 is_exception1_o <= is_exception1;
                 is_exception2_o <= is_exception2;
-                pc_exception_cause_o <= pc_exception_cause1;
+                pc_exception_cause1_o <= pc_exception_cause1;
                 pc_exception_cause2_o <= pc_exception_cause2;
                 instbuffer_exception_cause1_o <= instbuffer_exception_cause1;
                 instbuffer_exception_cause2_o <= instbuffer_exception_cause2;
@@ -570,8 +572,8 @@ module execute (
                 is_ertn_mem[1] <= aluop[1] == `ALU_ERTN;
                 is_idle_mem[0] <= aluop[0] == `ALU_IDLE;
                 is_idle_mem[1] <= aluop[1] == `ALU_IDLE;
-                valid_mem[0] <= valid_o[0];
-                valid_mem[1] <= valid_o[1];
+                valid_mem[0] <= valid_mem_o[0];
+                valid_mem[1] <= valid_mem_o[1];
                 reg_write_en_mem[0] <= reg_write_en[0];
                 reg_write_en_mem[1] <= reg_write_en[1];
                 reg_write_addr1_mem <= reg_write_addr[0];
