@@ -22,14 +22,14 @@ module axi_interface
 
     //conneceed to AXI :AR,R,AW,W,B (详见实验4：AXI总线接口设计-实验原理)
     //AR读地址
-    output wire [3:0] arid,        //cache的设备ID，assign赋固定值4’b0000
+    output wire [3:0] arid,        //cache的设备ID，assign赋固定值4'b0000
     output reg [31:0] araddr,      
     output reg [7:0] arlen,       //读时在clk上升沿被赋值为上面的cacher_burst_length
     output reg [2:0] arsize,
     output reg [1:0] arburst,
-    output wire [1:0] arlock,    //值为2‘b00，assign直接赋值，功能不明
-    output reg [3:0] arcache,    //下文中仅可能被赋值为4‘b0000，功能不明
-    output wire [2:0] arprot,    //assign直接赋值为3’b000，功能不明
+    output wire [1:0] arlock,    //值为2'b00，assign直接赋值，功能不明
+    output reg [3:0] arcache,    //下文中仅可能被赋值为4'b0000，功能不明
+    output wire [2:0] arprot,    //assign直接赋值为3'b000，功能不明
     output reg arvalid ,         //读地址有效信号
     input wire arready,          //从设备的AR通道就绪
     //R读数据
@@ -55,7 +55,7 @@ module axi_interface
     //W写数据
     output wire [3:0] wid,     //assign wid = 4'b0000
     output reg [31:0] wdata,   //给总线的写数据
-    output reg [3:0] wstrb,    //给总线的按字节的写使能，意义不明的4位，应该只有4‘b0000和4’b1111
+    output reg [3:0] wstrb,    //给总线的按字节的写使能，意义不明的4位，应该只有4'b0000和4'b1111
     output reg wlast,          //向总线指示最后32位数据
     output reg wvalid,         //写数据有效
     input wire wready,         //从设备w通道就绪，信号来自总线

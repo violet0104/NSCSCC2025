@@ -53,7 +53,7 @@ module cache_AXI
     input wire wdata_resp_i,  // 写响应信号
     output wire axi_wen_o,
     output wire [31:0] axi_waddr_o,
-    output wire [31:0] axi_wdata_o,
+    output reg [31:0] axi_wdata_o,
     output wire axi_wvalid_o,
     output wire axi_wlast_o,
     output wire [7:0] axi_wlen_o
@@ -73,7 +73,7 @@ module cache_AXI
     reg [1:0] read_count;
     reg [1:0] write_count;
 
-    assign axi_ce_o = rst ? 1'b1 : 1'b0;
+    assign axi_ce_o = rst ? 1'b0 : 1'b1;
     assign dev_rrdy_o = read_state == read_FREE;
     assign dev_wrdy_o = write_state == write_FREE;
 

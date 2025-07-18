@@ -138,7 +138,7 @@ module alu (
     reg start_mul;
     wire signed_mul;
     wire mul_done;
-    reg [63:0] mul_result;
+    wire [63:0] mul_result;
     reg [31:0] mul_data1;
     reg [31:0] mul_data2;
         

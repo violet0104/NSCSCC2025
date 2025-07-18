@@ -55,7 +55,7 @@ module id_3R
         inst_out = inst;
         reg1_read_addr = rj;
         reg2_read_addr = rk;
-        reg_write_addr = rd;
+        
         csr_read_en = 1'b0;
         csr_write_en = 1'b0;
         csr_addr = 14'b0;
@@ -68,6 +68,7 @@ module id_3R
             `ADDW_OPCODE:begin
                 is_privilege = 1'b0;
                 reg_write_en = 1'b1;
+                reg_write_addr = rd;
                 aluop = `ALU_ADDW;
                 alusel = `ALU_SEL_ARITHMETIC;
                 reg1_read_en = 1'b1;
@@ -79,6 +80,7 @@ module id_3R
             `SUBW_OPCODE:begin
                 is_privilege = 1'b0;
                 reg_write_en = 1'b1;
+                reg_write_addr = rd;
                 aluop = `ALU_SUBW;
                 alusel = `ALU_SEL_ARITHMETIC;
                 reg1_read_en = 1'b1;
@@ -90,6 +92,7 @@ module id_3R
             `AND_OPCODE:begin
                 is_privilege = 1'b0;
                 reg_write_en = 1'b1;
+                reg_write_addr = rd;
                 aluop = `ALU_AND;
                 alusel = `ALU_SEL_ARITHMETIC;
                 reg1_read_en = 1'b1;
@@ -101,6 +104,7 @@ module id_3R
             `SLT_OPCODE:begin
                 is_privilege = 1'b0;
                 reg_write_en = 1'b1;
+                reg_write_addr = rd;
                 aluop = `ALU_SLT;
                 alusel = `ALU_SEL_ARITHMETIC;
                 reg1_read_en = 1'b1;
@@ -112,6 +116,7 @@ module id_3R
             `SLTU_OPCODE:begin
                 is_privilege = 1'b0;
                 reg_write_en = 1'b1;
+                reg_write_addr = rd;
                 aluop = `ALU_SLTU;
                 alusel = `ALU_SEL_ARITHMETIC;
                 reg1_read_en = 1'b1;
@@ -123,6 +128,7 @@ module id_3R
             `OR_OPCODE:begin
                 is_privilege = 1'b0;
                 reg_write_en = 1'b1;
+                reg_write_addr = rd;
                 aluop = `ALU_OR;
                 alusel = `ALU_SEL_ARITHMETIC;
                 reg1_read_en = 1'b1;
@@ -134,6 +140,7 @@ module id_3R
             `XOR_OPCODE:begin
                 is_privilege = 1'b0;
                 reg_write_en = 1'b1;
+                reg_write_addr = rd;
                 aluop = `ALU_XOR;
                 alusel = `ALU_SEL_ARITHMETIC;
                 reg1_read_en = 1'b1;
@@ -145,6 +152,7 @@ module id_3R
             `NOR_OPCODE:begin
                 is_privilege = 1'b0;
                 reg_write_en = 1'b1;
+                reg_write_addr = rd;
                 aluop = `ALU_NOR;
                 alusel = `ALU_SEL_ARITHMETIC;
                 reg1_read_en = 1'b1;
@@ -156,6 +164,7 @@ module id_3R
             `SLLW_OPCODE:begin
                 is_privilege = 1'b0;
                 reg_write_en = 1'b1;
+                reg_write_addr = rd;
                 aluop = `ALU_SLLW;
                 alusel = `ALU_SEL_ARITHMETIC;
                 reg1_read_en = 1'b1;
@@ -167,6 +176,7 @@ module id_3R
             `SRLW_OPCODE:begin
                 is_privilege = 1'b0;
                 reg_write_en = 1'b1;
+                reg_write_addr = rd;
                 aluop = `ALU_SRLW;
                 alusel = `ALU_SEL_ARITHMETIC;
                 reg1_read_en = 1'b1;
@@ -178,6 +188,7 @@ module id_3R
             `SRAW_OPCODE:begin
                 is_privilege = 1'b0;
                 reg_write_en = 1'b1;
+                reg_write_addr = rd;
                 aluop = `ALU_SRAW;
                 alusel = `ALU_SEL_ARITHMETIC;
                 reg1_read_en = 1'b1;
@@ -189,6 +200,7 @@ module id_3R
             `SLLIW_OPCODE:begin
                 is_privilege = 1'b0;
                 reg_write_en = 1'b1;
+                reg_write_addr = rd;
                 aluop = `ALU_SLLIW;
                 alusel = `ALU_SEL_ARITHMETIC;
                 reg1_read_en = 1'b1;
@@ -200,6 +212,7 @@ module id_3R
             `SRLIW_OPCODE:begin
                 is_privilege = 1'b0;
                 reg_write_en = 1'b1;
+                reg_write_addr = rd;
                 aluop = `ALU_SRLIW;
                 alusel = `ALU_SEL_ARITHMETIC;
                 reg1_read_en = 1'b1;
@@ -211,6 +224,7 @@ module id_3R
             `SRAIW_OPCODE:begin
                 is_privilege = 1'b0;
                 reg_write_en = 1'b1;
+                reg_write_addr = rd;
                 aluop = `ALU_SRAIW;
                 alusel = `ALU_SEL_ARITHMETIC;
                 reg1_read_en = 1'b1;
@@ -222,6 +236,7 @@ module id_3R
             `MULW_OPCODE:begin
                 is_privilege = 1'b0;
                 reg_write_en = 1'b1;
+                reg_write_addr = rd;
                 aluop = `ALU_MULW;
                 alusel = `ALU_SEL_MUL;
                 reg1_read_en = 1'b1;
@@ -233,6 +248,7 @@ module id_3R
             `MULHW_OPCODE:begin
                 is_privilege = 1'b0;
                 reg_write_en = 1'b1;
+                reg_write_addr = rd;
                 aluop = `ALU_MULHW;
                 alusel = `ALU_SEL_MUL;
                 reg1_read_en = 1'b1;
@@ -244,6 +260,7 @@ module id_3R
             `MULHWU_OPCODE:begin
                 is_privilege = 1'b0;
                 reg_write_en = 1'b1;
+                reg_write_addr = rd;
                 aluop = `ALU_MULHWU;
                 alusel = `ALU_SEL_MUL;
                 reg1_read_en = 1'b1;
@@ -255,6 +272,7 @@ module id_3R
             `MULHWU_OPCODE:begin
                 is_privilege = 1'b0;
                 reg_write_en = 1'b1;
+                reg_write_addr = rd;
                 aluop = `ALU_MULHWU;
                 alusel = `ALU_SEL_MUL;
                 reg1_read_en = 1'b1;
@@ -266,6 +284,7 @@ module id_3R
             `DIVW_OPCODE:begin
                 is_privilege = 1'b0;
                 reg_write_en = 1'b1;
+                reg_write_addr = rd;
                 aluop = `ALU_DIVW;
                 alusel = `ALU_SEL_MUL;
                 reg1_read_en = 1'b1;
@@ -277,6 +296,7 @@ module id_3R
             `DIVWU_OPCODE:begin
                 is_privilege = 1'b0;
                 reg_write_en = 1'b1;
+                reg_write_addr = rd;
                 aluop = `ALU_DIVWU;
                 alusel = `ALU_SEL_MUL;
                 reg1_read_en = 1'b1;
@@ -288,6 +308,7 @@ module id_3R
             `MODW_OPCODE:begin
                 is_privilege = 1'b0;
                 reg_write_en = 1'b1;
+                reg_write_addr = rd;
                 aluop = `ALU_MODW;
                 alusel = `ALU_SEL_MUL;
                 reg1_read_en = 1'b1;
@@ -299,6 +320,7 @@ module id_3R
             `BREAK_OPCODE:begin
                 is_privilege = 1'b0;
                 reg_write_en = 1'b0;
+                reg_write_addr = 5'b0;
                 aluop = `ALU_BREAK;
                 alusel = `ALU_SEL_NOP;
                 reg1_read_en = 1'b0;
@@ -310,6 +332,7 @@ module id_3R
             `SYSCALL_OPCODE:begin
                 is_privilege = 1'b0;
                 reg_write_en = 1'b0;
+                reg_write_addr = 5'b0;
                 aluop = `ALU_SYSCALL;
                 alusel = `ALU_SEL_NOP;
                 reg1_read_en = 1'b0;
@@ -321,6 +344,7 @@ module id_3R
             `IDLE_OPCODE:begin
                 is_privilege = 1'b1;
                 reg_write_en = 1'b0;
+                reg_write_addr = 5'b0;
                 aluop = `ALU_IDLE;
                 alusel = `ALU_SEL_NOP;
                 reg1_read_en = 1'b0;
@@ -332,6 +356,7 @@ module id_3R
             `INVTLB_OPCODE:begin
                 is_privilege = 1'b1;
                 reg_write_en = 1'b0;
+                reg_write_addr = 5'b0;
                 aluop = `ALU_INVTLB;
                 alusel = `ALU_SEL_NOP;
                 reg1_read_en = 1'b1;
@@ -343,6 +368,7 @@ module id_3R
             `DBAR_OPCODE:begin
                 is_privilege = 1'b0;
                 reg_write_en = 1'b0;
+                reg_write_addr = 5'b0;
                 aluop = `ALU_NOP;
                 alusel = `ALU_SEL_NOP;
                 reg1_read_en = 1'b0;
@@ -354,6 +380,7 @@ module id_3R
             `IBAR_OPCODE:begin
                 is_privilege = 1'b0;
                 reg_write_en = 1'b0;
+                reg_write_addr = 5'b0;
                 aluop = `ALU_NOP;
                 alusel = `ALU_SEL_NOP;
                 reg1_read_en = 1'b0;
@@ -365,6 +392,7 @@ module id_3R
             default: begin
                 is_privilege = 1'b0;
                 reg_write_en = 1'b0;
+                reg_write_addr = 5'b0;
                 aluop = `ALU_NOP;
                 alusel = `ALU_SEL_NOP;
                 reg1_read_en = 1'b0;

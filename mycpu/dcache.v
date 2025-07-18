@@ -11,13 +11,13 @@ module dcache
     output reg rdata_valid,    // 输出给CPU的数据有效信号（高电平表示DCache已准备好数据）
     output reg write_finish,   // 输出给CPU的写响应（高电平表示DCache已完成写操作）
     //to write BUS
-    input  wire         dev_wrdy,       // 主存/外设的写就绪信号（高电平表示主存/外设可接收DCache的写请求）
+    input  wire         dev_wrdy,       // 闁主存/外设的写就绪信号（高电平表示主存/外设可接收DCache的写请求）
     output reg  [ 3:0]  cpu_wen,        // 输出给主存/外设的写使能信号
     output reg  [31:0]  cpu_waddr,      // 输出给主存/外设的写地址
     output reg  [127:0]  cpu_wdata,      // 输出给主存/外设的写数据
     //to Read Bus
     input  wire         dev_rrdy,       // 主存/外设的读就绪信号（高电平表示主存/外设可接收DCache的读请求）
-    output reg  [ 3:0]  cpu_ren,        // 输出给主存/外设的读使能信号
+    output reg          cpu_ren,        // 输出给主存/外设的读使能信号
     output reg  [31:0]  cpu_raddr,      // 输出给主存/外设的读地址
     input  wire         dev_rvalid,     // 来自主存/外设的数据有效信号
     input  wire [127:0] dev_rdata,       // 来自主存/外设的读数据
@@ -28,7 +28,7 @@ module dcache
     output wire [31:0] uncache_raddr,
 
     input wire uncache_write_finish,
-    output wire [3:0] uncache_wen,   //考虑不将该信号做成仅持续一个clk，而是在cache-axi中处理成一个clk长度的信号输出给总线
+    output wire [3:0] uncache_wen,   
     output wire [31:0] uncache_wdata,
     output wire [31:0] uncache_waddr
 );
@@ -153,7 +153,7 @@ module dcache
             ren_2 <= 1'b0;
             index_2 <= 6'b0;
             cpu_wen <= 4'b0;
-            cpu_ren <= 4'b0;
+            cpu_ren <= 1'b0;
             cpu_waddr <= 32'b0;
             cpu_raddr <= 32'b0;
             cpu_wdata <= 128'b0;
@@ -166,10 +166,10 @@ module dcache
             end
 
         end
-        else if((state == IDLE | state == RETURN) & (req_2 & hit | !req_2) & (next_state != UNCACHE))  //可能要补充state == `RETURN
+        else if((state == IDLE | state == RETURN) & (req_2 & hit | !req_2) & (next_state != UNCACHE))  //闁跨喐鏋婚幏鐑芥晸閺傘倖瀚圭憰渚€鏁撻弬銈嗗闁跨喐鏋婚幏绌漷ate == `RETURN
         begin
-            paddr_2 <= vaddr_1;                         //此处的虚拟地址向物理地址的转换需要补充
-            uncache_2 <= vaddr_1[31:16] == 16'hbfaf & (ren | (|wen));     //将要访问外设
+            paddr_2 <= vaddr_1;                         //闁跨喎澹欐潏鐐闁跨喐鏋婚幏鐑芥晸閺傘倖瀚归柨鐔告灮閹风兘鏁撶悰妤€鍤栭幏鐑芥晸閺傘倖瀚归柨鐔告灮閹风兘鏁撻弬銈嗗闁跨喕顢滈崙銈嗗闁跨喖妯侀搴㈠闁跨喐鏋婚幏鐑芥晸閹活収浜烽幏鐑芥晸閺傘倖瀚归柨鐕傛嫹
+            uncache_2 <= vaddr_1[31:16] == 16'hbfaf & (ren | (|wen));     //闁跨喐鏋婚幏鐤洣闁跨喐鏋婚幏鐑芥晸閺傘倖瀚归柨鐔告灮閹风兘鏁撻弬銈嗗
             w_data_2 <= write_data;
             wen_2 <= wen;
             ren_2 <= ren;
@@ -204,13 +204,13 @@ module dcache
         begin
             if(dev_rrdy & !dealing)
             begin
-                cpu_ren <= 4'b1111;
+                cpu_ren <= 1'b1;
                 cpu_raddr <= paddr_2;
                 dealing <= 1'b1;
             end
-            else if(cpu_ren != 4'b0000)
+            else if(cpu_ren != 1'b0)
             begin
-                cpu_ren <= 4'b0000;
+                cpu_ren <= 1'b0;
             end
             if(dev_rvalid)
             begin

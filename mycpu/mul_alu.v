@@ -10,7 +10,7 @@ module mul_alu (
     input wire [31:0] reg2,     // 操作数2
 
     output wire done,           //乘法运算完成信号
-    output wire [64:0] result   // 乘法运算结果     
+    output wire [63:0] result   // 乘法运算结果
 );
 
     reg signed [63:0] mul_result;  
@@ -23,7 +23,7 @@ module mul_alu (
     assign reg1_ext = signed_op ? {reg1[31], reg1} : {1'b0, reg1};
     assign reg2_ext = signed_op ? {reg2[31], reg2} : {1'b0, reg2};
 
-    // ?? 不知道能不能直接乘
+    // ??不知道能不能直接乘
     always @(posedge clk) begin
         if (start) begin
             mul_result <= {32'b0, reg1_ext} * {32'b0, reg2_ext}; // 执行乘法运算

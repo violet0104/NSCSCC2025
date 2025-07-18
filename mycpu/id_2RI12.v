@@ -30,7 +30,7 @@ module id_2RI12
     output reg  csr_write_en, //CSR寄存器写使能
     output reg  [13:0] csr_addr, //CSR
     output reg  is_cnt, //是否是计数器寄存器
-    output reg  invtlb_op  //TLB无效操作
+    output reg  [4:0] invtlb_op  //TLB无效操作
 );
     reg [9:0] opcode;
     reg [4:0] rj;
@@ -52,7 +52,7 @@ module id_2RI12
         si12 = inst[21:10];
         pc_out = pc;
         inst_out = inst;
-        reg_write_addr = rd;
+        
         is_privilege = 1'b0;
         csr_read_en = 1'b0;
         csr_write_en = 1'b0;
@@ -65,6 +65,7 @@ module id_2RI12
         case(opcode)
             `ORI_OPCODE:begin
                 reg_writen_en = 1'b1;
+                reg_write_addr = rd;
                 aluop = `ALU_ORI;
                 alusel = `ALU_SEL_ARITHMETIC;
                 reg1_read_en = 1'b1;
@@ -76,6 +77,7 @@ module id_2RI12
             end
             `SLTI_OPCODE:begin
                 reg_writen_en = 1'b1;
+                reg_write_addr = rd;
                 aluop = `ALU_SLTI;
                 alusel = `ALU_SEL_ARITHMETIC;
                 reg1_read_en = 1'b1;
@@ -87,6 +89,7 @@ module id_2RI12
             end
             `SLTUI_OPCODE:begin
                 reg_writen_en = 1'b1;
+                reg_write_addr = rd;
                 aluop = `ALU_SLTUI;
                 alusel = `ALU_SEL_ARITHMETIC;
                 reg1_read_en = 1'b1;
@@ -98,6 +101,7 @@ module id_2RI12
             end
             `ADDIW_OPCODE:begin
                 reg_writen_en = 1'b1;
+                reg_write_addr = rd;
                 aluop = `ALU_ADDIW;
                 alusel = `ALU_SEL_ARITHMETIC;
                 reg1_read_en = 1'b1;
@@ -109,6 +113,7 @@ module id_2RI12
             end
             `ANDI_OPCODE:begin
                 reg_writen_en = 1'b1;
+                reg_write_addr = rd;
                 aluop = `ALU_ADDIW;
                 alusel = `ALU_SEL_ARITHMETIC;
                 reg1_read_en = 1'b1;
@@ -118,10 +123,119 @@ module id_2RI12
                 imm = {20'b0,ui12};
                 inst_valid = 1'b1;
             end
+            `XORI_OPCODE: begin
+                reg_writen_en = 1'b1;
+                reg_write_addr = rd;
+                aluop = `ALU_XORI;
+                alusel = `ALU_SEL_ARITHMETIC;
+                reg1_read_en = 1'b1;
+                reg2_read_en = 1'b0;
+                reg1_read_addr = rj;
+                reg2_read_addr = 5'b0;
+                imm = {20'b0, ui12};
+                inst_valid = 1'b1;
+            end
+            `LDB_OPCODE: begin
+                reg_writen_en = 1'b1;
+                reg_write_addr = rd;
+                aluop = `ALU_LDB;
+                alusel = `ALU_SEL_LOAD_STORE;
+                reg1_read_en= 1'b1;
+                reg2_read_en = 1'b0;
+                reg1_read_addr = rj;
+                reg2_read_addr = 5'b0;
+                imm = {{20{si12[11]}}, si12};
+                inst_valid = 1'b1;
+            end
+            `LDH_OPCODE: begin
+                reg_writen_en = 1'b1;
+                reg_write_addr = rd;
+                aluop = `ALU_LDH;
+                alusel = `ALU_SEL_LOAD_STORE;
+                reg1_read_en = 1'b1;
+                reg2_read_en = 1'b0;
+                reg1_read_addr = rj;
+                reg2_read_addr = 5'b0;
+                imm = {{20{si12[11]}}, si12};
+                inst_valid = 1'b1;
+            end
+            `LDW_OPCODE: begin
+                reg_writen_en = 1'b1;
+                reg_write_addr = rd;
+                aluop = `ALU_LDW;
+                alusel = `ALU_SEL_LOAD_STORE;
+                reg1_read_en = 1'b1;
+                reg2_read_en = 1'b0;
+                reg1_read_addr = rj;
+                reg2_read_addr = 5'b0;
+                imm = {{20{si12[11]}}, si12};
+                inst_valid = 1'b1;
+            end
+            `LDBU_OPCODE: begin
+                reg_writen_en = 1'b1;
+                reg_write_addr = rd;
+                aluop = `ALU_LDBU;
+                alusel = `ALU_SEL_LOAD_STORE;
+                reg1_read_en = 1'b1;
+                reg2_read_en = 1'b0;
+                reg1_read_addr = rj;
+                reg2_read_addr = 5'b0;
+                imm = {{20{si12[11]}}, si12};
+                inst_valid = 1'b1;
+            end
+            `LDHU_OPCODE: begin
+                reg_writen_en = 1'b1;
+                reg_write_addr = rd;
+                aluop = `ALU_LDHU;
+                alusel = `ALU_SEL_LOAD_STORE;
+                reg1_read_en = 1'b1;
+                reg2_read_en = 1'b0;
+                reg1_read_addr = rj;
+                reg2_read_addr = 5'b0;
+                imm = {{20{si12[11]}}, si12};
+                inst_valid = 1'b1;
+            end
+            `STB_OPCODE: begin
+                reg_writen_en = 1'b0;
+                reg_write_addr = 5'b0;
+                aluop = `ALU_STB;
+                alusel = `ALU_SEL_LOAD_STORE;
+                reg1_read_en = 1'b1;
+                reg2_read_en = 1'b1;
+                reg1_read_addr = rj;
+                reg2_read_addr = rd;
+                imm = 32'b0;
+                inst_valid = 1'b1;
+            end
+            `STH_OPCODE: begin
+                reg_writen_en = 1'b0;
+                reg_write_addr = 5'b0;
+                aluop = `ALU_STH;
+                alusel = `ALU_SEL_LOAD_STORE;
+                reg1_read_en = 1'b1;
+                reg2_read_en = 1'b1;
+                reg1_read_addr = rj;
+                reg2_read_addr = rd;
+                imm = 32'b0;
+                inst_valid = 1'b1;
+            end
+            `STW_OPCODE: begin
+                reg_writen_en = 1'b0;
+                reg_write_addr = 5'b0;
+                aluop = `ALU_STW;
+                alusel = `ALU_SEL_LOAD_STORE;
+                reg1_read_en = 1'b1;
+                reg2_read_en = 1'b1;
+                reg1_read_addr = rj;
+                reg2_read_addr = rd;
+                imm = 32'b0;
+                inst_valid = 1'b1;
+            end
             default:begin
                 aluop = `ALU_NOP;
                 alusel = `ALU_SEL_NOP;
                 reg_writen_en = 1'b0;
+                reg_write_addr = 5'b0;
                 reg1_read_en  = 1'b0;
                 reg2_read_en  = 1'b0;
                 reg1_read_addr= 5'b0;

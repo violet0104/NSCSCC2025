@@ -15,7 +15,7 @@ module pc
     input wire [31:0] pre_addr, //预测的分支地址
     input wire pred_taken, // 确定跳转的信号
 
-    output reg [31:0]pc_out,
+    output wire [31:0]pc_out,
     output wire inst_rreq_to_icache,
     output reg pc_is_exception,
     output reg [6:0] pc_exception_cause
@@ -61,11 +61,6 @@ module pc
         
     end
     
-    always @(*) begin
-        if (iuncache) begin
-            pc_out = pc_4;
-            end
-        else pc_out = pc_8;
-    end
+    assign pc_out = pc_8;
 
 endmodule

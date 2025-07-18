@@ -45,14 +45,13 @@ module mycpu_top(
     input  wire [ 3:0] bid,
     input  wire [ 1:0] bresp,
     input  wire        bvalid,
-    output wire        bready
+    output wire        bready,
 
-/*****************************************
     output wire [31:0] debug_wb_pc,    
     output wire [ 3:0] debug_wb_rf_we,
     output wire [ 4:0] debug_wb_rf_wnum,
     output wire [31:0] debug_wb_rf_wdata,
-    output wire [31:0] debug_wb_inst,
+    output wire [31:0] debug_wb_inst
 
     `ifdef DIFF
     output [31:0] debug0_wb_pc,
@@ -67,7 +66,7 @@ module mycpu_top(
     output [31:0] debug1_wb_rf_wdata,
     output [31:0] debug1_wb_inst
     `endif
-*******************************************/
+
 );
     wire rst;
     assign rst = ~aresetn;
@@ -79,7 +78,7 @@ module mycpu_top(
     wire dcache_ren;
     wire [31:0] dcache_araddr;
     wire dcache_rvalid;
-    wire dcache_rdata;
+    wire [31:0] dcache_rdata;
     wire [3:0] dcache_wen;
     wire [127:0] dcache_wdata;
     wire [31:0] dcache_awaddr;
@@ -95,6 +94,8 @@ module mycpu_top(
     wire axi_rready;
     wire [31:0] axi_raddr;
     wire [7:0] axi_rlen;
+    wire [127:0] dcache_axi_data_block;
+
     //AXI write
     wire axi_wdata_resp;
     wire axi_wen;
@@ -108,7 +109,7 @@ module mycpu_top(
     wire [2:0] cache_brust_size;
     assign cache_brust_size = 3'b010;
 
-    //icache  与前端模块的交互信号**********************
+    //icache  闁跨喐鏋婚幏宄板闁跨喐鏋婚幏閿嬆侀柨鐔告灮閹烽攱鍘遍柨鐔告灮閹风兘鏁撻弬銈嗗閽樻洟鏁撻敓锟?**********************
     wire BPU_flush;
     wire inst_rreq;
     wire [31:0] inst_addr;
@@ -117,94 +118,107 @@ module mycpu_top(
     wire [6:0] pi_exception_cause; 
 
     wire icache_inst_valid;
-    wire [31:0] inst_for_buffer [1:0];
     wire [31:0] pred_addr_for_buffer;
     wire pi_icache_is_exception1;
     wire pi_icache_is_exception2;
     wire [6:0] pi_icache_exception_cause1;
     wire [6:0] pi_icache_exception_cause2;
     wire pc_suspend;
-    wire [31:0] icache_pc [1:0];
-    wire [31:0] icache_inst [1:0];
+    wire [31:0] icache_pc1;
+    wire [31:0] icache_pc2;
+    wire [31:0] icache_inst1;
+    wire [31:0] icache_inst2;
     //*************************************************
 
 
-    // 前端给后端的信号
-    wire [31:0]fb_pc[1:0];
-    wire [31:0]fb_inst[1:0];
-    wire fb_valid;
+    // 閸撳秹鏁撻崜鍧楁交閹风兘鏁撻弬銈嗗鐠囨挳鏁撻弬銈嗗閽樻洟鏁撻敓锟?
+    wire [31:0]fb_pc1;
+    wire [31:0]fb_pc2;
+    wire [31:0]fb_inst1;
+    wire [31:0]fb_inst2;
+    wire [1:0] fb_valid;
     wire [1:0]fb_pre_taken;
-    wire [31:0]fb_pre_branch_addr[1:0];
-    wire fb_is_exception1;
-    wire fb_is_exception2;
+    
+    assign fb_pre_taken = 2'b0;
+    
+    wire [31:0]fb_pre_branch_addr1;
+    wire [31:0]fb_pre_branch_addr2;
+    wire [1:0] fb_is_exception1;
+    wire [1:0] fb_is_exception2;
     wire [6:0] fb_pc_exception_cause1;
     wire [6:0] fb_pc_exception_cause2;
     wire [6:0] fb_instbuffer_exception_cause1;
     wire [6:0] fb_instbuffer_exception_cause2;
 
-    // 后端给前端的信号
+    // 闁跨喐鏋婚幏椋庡剨闁跨喕顫楃敮顔藉鐠囨挳鏁撻弬銈嗗閽樻洟鏁撻敓锟?
     wire iuncache;
     wire [1:0]ex_is_bj;
-    wire [31:0]ex_pc[1:0];
+    wire [31:0]ex_pc1;
+    wire [31:0]ex_pc2;
     wire [1:0]ex_valid;
-    wire [1:0]real_taken;
-    wire [31:0]real_addr[1:0];
-    wire [31:0]pred_addr[1:0];
+    wire [1:0]ex_real_taken;
+    wire [31:0]ex_real_addr1;
+    wire [31:0]ex_real_addr2;
+    wire [31:0]ex_pred_addr1;
+    wire [31:0]ex_pred_addr2;
     wire get_data_req;
-    wire flush_o;
-    wire pause_o;
+    wire [7:0] flush_o;
+    wire [7:0] pause_o;
 
-    // 后端给 dcache 的信号
+    // 闁跨喐鏋婚幏椋庡剨闁跨噦鎷? dcache 闁跨喐鏋婚幏鐑芥晸閼存氨灏ㄩ幏锟?
     wire [3:0]  backend_dcache_ren;
     wire [3:0]  backend_dcache_wen;
     wire [31:0] backend_dcache_addr;
     wire [31:0] backend_dcache_write_data;
 
-    // dcache 给后端的信号
+    // dcache 闁跨喐鏋婚幏鐑芥晸閺傘倖瀚圭拠鎾晸閺傘倖瀚归挊鏇㈡晸閿燂拷
     wire [31:0] dcache_backend_rdata;
     wire dcache_backend_rdata_valid;
     wire dcache_backend_write_finish;
 
-    // dcache-AXI 给的 cache 接口信号
+    // dcache-AXI 闁跨喐鏋婚幏鐑芥晸閺傘倖瀚? cache 闁跨喐甯撮崠鈩冨闁跨喕鍓奸悮瀛樺
     wire dev_rrdy_to_cache;
     wire dev_wrdy_to_cache;
 
     wire duncache_rvalid;
     wire [31:0] duncache_rdata;
-    wire [3:0] duncache_ren;
+    wire  duncache_ren;
     wire [31:0] duncache_raddr;
 
     wire duncache_write_finish;
     wire [3:0] duncache_wen;
     wire [31:0] duncache_wdata;
     wire [31:0] duncache_waddr;
+    
+
 
     front u_front(
-        // 输入
+        // 闁跨喐鏋婚幏鐑芥晸閺傘倖瀚?
         .cpu_clk(aclk),
         .cpu_rst(rst),
 
-        .iuncache(iuncache),//不知道信号来源       //(别管iuncache信号)
+        .iuncache(iuncache),//闁跨喐鏋婚幏椋庣叀闁跨喐鏋婚幏鐑芥晸閼存氨灏ㄩ幏鐑芥晸閺傘倖瀚瑰┃锟?       //(闁跨喐鏋婚幏鐑芥晸缁茬垜ncache闁跨喕鍓奸悮瀛樺)
 
-        // 来自 icache 的信号
-        .pi_icache_is_exception1(pi_icache_is_exception1),      //从icache传回来的例外信息
+        // 闁跨喐鏋婚幏鐑芥晸閺傘倖瀚? icache 闁跨喐鏋婚幏鐑芥晸閼存氨灏ㄩ幏锟?
+        .pi_icache_is_exception1(pi_icache_is_exception1),      //闁跨喐鏋婚幏绌抍ache闁跨喐鏋婚幏鐑芥晸閺傘倖瀚归柨鐔告灮閹风兘鏁撻弬銈嗗闁跨喐鏋婚幏鐑芥晸閺傘倖瀚归柨鐔告灮閹烽攱浼?
         .pi_icache_is_exception2(pi_icache_is_exception2),
         .pi_icache_exception_cause1(pi_icache_exception_cause1),  
         .pi_icache_exception_cause2(pi_icache_exception_cause2),
-        .pc_for_buffer1(icache_pc[0]),
-        .pc_for_buffer2(icache_pc[1]),
+        .pc_for_buffer1(icache_pc1),
+        .pc_for_buffer2(icache_pc2),
         .pred_addr_for_buffer(pred_addr_for_buffer),
         .icache_pc_suspend(pc_suspend),
-        .inst_for_buffer1(icache_inst[0]),
-        .inst_for_buffer2(icache_inst[1]),
+        .inst_for_buffer1(icache_inst1),
+        .inst_for_buffer2(icache_inst2),
         .icache_inst_valid(icache_inst_valid),
 
     // *******************
-        .fb_flush(0), //如果这是因为分支预测错误，导致后端向前端发送的flush信号，那该信号可以删去，前端的bpu将完成错误判断和flush信号的生成（还需一并去掉front/pc调用中的|前面的fb_flush
-        .fb_pause(0),
-        .fb_interrupt(0),       // 先全接0
+        .fb_flush({flush_o[2],flush_o[0]}), //闁跨喐鏋婚幏鐑芥晸閺傘倖瀚归柨鐔告灮閹风兘鏁撻弬銈嗗闁跨喕濞囬搴㈠闁跨喕顢滆皭閵堝繑瀚归柨鐔告灮閹风兘鏁撶憲鐕傜礉绾板瀚归柨鐔兼應閻氬瓨瀚归柨鐔告灮閹风兘鏁撶憴鎺戝簻閹烽攱婀愰柨鐔告灮閹峰嘲浼旈柨鐔虹lush闁跨喕鍓奸崣鍑ょ秶閹风兘鏁撶憴鎺楁交閹风兘鏁撻懘姘娇閸栤剝瀚归柨鐔告灮閹峰嘲鍨归崢濠氭晸閺傘倖瀚归崜宥夋晸閸撹法顣幏绌妏u闁跨喐鏋婚幏鐑芥晸閺傘倖瀚圭痪閬嶆晸閺傘倖瀚归柨鐔告灮閹峰嘲宓忛搹楣冩晸缁叉姬ush闁跨喕鍓奸崣椋庮暜閹风兘鏁撻弬銈嗗闁跨喓鍗抽敐蹇斿闁跨喐鏋婚幏鐑芥晸閺傘倖瀚规稉鈧柨鐔告灮閹峰嘲骞撻柨鐔告灮閹风⿴ront/pc闁跨喐鏋婚幏鐑芥晸閺傘倖瀚归柨鐔峰建绾板瀚箌閸撳秹鏁撻弬銈嗗闁跨喓绂巄_flush
+        .fb_pause({pause_o[2],pause_o[0]}),
+        .fb_interrupt(1'b0),       // 闁跨喐鏋婚幏宄板弿闁跨喐鏋婚幏锟?0
+//        .fb_new_pc(32'b0),
 
-        // 输出给icache的信号
+        // 闁跨喐鏋婚幏鐑芥晸閺傘倖瀚归柨鐔虹cache闁跨喐鏋婚幏鐑芥晸閼存氨灏ㄩ幏锟?
         .BPU_flush(BPU_flush),
         .pi_pc(inst_addr),
         .BPU_pred_addr(BPU_pred_addr),
@@ -212,27 +226,26 @@ module mycpu_top(
         .pi_is_exception(pi_is_exception),
         .pi_exception_cause(pi_exception_cause),
 
-        // 来自后端的信号
+        // 闁跨喐鏋婚幏鐑芥晸閻ㄥ棛灏ㄩ幏鐤嚛闁跨喐鏋婚幏鐤闁跨噦鎷?
         .ex_is_bj(ex_is_bj),
-        .ex_pc1(ex_pc[0]),
-        .ex_pc2(ex_pc[1]),
+        .ex_pc1(ex_pc1),
+        .ex_pc2(ex_pc2),
         .ex_valid(ex_valid),
-        .real_taken(real_taken),
-        .real_addr1(real_addr[0]),
-        .real_addr2(real_addr[1]),
-        .pred_addr1(pred_addr[0]),
-        .pred_addr2(pred_addr[1]),
+        .real_taken(ex_real_taken),
+        .real_addr1(ex_real_addr1),
+        .real_addr2(ex_real_addr2),
+        .pred_addr1(ex_pred_addr1),
+        .pred_addr2(ex_pred_addr2),
         .get_data_req(get_data_req),
 
-        // 输出给后端的信号
-        .fb_pc_out1(fb_pc[0]),
-        .fb_pc_out2(fb_pc[1]),
-        .fb_inst_out1(fb_inst[0]),
-        .fb_inst_out2(fb_inst[0]),
+        // 闁跨喐鏋婚幏鐑芥晸閺傘倖瀚归柨鐔告灮閹风兘鏁撻崜璺暜閹风兘鏁撻懘姘卞皑閹凤拷
+        .fb_pc_out1(fb_pc1),
+        .fb_pc_out2(fb_pc2),
+        .fb_inst_out1(fb_inst1),
+        .fb_inst_out2(fb_inst2),
         .fb_valid(fb_valid),
-        .BPU_pred_taken(fb_pre_taken),
-        .fb_pre_branch_addr1(fb_pre_branch_addr[0]),
-        .fb_pre_branch_addr2(fb_pre_branch_addr[1]),
+        .fb_pre_branch_addr1(fb_pre_branch_addr1),
+        .fb_pre_branch_addr2(fb_pre_branch_addr2),
         .fb_is_exception1(fb_is_exception1),
         .fb_is_exception2(fb_is_exception2),
         .fb_pc_exception_cause1(fb_pc_exception_cause1),
@@ -246,15 +259,15 @@ module mycpu_top(
         .clk(aclk),
         .rst(rst),
         
-        // 来自前端的信号
-        .pc_i1(fb_pc[0]),
-        .pc_i2(fb_pc[1]),
-        .inst_i1(fb_inst[0]),
-        .inst_i2(fb_inst[1]),
+        // 闁跨喐鏋婚幏鐑芥晸閺傘倖瀚归崜宥夋晸閸撹法顣幏鐑芥晸閼存氨灏ㄩ幏锟?
+        .pc_i1(fb_pc1),
+        .pc_i2(fb_pc2),
+        .inst_i1(fb_inst1),
+        .inst_i2(fb_inst2),
         .valid_i(fb_valid),
         .pre_is_branch_taken_i(fb_pre_taken),
-        .pre_branch_addr_i1(fb_pre_branch_addr[0]),
-        .pre_branch_addr_i2(fb_pre_branch_addr[1]),
+        .pre_branch_addr_i1(fb_pre_branch_addr1),
+        .pre_branch_addr_i2(fb_pre_branch_addr2),
         .is_exception1_i(fb_is_exception1),
         .is_exception2_i(fb_is_exception2),
         .pc_exception_cause1_i(fb_pc_exception_cause1),
@@ -262,16 +275,18 @@ module mycpu_top(
         .instbuffer_exception_cause1_i(fb_instbuffer_exception_cause1),
         .instbuffer_exception_cause2_i(fb_instbuffer_exception_cause2),
 
-        .bpu_flush(BPU_flush),   // 分支预测错误，清空译码队列
+        .bpu_flush(BPU_flush),   // 闁跨喐鏋婚幏閿嬫暜妫板嫰鏁撻弬銈嗗闁跨喐鏋婚幏鐑芥晸閺傘倖瀚归柨鐔告灮閹风兘鏁撻弬銈嗗闁跨喐鏋婚幏鐑芥晸閺傘倖瀚归柨鐕傛嫹
     
-        // 输出给前端的信号
+        // 闁跨喐鏋婚幏鐑芥晸閺傘倖瀚归柨鐔活潡鐢喗瀚圭拠鎾晸閺傘倖瀚归挊鏇㈡晸閿燂拷
         .ex_bpu_is_bj(ex_is_bj),
-        .ex_pc1(ex_pc[0]),
-        .ex_pc2(ex_pc[1]),
+        .ex_pc1(ex_pc1),
+        .ex_pc2(ex_pc2),
         .ex_valid(ex_valid),
-        .ex_bpu_taken_or_not_actual(real_taken),
-        .ex_bpu_branch_pred_addr1(pred_addr[0]),
-        .ex_bpu_branch_pred_addr2(pred_addr[1]),
+        .ex_bpu_taken_or_not_actual(ex_real_taken),
+        .ex_bpu_branch_actual_addr1(ex_real_addr1),  
+        .ex_bpu_branch_actual_addr2(ex_real_addr2),
+        .ex_bpu_branch_pred_addr1(ex_pred_addr1),
+        .ex_bpu_branch_pred_addr2(ex_pred_addr2),
         .get_data_req_o(get_data_req),
 
 /*******************************
@@ -292,18 +307,18 @@ module mycpu_top(
         .csr_datm(),
 ***********************************/
 
-        // 输出给 dcache 的信号
+        // 闁跨喐鏋婚幏鐑芥晸閺傘倖瀚归柨鐕傛嫹 dcache 闁跨喐鏋婚幏鐑芥晸閼存氨灏ㄩ幏锟?
         .ren_o(backend_dcache_ren),
         .wstrb_o(backend_dcache_wen),
         .virtual_addr_o(backend_dcache_addr),
         .wdata_o(backend_dcache_write_data),
 
-        // dcache 返回的信号
-        .rdata_i(dcache_backend_rdata),
+        // dcache 闁跨喐鏋婚幏鐑芥晸閹搭亞顣幏鐑芥晸閼存氨灏ㄩ幏锟?
+        .rdata_i(dcache_rdata),
         .rdata_valid_i(dcache_backend_rdata_valid),
         .dcache_pause_i(~dcache_backend_write_finish),
 
-        // 从ctrl输出的信号（8位）
+        // 闁跨喐鏋婚幏绌媡rl闁跨喐鏋婚幏鐑芥晸閺傘倖瀚归柨鐔告灮閹风柉妫旈悧娑㈡晸閿燂拷8娴ｅ秹鏁撻弬銈嗗
         .flush_o(flush_o),
         .pause_o(pause_o)
     );
@@ -314,8 +329,8 @@ module mycpu_top(
         .rst(rst),   
         .BPU_flush(BPU_flush),       
     // Interface to CPU
-        .inst_rreq(inst_rreq),  // 来自CPU的取指请求
-        .inst_addr(unst_addr),      // 来自CPU的取指地址
+        .inst_rreq(inst_rreq),  // 闁跨喐鏋婚幏鐑芥晸閺傘倖瀚笴PU闁跨喐鏋婚幏宄板絿閹稿洭鏁撻弬銈嗗闁跨喐鏋婚幏锟?
+        .inst_addr(inst_addr),      // 闁跨喐鏋婚幏鐑芥晸閺傘倖瀚笴PU闁跨喐鏋婚幏宄板絿閹稿洭鏁撻弬銈嗗閸р偓
         .BPU_pred_addr(BPU_pred_addr),
 
         .pi_is_exception(pi_is_exception),
@@ -323,10 +338,10 @@ module mycpu_top(
 
         .pred_addr(pred_addr_for_buffer),
         .inst_valid(icache_inst_valid),     
-        .inst_out1(icache_inst[0]),       
-        .inst_out2(icache_inst[1]),
-        .pc1(icache_pc[0]),
-        .pc2(icache_pc[1]),
+        .inst_out1(icache_inst1),       
+        .inst_out2(icache_inst2),
+        .pc1(icache_pc1),
+        .pc2(icache_pc2),
         .pc_is_exception_out1(pi_icache_is_exception1),
         .pc_is_exception_out2(pi_icache_is_exception2), 
         .pc_exception_cause_out1(pi_icache_exception_cause1),
@@ -344,13 +359,13 @@ module mycpu_top(
         .clk(aclk),
         .rst(rst),
 
-        // 来自后端的信号
-        .ren(backend_dcache_ren),
+        // 闁跨喐鏋婚幏鐑芥晸閻ㄥ棛灏ㄩ幏鐤嚛闁跨喐鏋婚幏鐤闁跨噦鎷?
+        .ren(|backend_dcache_ren),
         .wen(backend_dcache_wen),
         .vaddr(backend_dcache_addr),
         .write_data(backend_dcache_write_data),
 
-        // 输出给后端的信号
+        // 闁跨喐鏋婚幏鐑芥晸閺傘倖瀚归柨鐔告灮閹风兘鏁撻崜璺暜閹风兘鏁撻懘姘卞皑閹凤拷
         .rdata(dcache_rdata),
         .rdata_valid(dcache_backend_rdata_valid),    
         .write_finish(dcache_backend_write_finish),  
@@ -365,7 +380,7 @@ module mycpu_top(
         .cpu_ren(dcache_ren),        
         .cpu_raddr(dcache_araddr),      
         .dev_rvalid(dcache_rvalid),     
-        .dev_rdata(dcache_rdata),
+        .dev_rdata(dcache_axi_data_block),
     //duncache to cache_axi
         .uncache_rvalid(duncache_rvalid),
         .uncache_rdata(duncache_rdata),
@@ -409,14 +424,16 @@ module mycpu_top(
         .arprot(arprot),   
         .arvalid(arvalid),       
         .arready(arready),         
-    //R读数据
+    //R闁跨喐鏋婚幏鐑芥晸閺傘倖瀚归柨鐔告灮閹凤拷
         .rid(rid),
         .rdata(rdata),   
         .rresp(rresp),    
         .rlast(rlast),           
         .rvalid(rvalid),       
-        .rready(rready),         
-    //AW写地址
+        .rready(rready),
+        .rdata_o(axi_rdata),
+        .rdata_valid_o(axi_rdata_valid),         
+    //AW閸愭瑩鏁撻弬銈嗗閸р偓
         .awid(awid),     
         .awaddr(awaddr),  
         .awlen(awlen),    
@@ -427,14 +444,14 @@ module mycpu_top(
         .awprot(awprot),   
         .awvalid(awvalid),        
         .awready(awready),        
-    //W写数据
+    //W閸愭瑩鏁撻弬銈嗗闁跨喐鏋婚幏锟?
         .wid(wid),     
         .wdata(wdata),  
         .wstrb(wstrb),    
         .wlast(wlast),          
         .wvalid(wvalid),       
         .wready(wready),         
-    //写响应
+    //閸愭瑩鏁撻弬銈嗗鎼达拷
         .bid(bid),      
         .bresp(bresp),    
         .bvalid(bvalid),        
@@ -455,7 +472,7 @@ module mycpu_top(
         .data_ren_i(dcache_ren),
         .data_araddr_i(dcache_araddr),
         .data_rvalid_o(dcache_rvalid),
-        .data_rdata_o(dcache_rdata),
+        .data_rdata_o(dcache_axi_data_block),
 
     //dcache write
         .data_wen_i(dcache_wen),
@@ -480,18 +497,18 @@ module mycpu_top(
 
     //AXI communicate
         .axi_ce_o(axi_ce_o),
-        .axi_wsel_o(axi_wsel),   // 连接总线的wstrb
+        .axi_wsel_o(axi_wsel),   // 闁跨喐鏋婚幏鐑芥晸閺傘倖瀚归柨鐔告灮閹风兘鏁撶粩顓狀暜閹风strb
 
     //AXI read
-        .rdata_i(rdata),
-        .rdata_valid_i(rdata_valid),
+        .rdata_i(axi_rdata),
+        .rdata_valid_i(axi_rdata_valid),
         .axi_ren_o(axi_ren),
         .axi_rready_o(axi_rready),
         .axi_raddr_o(axi_raddr),
         .axi_rlen_o(axi_rlen),
 
     //AXI write
-        .wdata_resp_i(wdata_resp),  // 写响应信号
+        .wdata_resp_i(axi_wdata_resp),  // 閸愭瑩鏁撻弬銈嗗鎼存棃鏁撻懘姘卞皑閹凤拷
         .axi_wen_o(axi_wen),
         .axi_waddr_o(axi_waddr),
         .axi_wdata_o(axi_wdata),

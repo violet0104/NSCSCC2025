@@ -12,9 +12,9 @@ module icache
     input  wire         pi_is_exception,
     input  wire [6:0]   pi_exception_cause, 
 
-    output wire         pred_addr,
-    output reg          inst_valid,     // 输出给CPU的指令有效信号（读指令命中）
-    output reg  [31:0]  inst_out1,       // 输出给CPU的指令
+    output wire [31:0]  pred_addr,
+    output reg          inst_valid,     // 输出给CPU的指令有效信号
+    output reg  [31:0]  inst_out1,       // 
     output reg  [31:0]  inst_out2,
     output reg  [31:0]  pc1,
     output reg  [31:0]  pc2,
@@ -25,7 +25,7 @@ module icache
     output wire         pc_suspend,  
     // Interface to Read Bus
     input  wire         dev_rrdy,       // 主存就绪信号（高电平表示主存可接收ICache的读请求）
-    output reg  [ 3:0]  cpu_ren,        // 输出给主存的读使能信号
+    output reg          cpu_ren,        // 输出给主存的读使能信号
     output reg  [31:0]  cpu_raddr,      // 输出给主存的读地址
     input  wire         dev_rvalid,     // 来自主存的数据有效信号
     input  wire [127:0] dev_rdata   // 来自主存的读数据  128
@@ -35,8 +35,8 @@ module icache
     wire [31:0] addr_2_1 = inst_addr + 4;
     wire [5:0]  index_1_1 = addr_1_1[9:4];
     wire [5:0]  index_2_1 = addr_2_1[9:4];
-    wire [21:5] tag_1_1 = addr_1_1[31:10];
-    wire [21:5] tag_2_1 = addr_2_1[31:10];
+    wire [21:0] tag_1_1 = addr_1_1[31:10];
+    wire [21:0] tag_2_1 = addr_2_1[31:10];
     wire [1:0] offset1_1 = addr_1_1[3:2];
     wire [1:0] offset2_1 = addr_2_1[3:2];
 
@@ -69,7 +69,7 @@ module icache
     wire we2 = (dev_rvalid==1) & (use_bit[refill_index]==2'b01)& !BPU_flush & req_2;
     wire [150:0] refill_data = {{1'b1,refill_tag},dev_rdata};
 
-    //hit第一个1代表ram1，第二个1代表index1
+    //第一个1代表ram1，第二个1代表index1
     wire hit1_1 = !BPU_flush & (tag_1_2==ram1_tag1) & req_2 & ram1_data_block1[150];  
     wire hit2_1 = !BPU_flush & (tag_1_2==ram2_tag1) & req_2 & ram2_data_block1[150];
     wire hit1 = hit1_1 | hit2_1;    //index1
@@ -201,29 +201,29 @@ module icache
     begin
         index1_delay <= index1;
         index2_delay <= index2;
-        cpu_raddr <= 32'b0;
         if(rst | BPU_flush)
         begin
             dealing1 <= 1'b0;
             dealing2 <= 1'b0;
-            cpu_ren <= 4'b0;
+            cpu_ren <= 1'b0;
+            cpu_raddr <= 32'b0;
         end
         else
         begin
             if(dev_rrdy & !dealing1 & refill_1_2)
             begin
                 cpu_raddr <= {addr_1_2[31:4],4'b0};
-                cpu_ren <= 4'b1111;
+                cpu_ren <= 1'b1;
                 dealing1 <= 1'b1;
                 if(addr_1_2[9:4]==addr_2_2[9:4]) dealing2 <= 1'b1;
             end
             else if(dev_rrdy & !dealing2 & refill_2_2 & !dealing1)
             begin
-                cpu_ren <= {addr_2_2[31:4],4'b0};
-                cpu_ren <= 4'b1111;
+                cpu_raddr <= {addr_2_2[31:4],4'b0};
+                cpu_ren <= 1'b1;
                 dealing2 <= 1'b1;
             end
-            else cpu_ren <= 4'b000;
+            else cpu_ren <= 1'b0;
             if(dev_rvalid)
             begin
                 if(dealing1)

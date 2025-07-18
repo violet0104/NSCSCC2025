@@ -29,7 +29,7 @@ module id_1R_I26
     output reg  csr_write_en, //CSR寄存器写使能
     output reg  [13:0] csr_addr, //CSR
     output reg  is_cnt, //是否是计数器寄存器
-    output reg  invtlb_op //TLB无效操作
+    output reg  [4:0] invtlb_op //TLB无效操作
 );
     
     reg [21:0] opcode;

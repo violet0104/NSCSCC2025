@@ -29,7 +29,7 @@ module id_2RI14
     output reg  csr_write_en, //CSR寄存器写使能
     output reg  [13:0] csr_addr, //CSR
     output reg  is_cnt, //是否是计数器寄存器
-    output reg  invtlb_op  //TLB无效操作
+    output reg  [4:0]invtlb_op  //TLB无效操作
 );
     reg [9:0] opcode;
     reg [4:0] rj;
@@ -51,7 +51,7 @@ module id_2RI14
         
         pc_out = pc;
         inst_out = inst;
-        reg_write_addr = rd;
+       
         is_cnt = 1'b0;
         invtlb_op = 5'b0;
     end
@@ -61,6 +61,7 @@ module id_2RI14
             `LLW_OPCODE: begin
                 is_privilege = 1'b0;
                 reg_write_en = 1'b1;
+                reg_write_addr = rd;
                 aluop = `ALU_LLW;
                 alusel = `ALU_SEL_LOAD_STORE;
                 reg1_read_en = 1'b1;
@@ -76,6 +77,7 @@ module id_2RI14
             `SCW_OPCODE: begin
                 is_privilege = 1'b0;
                 reg_write_en = 1'b1;
+                reg_write_addr = rd;
                 aluop = `ALU_SCW;
                 alusel = `ALU_SEL_LOAD_STORE;
                 reg1_read_en = 1'b1;
@@ -96,6 +98,7 @@ module id_2RI14
                 case (rj)
                     `CSRRD_OPCODE: begin
                         reg_write_en = 1'b1;
+                        reg_write_addr = rd;
                         aluop = `ALU_CSRRD;
                         alusel = `ALU_SEL_CSR;
                         reg1_read_en = 1'b0;
@@ -107,6 +110,7 @@ module id_2RI14
                     end
                     `CSRWR_OPCODE: begin
                         reg_write_en = 1'b1;
+                        reg_write_addr = rd;
                         aluop = `ALU_CSRWR;
                         alusel = `ALU_SEL_CSR;
                         reg1_read_en = 1'b1;
@@ -118,6 +122,7 @@ module id_2RI14
                     end
                     default: begin
                         reg_write_en = 1'b1;
+                        reg_write_addr = rd;
                         aluop = `ALU_CSRXCHG;
                         alusel = `ALU_SEL_CSR;
                         reg1_read_en = 1'b1;
@@ -132,6 +137,7 @@ module id_2RI14
             default: begin
                 is_privilege = 1'b0;
                 reg_write_en = 1'b0;
+                reg_write_addr = 5'b0;
                 aluop = `ALU_NOP;
                 alusel = `ALU_SEL_NOP;
                 reg1_read_en = 1'b0;

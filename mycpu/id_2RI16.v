@@ -29,7 +29,7 @@ module id_2RI16
     output reg  csr_write_en, //CSR寄存器写使能
     output reg  [13:0] csr_addr, //CSR
     output reg  is_cnt, //是否是计数器寄存器
-    output reg  invtlb_op  //TLB无效操作
+    output reg  [4:0] invtlb_op  //TLB无效操作
 );
 
     reg [5:0] opcode;
@@ -128,7 +128,7 @@ module id_2RI16
                 reg_writen_en = 1'b1;
                 aluop = `ALU_BL;
                 alusel = `ALU_SEL_JUMP_BRANCH;
-                reg_write_addr = 5'b0;
+                reg_write_addr = 5'b1;
                 reg1_read_en = 1'b0;
                 reg2_read_en = 1'b0;
                 inst_valid = 1'b1;
@@ -144,11 +144,11 @@ module id_2RI16
             end
             default: begin
                 reg_writen_en = 1'b0;
+                reg_write_addr = 5'b0;
                 aluop = `ALU_NOP;
                 alusel = `ALU_SEL_NOP;
                 reg1_read_en = 1'b0;
                 reg2_read_en = 1'b0;
-                reg_write_addr = 5'b0;
                 inst_valid = 1'b0;
             end
         endcase

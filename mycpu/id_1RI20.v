@@ -30,7 +30,7 @@ module id_1RI20
     output reg  csr_write_en, //CSR寄存器写使能
     output reg  [13:0] csr_addr, //CSR
     output reg  is_cnt, //是否是计数器寄存器
-    output reg  invtlb_op  //TLB无效操作
+    output reg  [4:0] invtlb_op  //TLB无效操作
 );
 
     reg [6:0] opcode;
@@ -54,7 +54,7 @@ module id_1RI20
         
         reg1_read_addr = 5'b0;
         reg2_read_addr = 5'b0;
-        reg_write_addr = rd;
+      
         is_privilege = 1'b0;
         csr_read_en = 1'b0;
         is_cnt = 1'b0;
@@ -69,6 +69,7 @@ module id_1RI20
                 aluop = `ALU_LU12I;
                 alusel = `ALU_SEL_ARITHMETIC;
                 reg_writen_en = 1'b1;
+                reg_write_addr = rd;
                 reg1_read_en = 1'b1;
                 reg2_read_en = 1'b0;
                 imm = {si20, 12'b0}; // 将20位立即数左移12位    
@@ -78,6 +79,7 @@ module id_1RI20
                 aluop = `ALU_PCADDU12I;
                 alusel = `ALU_SEL_ARITHMETIC;
                 reg_writen_en = 1'b1;
+                reg_write_addr = rd;
                 reg1_read_en = 1'b1;
                 reg2_read_en = 1'b0;
                 imm = {si20, 12'b0}; // 将20位立即数左移12位
@@ -87,6 +89,7 @@ module id_1RI20
                 aluop = `ALU_NOP;
                 alusel = `ALU_SEL_NOP;
                 reg_writen_en = 1'b0;
+                reg_write_addr = 5'b0;
                 reg1_read_en = 1'b0;
                 reg2_read_en = 1'b0;
                 imm = 32'b0; 

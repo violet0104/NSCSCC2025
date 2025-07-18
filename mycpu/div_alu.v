@@ -38,12 +38,12 @@ module div_alu (
 
         .m_axis_dout_tdata(m_axis_tdata_signed),
         .m_axis_dout_tuser(m_axis_tuser_signed),
-        .m_axi_dout_tvalid(m_axis_tvalid_singned)
+        .m_axis_dout_tvalid(m_axis_tvalid_singned)
     );
 
     div_gen_1 u_divider_1 (
         .aclk(clk),
-        .aresetn(rstn),
+        .aresetn(~rst),
         .s_axis_dividend_tdata(s_axis_dividend),
         .s_axis_dividend_tvalid(valid_unsigned), 
         .s_axis_divisor_tdata(s_axis_divisor),
@@ -51,8 +51,9 @@ module div_alu (
 
         .m_axis_dout_tdata(m_axis_tdata_unsigned),
         .m_axis_dout_tuser(m_axis_tuser_unsigned),
-        .m_axi_dout_tvalid(m_axis_tvalid_unsingned)
+        .m_axis_dout_tvalid(m_axis_tvalid_unsingned)
     );
+
 
     // 选择有符号或无符号除法结果
     assign remainder_out  = signed_op ? m_axis_tdata_signed[31:0] : m_axis_tdata_unsigned[31:0];

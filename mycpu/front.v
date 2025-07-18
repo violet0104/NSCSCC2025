@@ -30,7 +30,6 @@ module front
     output wire BPU_flush,
     output reg [31:0] pi_pc,                //前端给icache的pc地址
     output wire [31:0] BPU_pred_addr,
-    output wire BPU_pred_taken,
     output wire inst_rreq_to_icache,            //前端给icache的指令使能信号
     output reg pi_is_exception,             //前端给icache的异常信号
     output reg [6:0] pi_exception_cause,    //前端给icache的异常原因
@@ -40,7 +39,7 @@ module front
     output wire [31:0] fb_pc_out2,              
     output wire [31:0] fb_inst_out1,            //前端给后端的指令
     output wire [31:0] fb_inst_out2,           
-    output wire fb_valid,                           //前端给后端的指令使能信号
+    output wire [1:0] fb_valid,                           //前端给后端的指令使能信号
     output wire [31:0] fb_pre_branch_addr1,         //前端给后端的分支地址
     output wire [31:0] fb_pre_branch_addr2,
 
@@ -68,10 +67,10 @@ module front
     //*************************************
 );
     reg [1:0] is_branch;
-    reg [31:0] pre_addr;
-    reg [31:0] pc_out;
-    reg is_exception;
-    reg [6:0] exception_cause;
+    wire [31:0] pre_addr;
+    wire [31:0] pc_out;
+    wire is_exception;
+    wire [6:0] exception_cause;
     reg inst_en1;
     reg inst_en2;
     //我新加的信号**********************************
@@ -80,6 +79,7 @@ module front
     wire [103:0] data_out1;
     wire [103:0] data_out2;
     wire [1:0] pred_taken;
+    wire BPU_pred_taken;
     //***************************************
 
     assign fb_pre_branch_addr1 = data_out1[103:72];
@@ -107,6 +107,7 @@ module front
     assign BPU_pred_taken = pred_taken[0] | pred_taken[1];
     
     wire stall;
+    wire [31:0] new_pc;
     
     pc u_pc 
     (
@@ -115,7 +116,7 @@ module front
         .stall(stall),
         .iuncache(iuncache),
         .flush(fb_flush[0] | BPU_flush),
-        .new_pc(fb_new_pc),       //后端需要接一个信号选择器，该pc来源有二：ex阶段分支预测错误，并得到的真正目标pc；触发例外，且例外处理程序的末尾，需要回到程序断点继续执行
+        .new_pc(new_pc),       //后端需要接一个信号选择器，该pc来源有二：ex阶段分支预测错误，并得到的真正目标pc；触发例外，且例外处理程序的末尾，需要回到程序断点继续执行
         .pause(fb_pause[0] | icache_pc_suspend),
         .pre_addr(pre_addr),  
         .pred_taken(pred_taken[0] | pred_taken[1]),  
@@ -136,6 +137,7 @@ module front
         .pred_addr(pre_addr),
 
         .BPU_flush(BPU_flush),
+        .new_pc(new_pc),
 
         .ex_is_bj_1(ex_is_bj[0]),     //等后端给我的信号，ex阶段的指令是否是跳转指令
         .ex_pc_1(ex_pc1),
@@ -155,7 +157,7 @@ module front
     (
         .clk(cpu_clk),
         .rst(cpu_rst),
-        .flush(fb_flush | BPU_flush),
+        .flush(fb_flush[1] | BPU_flush),
         .get_data_req(get_data_req),   //给instbuffer这个信号instbuffer才会给后端输出inst（异步读）
         .inst_valid(icache_inst_valid),
         .pc1(pc_for_buffer1),
