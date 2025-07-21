@@ -174,6 +174,8 @@ module execute (
     wire [31:0] virtual_addr2;
     wire [31:0] wdata1;
     wire [31:0] wdata2;
+    wire ren1;
+    wire ren2;
     wire [3:0] wstrb1;
     wire [3:0] wstrb2;
 
@@ -223,7 +225,11 @@ module execute (
 
     wire [1:0] is_llw_scw;
 
-    assign ren_o = dcache_pause_i ? 4'h0 : 4'hf;
+    wire       dcache_pause;
+
+    assign dcache_pause = dcache_pause_i;
+
+    assign ren_o = dcache_pause_i ? 4'h0 : (valid_o[0] ? ren1 : ren2);
     assign wstrb_o = dcache_pause_i ? 4'h0  : (valid_o[0] ? wstrb1 : wstrb2);
     assign virtual_addr_o = dcache_pause_i ? 32'h0 : (valid_o[0] ? virtual_addr1: virtual_addr2);
     assign wdata_o = dcache_pause_i ? 32'b0 : (valid_o[0] ? wdata1 : wdata2);
@@ -231,6 +237,7 @@ module execute (
 
 
     alu u_alu_1 (
+        .dcache_pause(dcache_pause),
         // 输入
         .clk(clk),
         .rst(rst),
@@ -274,6 +281,7 @@ module execute (
         // with dache
         .valid_o(valid_o[0]),
         .virtual_addr_o(virtual_addr1),
+        .ren_o(ren1),
         .wdata_o(wdata1),
         .wstrb_o(wstrb1),
 
@@ -325,6 +333,7 @@ module execute (
     );
 
     alu u_alu_2 (
+        .dcache_pause(dcache_pause),
         // 输入
         .clk(clk),
         .rst(rst),
@@ -368,6 +377,7 @@ module execute (
         // with dache
         .valid_o(valid_o[1]),
         .virtual_addr_o(virtual_addr2),
+        .ren_o(ren2),
         .wdata_o(wdata2),
         .wstrb_o(wstrb2),
 
@@ -475,7 +485,8 @@ module execute (
 
     // to mem
     always @(posedge clk) begin
-        if (rst || ex_mem_pause || flush) begin
+        if (rst || ex_mem_pause || flush) 
+        begin
             pc1_mem <= 32'b0;
             pc2_mem <= 32'b0;
             inst1_mem <= 32'b0;
@@ -520,8 +531,11 @@ module execute (
             csr_write_data2_mem <= 32'b0;
             is_llw_scw_mem[0] <= 1'b0;
             is_llw_scw_mem[1] <= 1'b0;
-        end else if (!pause) begin
-            if (branch_flush_alu[0]) begin
+        end 
+        else if (!pause) 
+        begin
+            if (branch_flush_alu[0]) 
+            begin
                 pc1_mem <= pc1;
                 inst1_mem <= inst1;
                 is_exception1_o <= is_exception1;
@@ -536,7 +550,7 @@ module execute (
                 valid_mem[0] <= valid_mem_o[0];
                 reg_write_en_mem[0] <= reg_write_en[0];
                 reg_write_addr1_mem <= reg_write_addr1;
-                reg_write_data1_mem <= reg_write_data2;
+                reg_write_data1_mem <= reg_write_data1;
                 aluop1_mem <= aluop1;
                 addr1_mem <= addr1;
                 data1_mem <= data1;
@@ -545,8 +559,8 @@ module execute (
                 csr_write_data1_mem <= csr_write_data1;
                 is_llw_scw_mem[0] <= is_llw_scw[0];
 
-                pc1_mem <= 32'b0;
-                inst1_mem <= 32'b0;
+                pc2_mem <= 32'b0;
+                inst2_mem <= 32'b0;
                 is_exception2_o <= 5'b0;
                 pc_exception_cause2_o <= 7'b0;
                 instbuffer_exception_cause2_o <= 7'b0;
@@ -558,16 +572,18 @@ module execute (
                 is_idle_mem[1] <= 1'b0;
                 valid_mem[1] <= 1'b0;
                 reg_write_en_mem[1] <= 1'b0;
-                reg_write_addr1_mem <= 5'b0;
-                reg_write_data1_mem <= 32'b0;
-                aluop1_mem <= 8'b0;
-                addr1_mem <= 32'b0;
-                data1_mem <= 32'b0;
+                reg_write_addr2_mem <= 5'b0;
+                reg_write_data2_mem <= 32'b0;
+                aluop2_mem <= 8'b0;
+                addr2_mem <= 32'b0;
+                data2_mem <= 32'b0;
                 csr_write_en_mem[1] <= 1'b0;
-                csr_addr1_mem <= 14'b0;
-                csr_write_data1_mem <= 32'b0;
+                csr_addr2_mem <= 14'b0;
+                csr_write_data2_mem <= 32'b0;
                 is_llw_scw_mem[1] <= 1'b0;
-            end else begin
+            end 
+            else 
+            begin
                 pc1_mem <= pc1;
                 pc2_mem <= pc2;
                 inst1_mem <= inst1;
@@ -613,7 +629,9 @@ module execute (
                 is_llw_scw_mem[0] <= is_llw_scw[0];
                 is_llw_scw_mem[1] <= is_llw_scw[1];
             end
-        end else begin
+        end 
+        else 
+        begin
             pc1_mem <= pc1_mem;
             pc2_mem <= pc2_mem;
             inst1_mem <= inst1_mem;

@@ -230,8 +230,8 @@ module cache_AXI
     assign axi_wlen_o = (write_state == write_UNCACHE) ? 8'h0 : 8'h3;
     assign axi_rlen_o = (read_state == read_UNCACHE ) ? 8'h0 : 8'h3;
     assign axi_wsel_o = (write_state == write_UNCACHE) ? duncache_wen_i : 4'b1111;
-    assign axi_waddr_o = {data_awaddr_i[31:4],4'b0};
-    assign axi_wlast_o = (write_state == write_BUSY) & write_count == 2'b11;
+    assign axi_waddr_o = write_state == write_UNCACHE ? duncache_waddr_i : {data_awaddr_i[31:4],4'b0};
+    assign axi_wlast_o = ((write_state == write_BUSY) & write_count == 2'b11) | write_state == write_UNCACHE;
 
     always @(posedge clk)
     begin
@@ -242,7 +242,7 @@ module cache_AXI
         end
         else 
         begin
-            data_bvalid_o <= (write_state == write_BUSY) & wdata_resp_i & (write_count == 2'b11);
+            data_bvalid_o <= wdata_resp_i & ((write_state == write_BUSY) & write_count == 2'b11 ) | (write_state == write_UNCACHE & wdata_resp_i);
             duncache_write_resp <= (write_state == write_UNCACHE) & wdata_resp_i;
         end
     end

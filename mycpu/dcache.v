@@ -9,9 +9,10 @@ module dcache
     input wire [31:0] write_data,
     output reg [31:0] rdata,
     output reg rdata_valid,    // 输出给CPU的数据有效信号（高电平表示DCache已准备好数据）
-    output reg write_finish,   // 输出给CPU的写响应（高电平表示DCache已完成写操作）
+    output wire dcache_ready,   
     //to write BUS
     input  wire         dev_wrdy,       // 闁主存/外设的写就绪信号（高电平表示主存/外设可接收DCache的写请求）
+    input  wire         write_finish,
     output reg  [ 3:0]  cpu_wen,        // 输出给主存/外设的写使能信号
     output reg  [31:0]  cpu_waddr,      // 输出给主存/外设的写地址
     output reg  [127:0]  cpu_wdata,      // 输出给主存/外设的写数据
@@ -73,7 +74,7 @@ module dcache
 
     wire write_dirty = !hit & req_2 & dirty[index_2][dirty_index];
     wire ask_mem = !hit & req_2 & !dirty[index_2][dirty_index];
-    wire read_index_choose = (state==IDLE&hit)|(state==RETURN);
+    wire read_index_choose = next_state == IDLE;
     wire [127:0] attach_block_choose = hit1 ? data_block1[127:0] : data_block2[127:0];
     reg [127:0] attach_write_data;  //最终要写回ram的拼接完成的数据块
     reg [31:0] block_word_choose;   //根据输入地址的offset来选则data block中的哪一个字
@@ -100,7 +101,7 @@ module dcache
     wire write_ram_choose = dev_rvalid;
     wire [150:0] write_ram_data = write_ram_choose ? {1'b1,tag_2,dev_rdata} : {1'b1,tag_2,attach_write_data};
 
-
+    assign dcache_ready = next_state == IDLE;
     integer i;
 
     always @(posedge clk) 
@@ -142,6 +143,7 @@ module dcache
     end
 
     reg dealing;
+    reg uncache_dealing;
 
     always @(posedge clk or negedge rst)
     begin
@@ -158,6 +160,7 @@ module dcache
             cpu_raddr <= 32'b0;
             cpu_wdata <= 128'b0;
             dealing <= 1'b0;
+            uncache_dealing <= 1'b0;
 
             for(i=0;i<64;i=i+1)
             begin
@@ -174,6 +177,7 @@ module dcache
             wen_2 <= wen;
             ren_2 <= ren;
             index_2 <= index_1;
+            uncache_dealing <= 1'b0;
             if(hit & is_store) 
             begin
                 if(hit1) dirty[index_2][0] <= 1'b1;
@@ -229,6 +233,8 @@ module dcache
                 uncache_2 <= 1'b0;
                 wen_2 <= 4'b0;
             end
+            if(uncache_rvalid | uncache_write_finish) uncache_dealing <= 1'b0;
+            else uncache_dealing <= 1'b1;
         end
     end
 
@@ -250,7 +256,6 @@ module dcache
         begin
             rdata <= 32'b0;
             rdata_valid <= 1'b0;
-            write_finish <= 1'b0;
         end
         else if(state == UNCACHE & uncache_rvalid)
         begin
@@ -264,17 +269,12 @@ module dcache
                 rdata_valid <= 1'b1;
                 rdata <= hit_data_word_choose;
             end
-            if(is_store) 
-            begin
-                write_finish <= 1'b1;
-            end
             if(hit1) use_bit[index_2] <= 2'b01;
             else use_bit[index_2] <= 2'b10;
         end
         else 
         begin
             rdata_valid <= 1'b0;
-            write_finish <= 1'b0;
         end
     end
 
@@ -302,10 +302,10 @@ module dcache
         .data_out(data_block2)
     );
 
-    assign uncache_ren = (state == UNCACHE) & dev_rrdy & ren_2;
+    assign uncache_ren = (state == UNCACHE) & dev_rrdy & ren_2 & !uncache_rvalid;
     assign uncache_raddr = paddr_2;
 
-    assign uncache_wen = (state == UNCACHE) & dev_wrdy ? wen_2 : 4'b0;
+    assign uncache_wen = (state == UNCACHE) & dev_wrdy & !uncache_dealing ? wen_2 : 4'b0;
     assign uncache_waddr = paddr_2;
     assign uncache_wdata = w_data_2;
 endmodule

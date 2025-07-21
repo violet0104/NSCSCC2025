@@ -74,7 +74,6 @@ module front
     reg inst_en1;
     reg inst_en2;
     //我新加的信号**********************************
-    wire if_valid;
     wire instbuffer_stall;
     wire [103:0] data_out1;
     wire [103:0] data_out2;

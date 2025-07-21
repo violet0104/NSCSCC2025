@@ -46,8 +46,11 @@ module alu (
     input wire [63:0] cnt_i,
 
     // 和dcache的接口
+    input wire dcache_pause,
+
     output wire valid_o,
     output wire [31:0] virtual_addr_o,
+    output reg ren_o,
     output reg [31:0] wdata_o,
     output reg [3:0] wstrb_o,          // 访存地址字节偏移
 
@@ -204,29 +207,34 @@ module alu (
                     || aluop_i == `ALU_MODW || aluop_i == `ALU_MODWU) && !div_done;
     assign pause_ex_div = is_div && !div_done;  // 除法未完成时暂停
 
-    always @(posedge clk) begin
-        if (start_div) begin
-            start_div <= 1'b0;
-        end else if (is_div) begin
+    assign signed_div = aluop_i == `ALU_DIVW || aluop_i == `ALU_MODW;
+
+    always @(posedge clk) 
+    begin
+        if (is_div)
+        begin
             start_div <= 1'b1;
             div_data1 <= reg_data1;
             div_data2 <= reg_data2;
-        end else begin
+        end 
+        else if(div_done)
+        begin
             start_div <= 1'b0;
         end
     end
 
-    div_alu u_div_alu (
+    div_alu u_div_alu 
+    (
         .clk(clk),
         .rst(rst),
-        .start(start_div),
-        .signed_op(signed_div),
-        .dividend(div_data1),
-        .divisor(div_data2),
-        .remainder_out(remainder),
-        .quotient_out(quotient),
-        .divide_by_zero(divide_by_zero),
-        .done(div_done)
+        .valid_in(start_div),
+        .a(div_data1),
+        .b(div_data2),
+        .sign(signed_div),
+        .rest(remainder),
+        .div(quotient),
+        .div_zero_error(divide_by_zero),
+        .valid_out(div_done)
     );
 
     // 结果选择
@@ -285,12 +293,12 @@ module alu (
                     || aluop_i == `ALU_LLW || aluop_i == `ALU_SCW
                     || aluop_i == `ALU_PRELD;
     wire pause_ex_mem;
-    assign pause_ex_mem = is_mem && valid_o;  
+    assign pause_ex_mem = is_mem && valid_o && dcache_pause;  
 
     wire [11:0] si12;
     wire [13:0] si14;
-    assign si12 = inst_i[11:0];  // 12位立即数
-    assign si14 = inst_i[13:0];  // 14位立即数
+    assign si12 = inst_i[21:10];  // 12位立即数
+    assign si14 = inst_i[23:10];  // 14位立即数
 
     always @(*) begin
         case (aluop_i) 
@@ -321,28 +329,33 @@ module alu (
     always @(*) begin
         case (aluop_i)
             `ALU_LDB, `ALU_LDBU: begin
+                ren_o = 1'b1;
+                wstrb_o = 4'b0;
                 ex_mem_exception = 1'b0;
                 mem_is_valid = 1'b1;
                 wdata_o = 32'b0;
             end
 
             `ALU_LDH, `ALU_LDHU: begin
+                ren_o = 1'b1;
                 ex_mem_exception = (addr_mem[1:0] == 2'b01) || (addr_mem[1:0] == 2'b11);
                 mem_is_valid = 1'b1;
                 wdata_o = 32'b0;
-                wstrb_o = 4'b1111;
+                wstrb_o = 4'b0;
             end
 
             `ALU_LDW, `ALU_LLW: begin
+                ren_o = 1'b1;
                 ex_mem_exception = (addr_mem[1:0] != 2'b00);
                 mem_is_valid = 1'b1;
                 wdata_o = 32'b0;
-                wstrb_o = 4'b1111;
+                wstrb_o = 4'b0;
             end
 
             `ALU_STB: begin
                 ex_mem_exception = 1'b0;
                 mem_is_valid = 1'b1;
+                ren_o = 1'b0;
                 case (addr_mem[1: 0])
                     2'b00: begin
                         wstrb_o = 4'b0001;
@@ -368,6 +381,7 @@ module alu (
             end
 
             `ALU_STH: begin
+                ren_o = 1'b0;
                 mem_is_valid = 1'b1;
                 case (addr_mem[1: 0])
                     2'b00: begin
@@ -394,6 +408,7 @@ module alu (
             end
 
             `ALU_STW: begin
+                ren_o = 1'b0;
                 ex_mem_exception = (addr_mem[1: 0] != 2'b00);
                 mem_is_valid = 1'b1;
                 wdata_o = reg_data2;
@@ -401,6 +416,7 @@ module alu (
             end
 
             `ALU_SCW: begin
+                ren_o = 1'b0;
                 ex_mem_exception = (addr_mem[1:0] != 2'b00);
                 if (LLbit) begin
                     mem_is_valid = 1'b1;
@@ -416,8 +432,9 @@ module alu (
             default: begin
                 ex_mem_exception = 1'b0;
                 mem_is_valid = 1'b0;
+                ren_o = 1'b0;
                 wdata_o = 32'b0;
-                wstrb_o = 4'b1111;
+                wstrb_o = 4'b0000;
             end
         endcase
     end
@@ -496,7 +513,7 @@ module alu (
             end
 
             `ALU_SEL_LOAD_STORE: begin
-                reg_write_data_mem = load_store_alu_res; // 访存指令
+                reg_write_data_mem = reg_data2_i; // 访存指令
             end
 
             `ALU_SEL_CSR: begin
@@ -510,6 +527,6 @@ module alu (
     end
 
     // 暂停信号
-    assign pause_alu_o = pause_ex_mul || pause_ex_div || pause_mem_i;
+    assign pause_alu_o = pause_ex_mul || pause_ex_div || pause_ex_mem;
 
 endmodule

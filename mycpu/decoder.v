@@ -60,14 +60,14 @@ module decoder (
     output reg  [31:0] dispatch_imm1 ,
     output reg  [31:0] dispatch_imm2 ,
 
-    output reg  [1:0]  dispatch_reg_read_en1,           // 源寄存器1读使能
-    output reg  [1:0]  dispatch_reg_read_en2,           // 源寄存器2读使能
-    output reg  [4:0]  dispatch_reg1_read_addr1 ,   // 源寄存器1读地址
-    output reg  [4:0]  dispatch_reg1_read_addr2 ,
-    output reg  [4:0]  dispatch_reg2_read_addr1 ,   // 源寄存器2读地址
-    output reg  [4:0]  dispatch_reg2_read_addr2,
+    output reg  [1:0]  dispatch_reg_read_en1,           // 第一条指令的读使能
+    output reg  [1:0]  dispatch_reg_read_en2,           // 第二条指令的读使能
+    output reg  [4:0]  dispatch_reg_read_addr1_1 ,      // 第一条指令的两个读地址
+    output reg  [4:0]  dispatch_reg_read_addr1_2 ,
+    output reg  [4:0]  dispatch_reg_read_addr2_1 ,      // 第二条指令的两个读地址
+    output reg  [4:0]  dispatch_reg_read_addr2_2,
     output reg  [1:0]  dispatch_reg_writen_en,          // 寄存器写使能信号（2位）
-    output reg  [4:0]  dispatch_reg_write_addr1 ,   // 寄存器写地址
+    output reg  [4:0]  dispatch_reg_write_addr1 ,       // 寄存器写地址
     output reg  [4:0]  dispatch_reg_write_addr2 ,
 
     output reg  [1:0]  dispatch_id_pre_taken,           // 分支预测结果（是否跳转）
@@ -119,12 +119,12 @@ module decoder (
     wire  [31:0] imm1;
     wire  [31:0] imm2;
 
-    wire  [1:0]  reg1_read_en;   
-    wire  [1:0]  reg2_read_en;   
-    wire  [4:0]  reg1_read_addr1;
-    wire  [4:0]  reg1_read_addr2;
-    wire  [4:0]  reg2_read_addr1;
-    wire  [4:0]  reg2_read_addr2;
+    wire  [1:0]  reg_read_en1;          // 第一条指令的读使能
+    wire  [1:0]  reg_read_en2;          // 第二条指令的读使能
+    wire  [4:0]  reg_read_addr1_1;      // 第一条指令的读地址
+    wire  [4:0]  reg_read_addr1_2;
+    wire  [4:0]  reg_read_addr2_1;      // 第二条指令的读地址
+    wire  [4:0]  reg_read_addr2_2;
     wire  [1:0]  reg_writen_en; 
     wire  [4:0]  reg_write_addr1;
     wire  [4:0]  reg_write_addr2;
@@ -177,11 +177,11 @@ module decoder (
         .alusel(alusel1),
         .imm(imm1),
 
-        .reg1_read_en(reg1_read_en1),   
-        .reg2_read_en(reg2_read_en1),   
-        .reg1_read_addr(reg1_read_addr1),
-        .reg2_read_addr(reg2_read_addr1),
-        .reg_writen_en (reg_writen_en1),  
+        .reg1_read_en(reg_read_en1[0]),   
+        .reg2_read_en(reg_read_en1[1]),   
+        .reg1_read_addr(reg_read_addr1_1),
+        .reg2_read_addr(reg_read_addr1_2),
+        .reg_writen_en (reg_writen_en[0]),  
         .reg_write_addr(reg_write_addr1),  
 
         .id_pre_taken(id_pre_taken1), 
@@ -223,11 +223,11 @@ module decoder (
         .alusel(alusel2),
         .imm(imm2),
 
-        .reg1_read_en(reg1_read_en2),   
-        .reg2_read_en(reg2_read_en2),   
-        .reg1_read_addr(reg1_read_addr2),
-        .reg2_read_addr(reg2_read_addr2),
-        .reg_writen_en (reg_writen_en2),  
+        .reg1_read_en(reg_read_en2[0]),   
+        .reg2_read_en(reg_read_en2[1]),   
+        .reg1_read_addr(reg_read_addr2_1),
+        .reg2_read_addr(reg_read_addr2_2),
+        .reg_writen_en (reg_writen_en[1]),  
         .reg_write_addr(reg_write_addr2),  
 
         .id_pre_taken(id_pre_taken2), 
@@ -260,11 +260,10 @@ module decoder (
                                 id_pre_taken1,        // 126
                                 
                                 reg_write_addr1,      // 125:121
-                                reg_writen_en1,       // 120
-                                reg2_read_addr1,      // 119:115
-                                reg1_read_addr1,      // 114:110
-                                reg2_read_en1,        // 109
-                                reg1_read_en1,        // 108
+                                reg_writen_en[0],     // 120
+                                reg_read_addr1_2,     // 119:115
+                                reg_read_addr1_1,     // 114:110
+                                reg_read_en1,         // 109:108
 
                                 imm1,                 // 107:76
                                 alusel1,              // 75:73
@@ -291,11 +290,10 @@ module decoder (
                                 id_pre_taken2,        // 126
                                 
                                 reg_write_addr2,      // 125:121
-                                reg_writen_en2,       // 120
-                                reg2_read_addr2,      // 119:115
-                                reg1_read_addr2,      // 114:110
-                                reg2_read_en2,        // 109
-                                reg1_read_en2,        // 108
+                                reg_writen_en[1],     // 120
+                                reg_read_addr2_2,     // 119:115
+                                reg_read_addr2_1,     // 114:110
+                                reg_read_en2,         // 109:108
 
                                 imm2,                 // 107:76
                                 alusel2,              // 75:73
@@ -358,14 +356,12 @@ module decoder (
         dispatch_alusel2            =   dequeue_data2[75:73];
         dispatch_imm1               =   dequeue_data1[107:76];
         dispatch_imm2               =   dequeue_data2[107:76];
-        dispatch_reg_read_en1[0]    =   dequeue_data1[108];   
-        dispatch_reg_read_en2[0]    =   dequeue_data2[108];   
-        dispatch_reg_read_en1[1]    =   dequeue_data1[109];   
-        dispatch_reg_read_en2[1]    =   dequeue_data2[109];   
-        dispatch_reg1_read_addr1    =   dequeue_data1[114:110];
-        dispatch_reg1_read_addr2    =   dequeue_data2[114:110];
-        dispatch_reg2_read_addr1    =   dequeue_data1[119:115];
-        dispatch_reg2_read_addr2    =   dequeue_data2[119:115];
+        dispatch_reg_read_en1       =   dequeue_data1[109:108];   
+        dispatch_reg_read_en2       =   dequeue_data2[109:108];     
+        dispatch_reg_read_addr1_1   =   dequeue_data1[114:110];
+        dispatch_reg_read_addr1_2   =   dequeue_data1[119:115];
+        dispatch_reg_read_addr2_1   =   dequeue_data2[114:110];
+        dispatch_reg_read_addr2_2   =   dequeue_data2[119:115];
         dispatch_reg_writen_en[0]   =   dequeue_data1[120];
         dispatch_reg_writen_en[1]   =   dequeue_data2[120];  
         dispatch_reg_write_addr1    =   dequeue_data1[125:121];

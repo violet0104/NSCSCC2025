@@ -24,7 +24,7 @@ begin
     end
     else
     begin
-        data_out <= data[r_index];
+        data_out <= (we && w_index == r_index) ? data_in : data[r_index];
         if(we) data[w_index] <= data_in;
     end
 end

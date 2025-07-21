@@ -286,7 +286,7 @@ module id_3R
                 reg_write_en = 1'b1;
                 reg_write_addr = rd;
                 aluop = `ALU_DIVW;
-                alusel = `ALU_SEL_MUL;
+                alusel = `ALU_SEL_DIV;
                 reg1_read_en = 1'b1;
                 reg2_read_en = 1'b1;
                 imm = 32'b0;
@@ -298,7 +298,7 @@ module id_3R
                 reg_write_en = 1'b1;
                 reg_write_addr = rd;
                 aluop = `ALU_DIVWU;
-                alusel = `ALU_SEL_MUL;
+                alusel = `ALU_SEL_DIV;
                 reg1_read_en = 1'b1;
                 reg2_read_en = 1'b1;
                 imm = 32'b0;
@@ -310,7 +310,19 @@ module id_3R
                 reg_write_en = 1'b1;
                 reg_write_addr = rd;
                 aluop = `ALU_MODW;
-                alusel = `ALU_SEL_MUL;
+                alusel = `ALU_SEL_DIV;
+                reg1_read_en = 1'b1;
+                reg2_read_en = 1'b1;
+                imm = 32'b0;
+                inst_valid = 1'b1;
+                invtlb_op = 5'b0;
+            end
+            `MODWU_OPCODE:begin
+                is_privilege = 1'b0;
+                reg_write_en = 1'b1;
+                reg_write_addr = rd;
+                aluop = `ALU_MODWU;
+                alusel = `ALU_SEL_DIV;
                 reg1_read_en = 1'b1;
                 reg2_read_en = 1'b1;
                 imm = 32'b0;

@@ -1,3 +1,7 @@
+`timescale 1ns / 1ps
+`include "defines.vh"
+`include "csr_defines.vh"
+
 module csr (
     input wire clk,
     input wire rst,

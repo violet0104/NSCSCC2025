@@ -114,7 +114,7 @@ module id_2RI12
             `ANDI_OPCODE:begin
                 reg_writen_en = 1'b1;
                 reg_write_addr = rd;
-                aluop = `ALU_ADDIW;
+                aluop = `ALU_ANDI;
                 alusel = `ALU_SEL_ARITHMETIC;
                 reg1_read_en = 1'b1;
                 reg2_read_en = 1'b0;

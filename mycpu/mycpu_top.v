@@ -53,20 +53,6 @@ module mycpu_top(
     output wire [31:0] debug_wb_rf_wdata,
     output wire [31:0] debug_wb_inst
 
-    `ifdef DIFF
-    output [31:0] debug0_wb_pc,
-    output [ 3:0] debug0_wb_rf_wen,
-    output [ 4:0] debug0_wb_rf_wnum,
-    output [31:0] debug0_wb_rf_wdata,
-    output [31:0] debug0_wb_inst,
-    
-    output [31:0] debug1_wb_pc,
-    output [ 3:0] debug1_wb_rf_wen,
-    output [ 4:0] debug1_wb_rf_wnum,
-    output [31:0] debug1_wb_rf_wdata,
-    output [31:0] debug1_wb_inst
-    `endif
-
 );
     wire rst;
     assign rst = ~aresetn;
@@ -166,7 +152,7 @@ module mycpu_top(
     wire [7:0] pause_o;
 
     // 闁跨喐鏋婚幏椋庡剨闁跨噦鎷? dcache 闁跨喐鏋婚幏鐑芥晸閼存氨灏ㄩ幏锟?
-    wire [3:0]  backend_dcache_ren;
+    wire  backend_dcache_ren;
     wire [3:0]  backend_dcache_wen;
     wire [31:0] backend_dcache_addr;
     wire [31:0] backend_dcache_write_data;
@@ -174,7 +160,7 @@ module mycpu_top(
     // dcache 闁跨喐鏋婚幏鐑芥晸閺傘倖瀚圭拠鎾晸閺傘倖瀚归挊鏇㈡晸閿燂拷
     wire [31:0] dcache_backend_rdata;
     wire dcache_backend_rdata_valid;
-    wire dcache_backend_write_finish;
+    wire dcache_ready;
 
     // dcache-AXI 闁跨喐鏋婚幏鐑芥晸閺傘倖瀚? cache 闁跨喐甯撮崠鈩冨闁跨喕鍓奸悮瀛樺
     wire dev_rrdy_to_cache;
@@ -316,11 +302,25 @@ module mycpu_top(
         // dcache 闁跨喐鏋婚幏鐑芥晸閹搭亞顣幏鐑芥晸閼存氨灏ㄩ幏锟?
         .rdata_i(dcache_rdata),
         .rdata_valid_i(dcache_backend_rdata_valid),
-        .dcache_pause_i(~dcache_backend_write_finish),
+        .dcache_pause_i(~dcache_ready),
 
         // 闁跨喐鏋婚幏绌媡rl闁跨喐鏋婚幏鐑芥晸閺傘倖瀚归柨鐔告灮閹风柉妫旈悧娑㈡晸閿燂拷8娴ｅ秹鏁撻弬銈嗗
         .flush_o(flush_o),
-        .pause_o(pause_o)
+        .pause_o(pause_o),
+        
+        //debug
+        .debug_wb_valid1(debug_wb_valid1),
+        .debug_wb_valid2(debug_wb_valid2),
+        .debug_pc1(debug_pc1),
+        .debug_pc2(debug_pc2),
+        .debug_inst1(debug_inst1),
+        .debug_inst2(debug_inst2),
+        .debug_reg_addr1(debug_reg_addr1),
+        .debug_reg_addr2(debug_reg_addr2),
+        .debug_wdata1(debug_wdata1),
+        .debug_wdata2(debug_wdata2),
+        .debug_wb_we1(debug_wb_we1),
+        .debug_wb_we2(debug_wb_we2) 
     );
 
     icache u_icache
@@ -355,12 +355,25 @@ module mycpu_top(
         .dev_rdata(icache_rdata)   
     );
 
+    wire debug_wb_valid1;
+    wire debug_wb_valid2;
+    wire [31:0] debug_pc1;
+    wire [31:0] debug_pc2;
+    wire [31:0] debug_inst1;
+    wire [31:0] debug_inst2;
+    wire [4:0] debug_reg_addr1;
+    wire [4:0] debug_reg_addr2;
+    wire [31:0] debug_wdata1;
+    wire [31:0] debug_wdata2;
+    wire debug_wb_we1;
+    wire debug_wb_we2;
+
     dcache u_dcache(
         .clk(aclk),
         .rst(rst),
 
         // 闁跨喐鏋婚幏鐑芥晸閻ㄥ棛灏ㄩ幏鐤嚛闁跨喐鏋婚幏鐤闁跨噦鎷?
-        .ren(|backend_dcache_ren),
+        .ren(backend_dcache_ren),
         .wen(backend_dcache_wen),
         .vaddr(backend_dcache_addr),
         .write_data(backend_dcache_write_data),
@@ -368,7 +381,7 @@ module mycpu_top(
         // 闁跨喐鏋婚幏鐑芥晸閺傘倖瀚归柨鐔告灮閹风兘鏁撻崜璺暜閹风兘鏁撻懘姘卞皑閹凤拷
         .rdata(dcache_rdata),
         .rdata_valid(dcache_backend_rdata_valid),    
-        .write_finish(dcache_backend_write_finish),  
+        .dcache_ready(dcache_ready),  
 
     //to write BUS
         .dev_wrdy(dev_wrdy_to_cache),      
@@ -390,7 +403,7 @@ module mycpu_top(
         .uncache_write_finish(duncache_write_finish),
         .uncache_wen(duncache_wen),
         .uncache_wdata(duncache_wdata),
-        .uncache_waddr(duncache_waddr)      
+        .uncache_waddr(duncache_waddr)  
     );
 
     axi_interface u_axi_interface(
@@ -516,5 +529,37 @@ module mycpu_top(
         .axi_wlast_o(axi_wlast),
         .axi_wlen_o(axi_wlen)
     );
+
+
+    wire [101:0] data1;
+    wire [101:0] data2;
+    wire valid1;
+    wire valid2;
+    wire [101:0] debug_data_out;
+    wire debug_valid_out;
+
+    assign data1 = {debug_wb_we1,debug_reg_addr1,debug_wdata1,debug_inst1,debug_pc1};
+    assign data2 = {debug_wb_we2,debug_reg_addr2,debug_wdata2,debug_inst2,debug_pc2};
+    assign valid1 = debug_wb_valid1;
+    assign valid2 = debug_wb_valid2;
+
+
+    debug_FIFO debug
+    (
+        .clk(aclk),
+        .rst(rst),
+        .valid1(valid1),
+        .data1(data1),
+        .valid2(valid2),
+        .data2(data2),
+        .data_out(debug_data_out),
+        .valid_out(debug_valid_out)
+    );
+
+    assign debug_wb_pc = debug_data_out[31:0];  
+    assign debug_wb_rf_we = {4{debug_data_out[101]}};
+    assign debug_wb_rf_wnum = debug_data_out[100:96];
+    assign debug_wb_rf_wdata = debug_data_out[95:64];
+    assign debug_wb_inst = debug_data_out[63:32];
 
 endmodule

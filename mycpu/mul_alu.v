@@ -13,24 +13,31 @@ module mul_alu (
     output wire [63:0] result   // 乘法运算结果
 );
 
-    reg signed [63:0] mul_result;  
+    reg [63:0] mul_result;  
     reg valid;
 
-    wire signed [32:0] reg1_ext;
-    wire signed [32:0] reg2_ext;
+    wire [63:0] reg1_ext;
+    wire [63:0] reg2_ext;
 
     // 符号扩展操处理
-    assign reg1_ext = signed_op ? {reg1[31], reg1} : {1'b0, reg1};
-    assign reg2_ext = signed_op ? {reg2[31], reg2} : {1'b0, reg2};
+    assign reg1_ext = signed_op ? {{32{reg1[31]}}, reg1} : {32'b0, reg1};
+    assign reg2_ext = signed_op ? {{32{reg2[31]}}, reg2} : {32'b0, reg2};
 
     // ??不知道能不能直接乘
-    always @(posedge clk) begin
-        if (start) begin
-            mul_result <= {32'b0, reg1_ext} * {32'b0, reg2_ext}; // 执行乘法运算
+    always @(posedge clk) 
+    begin
+        if(rst)
+        begin
+            mul_result <= 64'b0;
+        end
+        else if (start) 
+        begin
+            mul_result <= $signed(reg1_ext) * $signed(reg2_ext); // 执行乘法运算
         end
     end
 
-    always @(posedge clk) begin
+    always @(posedge clk) 
+    begin
         if (rst)    valid <= 0;
         else        valid <= start ? 1 : 0;
     end
@@ -39,3 +46,4 @@ module mul_alu (
     assign result = mul_result; 
 
 endmodule
+

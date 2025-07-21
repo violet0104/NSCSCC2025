@@ -89,7 +89,7 @@ module wb
     output reg  [31:0] commit_addr_out2,
     output reg  [1:0] commit_idle_out, //是否是空闲指令
     output reg  [1:0] commit_ertn_out, //是否是异常返回指令
-    output reg  [1:0] commit_is_privilege_out //特权指令
+    output reg  [1:0] commit_is_privilege_out, //特权指令
 /**********************************************************************8
    `ifdef DIFF
     input reg  [1:0][31:0] in_debug_wb_pc, // debug信息：写回阶段的PC
@@ -135,7 +135,14 @@ module wb
     output reg  [1:0] tlbfill_en //TLB填充使能
     `endif 
 **************************************************************************/
+//debug
+    input wire [31:0] mem_inst1,
+    input wire [31:0] mem_inst2,
+    
+    output reg [31:0] wb_inst1,
+    output reg [31:0] wb_inst2
 );
+
 
     always @(posedge clk) begin
         if(rst || pause_mem) begin
@@ -181,6 +188,8 @@ module wb
             commit_is_privilege_out[1] <= 1'b0;
         end 
         else begin
+            wb_inst1 <= mem_inst1;
+            wb_inst2 <= mem_inst2;
             ctrl_reg_write_en[0] <= wb_reg_write_en[0];
             ctrl_reg_write_en[1] <= wb_reg_write_en[1];
             ctrl_reg_write_addr1 <= wb_reg_write_addr1;
@@ -229,8 +238,8 @@ module wb
         wb_pf_reg_write_en[1] = ctrl_reg_write_en[1];
         wb_pf_reg_write_addr1 = ctrl_reg_write_addr1;
         wb_pf_reg_write_addr2 = ctrl_reg_write_addr2;
-        wb_pf_reg_write_data1 = ctrl_reg_write_data2;
-        wb_pf_reg_write_data1 = ctrl_reg_write_data2;
+        wb_pf_reg_write_data1 = ctrl_reg_write_data1;
+        wb_pf_reg_write_data2 = ctrl_reg_write_data2;
         end
 /**********************************************************************
     `ifdef DIFF

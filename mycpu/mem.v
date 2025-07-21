@@ -57,8 +57,7 @@ module mem
     output wire  [1:0]  mem_pf_reg_write_en, 
     output wire  [4:0]  mem_pf_reg_write_addr1,
     output wire  [4:0]  mem_pf_reg_write_addr2,
-    output wire  [31:0] mem_pf_reg_write_data1,
-    output wire  [31:0] mem_pf_reg_write_data2,
+
 
     // 输出给ctrl的信号
     output wire   pause_mem, //通知暂停内存访问信号
@@ -132,8 +131,6 @@ module mem
     assign mem_pf_reg_write_en[1] = reg_write_en[1];
     assign mem_pf_reg_write_addr1 = reg_write_addr1;
     assign mem_pf_reg_write_addr2 = reg_write_addr2;
-    assign mem_pf_reg_write_data1 = reg_write_data1;
-    assign mem_pf_reg_write_data2 = reg_write_data2;
 
     assign wb_reg_write_en[0] = reg_write_en[0];
     assign wb_reg_write_en[1] = reg_write_en[1];
@@ -146,7 +143,7 @@ module mem
     assign wb_csr_addr1 = csr_addr1;
     assign wb_csr_addr2 = csr_addr2;
     assign wb_csr_write_data1 = reg_write_data1;
-    assign wb_csr_write_data2 = reg_write_data1;
+    assign wb_csr_write_data2 = reg_write_data2;
 
 
     assign is_exception1_o = {is_exception1_i,1'b0};
@@ -300,7 +297,7 @@ module mem
             end
             default: begin
                 pause_uncache[0] = 1'b0;
-                wb_reg_write_data1 = 32'b0;
+                wb_reg_write_data1 = reg_write_data1;
             end
         endcase
     end
@@ -422,7 +419,7 @@ module mem
             end
             default: begin
                 pause_uncache[1] = 1'b0;
-                wb_reg_write_data2 = 32'b0;
+                wb_reg_write_data2 = reg_write_data2;
             end
         endcase
     end
