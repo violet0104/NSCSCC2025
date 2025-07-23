@@ -5,16 +5,16 @@ module FIFO
     input wire flush,
 
     input wire push_en,
-    input wire [103:0] push_data,
+    input wire [104:0] push_data,
     input wire pop_en,
-    output wire [103:0] pop_data,
+    output wire [104:0] pop_data,
     output wire empty,
     output wire full,
     output wire stall
 );
     reg [3:0] write_index;   
     reg [3:0] read_index;
-    reg [103:0] data [15:0];  //32+32+32+1+7
+    reg [104:0] data [15:0];  //1+32+32+32+1+7
     
     assign empty = write_index == read_index;
     assign full  = read_index == (write_index + 1)%16;
@@ -28,7 +28,7 @@ module FIFO
             write_index <= 4'b0;
             read_index <= 4'b0;
             for(i=0; i<16; i=i+1)
-                data[i] <= 104'b0;
+                data[i] <= 105'b0;
         end
         else 
         begin

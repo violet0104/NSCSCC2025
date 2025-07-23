@@ -1,7 +1,3 @@
-`timescale 1ns / 1ps
-`include "defines.vh"
-`include "csr_defines.vh"
-
 module csr (
     input wire clk,
     input wire rst,
@@ -299,7 +295,7 @@ module csr (
                     badv <= exception_pc_i;
                 end
                 default: begin
-                    badv <= 32'b0; //其他异常不处理??????????????
+                    badv <= badv; //其他异常不处理??????????????
                 end
             endcase
         end 
@@ -315,7 +311,7 @@ module csr (
     always @(posedge clk) begin
         if (rst) begin
             eentry <= 32'b0;
-        end 
+        end
         else if (eentry_wen) begin
             eentry[31:6] <= csr_write_data_i[31:6];
         end 

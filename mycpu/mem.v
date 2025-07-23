@@ -142,8 +142,8 @@ module mem
     assign wb_csr_write_en[1] = csr_write_en[1];
     assign wb_csr_addr1 = csr_addr1;
     assign wb_csr_addr2 = csr_addr2;
-    assign wb_csr_write_data1 = reg_write_data1;
-    assign wb_csr_write_data2 = reg_write_data2;
+    assign wb_csr_write_data1 = csr_write_data_mem1;
+    assign wb_csr_write_data2 = csr_write_data_mem2;
 
 
     assign is_exception1_o = {is_exception1_i,1'b0};

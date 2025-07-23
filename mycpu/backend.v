@@ -35,9 +35,9 @@ module backend (
     这个我们没有
     // to pc
     output logic   is_interrupt,
-    output bus32_t new_pc,
+    */
+    output [31:0] new_pc,
     
-******************************/
 
 
       // 输出给前端的信号
@@ -488,14 +488,17 @@ module backend (
 
     );
 
+    wire pause_to_dispatch = pause_o[4];
+    wire pause_to_dispatch_ex_pause = pause_o[5];
+    wire flush_to_dispatch = flush_o[4];
 
     dispatch u_dispatch (
         .clk(clk),
         .rst(rst),
 
     //控制单元的暂停和刷新信号
-        .pause(pause_o[4]),    //发射器暂停信号,当发生load-use冒险时需要暂停
-        .flush(flush_o[4]),    //发射器刷新信号,当发生分支预测错误时需要刷新
+        .pause(pause_to_dispatch),//pause_o[4]    //发射器暂停信号,当发生load-use冒险时需要暂停  
+        .flush(flush_to_dispatch),//flush_o[4]    //发射器刷新信号,当发生分支预测错误时需要刷新
 
     // 来自decoder的信号
         .pc1_i(pc_decoder1),      //指令地址
@@ -571,7 +574,7 @@ module backend (
         .ex_pre_aluop2(pre_ex_aluop2),
 
         //来自ex阶段的，可能由于乘除法等指令引起的暂停信号
-        .ex_pause(pause_o[5]),           //ex阶段的暂停信号
+        .ex_pause(pause_to_dispatch_ex_pause),//pause_o[5]           //ex阶段的暂停信号
 
         // 输出给execute的数据
         .pc1_o(pc_dispatch1),  
@@ -644,13 +647,17 @@ module backend (
 
     );
 
-    execute u_execute (
+    wire flush_to_execute = flush_o[5];
+    wire pause_to_execute = pause_o[5];
+
+    execute u_execute 
+    (
         .clk(clk),
         .rst(rst),
 
     // 来自ctrl的信号
-        .flush(flush_o[5]),    // 执行阶段刷新信号,当发生分支预测错误时需要刷新
-        .pause(pause_o[5]),    // 执行阶段暂停信号,当发生load-use冒险时需要暂停
+        .flush(flush_to_execute),    // 执行阶段刷新信号,当发生分支预测错误时需要刷新
+        .pause(pause_to_execute),    // 执行阶段暂停信号,当发生load-use冒险时需要暂停
 
     // 来自stable counter的信号
         .cnt_i(cnt), 
@@ -1041,10 +1048,8 @@ module backend (
         .flush(flush_o),//刷新信号
         .pause(pause_o),//暂停信号
 
-/***************************************
-        .new_pc(new_pc),
 
-****************************************/
+        .new_pc(new_pc),
 
     //to regfile
         .reg_write_en_o(reg_write_en),//写回阶段刷新信号
@@ -1169,23 +1174,24 @@ module backend (
         .tlbrentry_o(csr_tlbrentry)
     );
 
-    stable_counter u_stable_counter (
+    clock u_clock 
+    (
         .clk(clk),
         .rst(rst),
 
-        .cnt(cnt)
+        .count_64(cnt)
     );
 
     assign debug_wb_valid1 = valid_wb[0];
     assign debug_wb_valid2 = valid_wb[1];
-    assign debug_pc1 = pc_wb1 ;
-    assign debug_pc2 = pc_wb2;
+    assign debug_pc1 = !is_exception_wb1[1] ? pc_wb1 : 32'b0;
+    assign debug_pc2 = !is_exception_wb2[1] ? pc_wb2 : 32'b0;
     assign  debug_inst1 = wb_inst1;
     assign debug_inst2 = wb_inst2;
-    assign  debug_reg_addr1 = reg_write_addr_wb1;
-    assign  debug_reg_addr2 = reg_write_addr_wb2;
-    assign  debug_wdata1 = reg_write_data_wb1;
-    assign  debug_wdata2 = reg_write_data_wb2; 
+    assign  debug_reg_addr1 = !is_exception_wb1[1] ? reg_write_addr_wb1 : 5'b0;
+    assign  debug_reg_addr2 = !is_exception_wb2[1] ? reg_write_addr_wb2 : 5'b0;
+    assign  debug_wdata1 = !is_exception_wb1[1] ? reg_write_data_wb1 : 32'b0;
+    assign  debug_wdata2 = !is_exception_wb2[1] ? reg_write_data_wb2 : 32'b0; 
     assign debug_wb_we1 = reg_write_en_wb[0];
     assign debug_wb_we2 = reg_write_en_wb[1];
 

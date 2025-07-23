@@ -106,11 +106,15 @@ module branch_alu (
     assign branch_pre_vec = {is_branch, is_branch_taken, pre_is_branch_taken};
 
     // 分支刷新信号更新逻辑
-    always @(*) begin
-        case (branch_pre_vec[2])
+    always @(*) 
+    begin
+        case (branch_pre_vec)
             // 情况1：预测正确，但预测跳转地址可能错误
-            1'b1: begin
+            3'b111: begin
                 branch_flush = |(pre_branch_addr ^ branch_actual_addr);     // 预测跳转地址和实际地址相同，则不用刷新
+            end
+            3'b110,3'b101: begin
+                branch_flush = 1'b1;
             end
             // 其他情况：预测正确或为非分支指令
             default: begin

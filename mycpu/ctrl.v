@@ -204,7 +204,7 @@ module ctrl
     assign excp_vec2 = {csr_is_interrupt_i, inst_is_exception2};
 
     always @(*) begin
-        case(excp_vec1) 
+        casez(excp_vec1) 
             7'b1??????: exception_cause1 = `EXCEPTION_INT; 
             7'b01?????: exception_cause1 = inst_exception_cause1[5]; 
             7'b001????: exception_cause1 = inst_exception_cause1[4];
@@ -215,9 +215,21 @@ module ctrl
             default:    exception_cause1 = `EXCEPTION_NOP; 
         endcase
     end
-
+    /*
+    always @(*) 
+    begin
+        if (excp_vec1[6])       exception_cause1 = `EXCEPTION_INT; 
+        else if (excp_vec1[5])  exception_cause1 = inst_exception_cause1[5]; 
+        else if (excp_vec1[4])  exception_cause1 = inst_exception_cause1[4];
+        else if (excp_vec1[3])  exception_cause1 = (is_privilege_i[0] && csr_crmd_i[1:0] != 2'b00) ? `EXCEPTION_IPE : inst_exception_cause1[3];
+        else if (excp_vec1[2])  exception_cause1 = inst_exception_cause1[2];
+        else if (excp_vec1[1])  exception_cause1 = inst_exception_cause1[1];
+        else if (excp_vec1[0])  exception_cause1 = inst_exception_cause1[0];
+        else                    exception_cause1 = `EXCEPTION_NOP; 
+    end
+*/
     always @(*) begin
-        case(excp_vec2) 
+        casez(excp_vec2) 
             7'b1??????: exception_cause2 = `EXCEPTION_INT; 
             7'b01?????: exception_cause2 = inst_exception_cause2[5]; 
             7'b001????: exception_cause2 = inst_exception_cause2[4];
@@ -228,7 +240,20 @@ module ctrl
             default:    exception_cause2 = `EXCEPTION_NOP; 
         endcase
     end
-
+  
+    /*
+    always @(*) 
+    begin
+    if (excp_vec2[6]) exception_cause2 = `EXCEPTION_INT;  // 最高优先级（bit6=1）
+    else if (excp_vec2[5]) exception_cause2 = inst_exception_cause2[5];  // 次高优先级（bit5=1）
+    else if (excp_vec2[4]) exception_cause2 = inst_exception_cause2[4];  // bit4=1
+    else if (excp_vec2[3]) exception_cause2 = (is_privilege_i[1] && csr_crmd_i[1:0] != 2'b00) ? `EXCEPTION_IPE : inst_exception_cause2[3];
+    else if (excp_vec2[2]) exception_cause2 = inst_exception_cause2[2];  // bit2=1
+    else if (excp_vec2[1]) exception_cause2 = inst_exception_cause2[1];  // bit1=1
+    else if (excp_vec2[0]) exception_cause2 = inst_exception_cause2[0];  // bit0=1
+    else exception_cause2 = `EXCEPTION_NOP;  // 默认情况（无异常）
+    end
+*/
     //异常原因编码
     wire [6:0] exception_cause_out;
     assign exception_cause_out = is_exception[0] ? exception_cause1 : exception_cause2;

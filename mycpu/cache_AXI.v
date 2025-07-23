@@ -8,6 +8,7 @@ module cache_AXI
     input wire [31:0] inst_araddr_i,
     output reg inst_rvalid_o,
     output reg [127:0] inst_rdata_o,
+    output wire icache_ren_received,
 
     //dcache read
     input wire data_ren_i,
@@ -76,6 +77,7 @@ module cache_AXI
     assign axi_ce_o = rst ? 1'b0 : 1'b1;
     assign dev_rrdy_o = read_state == read_FREE;
     assign dev_wrdy_o = write_state == write_FREE;
+    assign icache_ren_received = read_state == read_ICACHE;
 
     //read state machine
     always @(posedge clk)

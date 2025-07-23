@@ -105,6 +105,7 @@ module mycpu_top(
 
     wire icache_inst_valid;
     wire [31:0] pred_addr_for_buffer;
+    wire [1:0] pred_taken_for_buffer;
     wire pi_icache_is_exception1;
     wire pi_icache_is_exception2;
     wire [6:0] pi_icache_exception_cause1;
@@ -118,6 +119,8 @@ module mycpu_top(
 
 
     // 閸撳秹鏁撻崜鍧楁交閹风兘鏁撻弬銈嗗鐠囨挳鏁撻弬銈嗗閽樻洟鏁撻敓锟?
+    wire fb_pred_taken1;
+    wire fb_pred_taken2;
     wire [31:0]fb_pc1;
     wire [31:0]fb_pc2;
     wire [31:0]fb_inst1;
@@ -125,7 +128,6 @@ module mycpu_top(
     wire [1:0] fb_valid;
     wire [1:0]fb_pre_taken;
     
-    assign fb_pre_taken = 2'b0;
     
     wire [31:0]fb_pre_branch_addr1;
     wire [31:0]fb_pre_branch_addr2;
@@ -176,9 +178,11 @@ module mycpu_top(
     wire [31:0] duncache_wdata;
     wire [31:0] duncache_waddr;
     
+    wire [31:0] new_pc_from_ctrl;
+    wire [1:0] BPU_pred_taken;
 
-
-    front u_front(
+    front u_front
+    (
         // 闁跨喐鏋婚幏鐑芥晸閺傘倖瀚?
         .cpu_clk(aclk),
         .cpu_rst(rst),
@@ -186,6 +190,7 @@ module mycpu_top(
         .iuncache(iuncache),//闁跨喐鏋婚幏椋庣叀闁跨喐鏋婚幏鐑芥晸閼存氨灏ㄩ幏鐑芥晸閺傘倖瀚瑰┃锟?       //(闁跨喐鏋婚幏鐑芥晸缁茬垜ncache闁跨喕鍓奸悮瀛樺)
 
         // 闁跨喐鏋婚幏鐑芥晸閺傘倖瀚? icache 闁跨喐鏋婚幏鐑芥晸閼存氨灏ㄩ幏锟?
+        .pred_taken(BPU_pred_taken),
         .pi_icache_is_exception1(pi_icache_is_exception1),      //闁跨喐鏋婚幏绌抍ache闁跨喐鏋婚幏鐑芥晸閺傘倖瀚归柨鐔告灮閹风兘鏁撻弬銈嗗闁跨喐鏋婚幏鐑芥晸閺傘倖瀚归柨鐔告灮閹烽攱浼?
         .pi_icache_is_exception2(pi_icache_is_exception2),
         .pi_icache_exception_cause1(pi_icache_exception_cause1),  
@@ -193,6 +198,7 @@ module mycpu_top(
         .pc_for_buffer1(icache_pc1),
         .pc_for_buffer2(icache_pc2),
         .pred_addr_for_buffer(pred_addr_for_buffer),
+        .pred_taken_for_buffer(pred_taken_for_buffer),
         .icache_pc_suspend(pc_suspend),
         .inst_for_buffer1(icache_inst1),
         .inst_for_buffer2(icache_inst2),
@@ -201,10 +207,10 @@ module mycpu_top(
     // *******************
         .fb_flush({flush_o[2],flush_o[0]}), //闁跨喐鏋婚幏鐑芥晸閺傘倖瀚归柨鐔告灮閹风兘鏁撻弬銈嗗闁跨喕濞囬搴㈠闁跨喕顢滆皭閵堝繑瀚归柨鐔告灮閹风兘鏁撶憲鐕傜礉绾板瀚归柨鐔兼應閻氬瓨瀚归柨鐔告灮閹风兘鏁撶憴鎺戝簻閹烽攱婀愰柨鐔告灮閹峰嘲浼旈柨鐔虹lush闁跨喕鍓奸崣鍑ょ秶閹风兘鏁撶憴鎺楁交閹风兘鏁撻懘姘娇閸栤剝瀚归柨鐔告灮閹峰嘲鍨归崢濠氭晸閺傘倖瀚归崜宥夋晸閸撹法顣幏绌妏u闁跨喐鏋婚幏鐑芥晸閺傘倖瀚圭痪閬嶆晸閺傘倖瀚归柨鐔告灮閹峰嘲宓忛搹楣冩晸缁叉姬ush闁跨喕鍓奸崣椋庮暜閹风兘鏁撻弬銈嗗闁跨喓鍗抽敐蹇斿闁跨喐鏋婚幏鐑芥晸閺傘倖瀚规稉鈧柨鐔告灮閹峰嘲骞撻柨鐔告灮閹风⿴ront/pc闁跨喐鏋婚幏鐑芥晸閺傘倖瀚归柨鐔峰建绾板瀚箌閸撳秹鏁撻弬銈嗗闁跨喓绂巄_flush
         .fb_pause({pause_o[2],pause_o[0]}),
-        .fb_interrupt(1'b0),       // 闁跨喐鏋婚幏宄板弿闁跨喐鏋婚幏锟?0
+        .fb_interrupt(1'b0),       
 //        .fb_new_pc(32'b0),
+        .new_pc(new_pc_from_ctrl),
 
-        // 闁跨喐鏋婚幏鐑芥晸閺傘倖瀚归柨鐔虹cache闁跨喐鏋婚幏鐑芥晸閼存氨灏ㄩ幏锟?
         .BPU_flush(BPU_flush),
         .pi_pc(inst_addr),
         .BPU_pred_addr(BPU_pred_addr),
@@ -225,6 +231,8 @@ module mycpu_top(
         .get_data_req(get_data_req),
 
         // 闁跨喐鏋婚幏鐑芥晸閺傘倖瀚归柨鐔告灮閹风兘鏁撻崜璺暜閹风兘鏁撻懘姘卞皑閹凤拷
+        .fb_pred_taken1(fb_pred_taken1),
+        .fb_pred_taken2(fb_pred_taken2),
         .fb_pc_out1(fb_pc1),
         .fb_pc_out2(fb_pc2),
         .fb_inst_out1(fb_inst1),
@@ -246,12 +254,13 @@ module mycpu_top(
         .rst(rst),
         
         // 闁跨喐鏋婚幏鐑芥晸閺傘倖瀚归崜宥夋晸閸撹法顣幏鐑芥晸閼存氨灏ㄩ幏锟?
+        .new_pc(new_pc_from_ctrl),
         .pc_i1(fb_pc1),
         .pc_i2(fb_pc2),
         .inst_i1(fb_inst1),
         .inst_i2(fb_inst2),
         .valid_i(fb_valid),
-        .pre_is_branch_taken_i(fb_pre_taken),
+        .pre_is_branch_taken_i({fb_pred_taken1,fb_pred_taken2}),
         .pre_branch_addr_i1(fb_pre_branch_addr1),
         .pre_branch_addr_i2(fb_pre_branch_addr2),
         .is_exception1_i(fb_is_exception1),
@@ -323,20 +332,24 @@ module mycpu_top(
         .debug_wb_we2(debug_wb_we2) 
     );
 
+    wire icache_ren_received;
+
     icache u_icache
     (
         .clk(aclk),
         .rst(rst),   
-        .BPU_flush(BPU_flush),       
+        .flush(BPU_flush | flush_o[1]),       
     // Interface to CPU
         .inst_rreq(inst_rreq),  // 闁跨喐鏋婚幏鐑芥晸閺傘倖瀚笴PU闁跨喐鏋婚幏宄板絿閹稿洭鏁撻弬銈嗗闁跨喐鏋婚幏锟?
         .inst_addr(inst_addr),      // 闁跨喐鏋婚幏鐑芥晸閺傘倖瀚笴PU闁跨喐鏋婚幏宄板絿閹稿洭鏁撻弬銈嗗閸р偓
         .BPU_pred_addr(BPU_pred_addr),
+        .BPU_pred_taken(BPU_pred_taken),
 
         .pi_is_exception(pi_is_exception),
         .pi_exception_cause(pi_exception_cause),
 
         .pred_addr(pred_addr_for_buffer),
+        .pred_taken(pred_taken_for_buffer),
         .inst_valid(icache_inst_valid),     
         .inst_out1(icache_inst1),       
         .inst_out2(icache_inst2),
@@ -352,7 +365,8 @@ module mycpu_top(
         .cpu_ren(icache_ren),       
         .cpu_raddr(icache_araddr),      
         .dev_rvalid(icache_rvalid),     
-        .dev_rdata(icache_rdata)   
+        .dev_rdata(icache_rdata),
+        .ren_received(icache_ren_received)   
     );
 
     wire debug_wb_valid1;
@@ -480,6 +494,7 @@ module mycpu_top(
         .inst_araddr_i(icache_araddr),
         .inst_rvalid_o(icache_rvalid),
         .inst_rdata_o(icache_rdata),
+        .icache_ren_received(icache_ren_received),
 
     //dcache read
         .data_ren_i(dcache_ren),

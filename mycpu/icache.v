@@ -3,16 +3,18 @@ module icache
 (
     input  wire         clk,
     input  wire         rst,       // low active
-    input  wire         BPU_flush,
+    input  wire         flush,
     // Interface to CPU
     input  wire         inst_rreq,      // 来自CPU的取指请求
     input  wire [31:0]  inst_addr,      // 来自CPU的取指地址
     input  wire [31:0]  BPU_pred_addr,
+    input  wire [1:0]   BPU_pred_taken,
 
     input  wire         pi_is_exception,
     input  wire [6:0]   pi_exception_cause, 
 
     output wire [31:0]  pred_addr,
+    output wire [1:0]   pred_taken,
     output reg          inst_valid,     // 输出给CPU的指令有效信号
     output reg  [31:0]  inst_out1,       // 
     output reg  [31:0]  inst_out2,
@@ -28,7 +30,8 @@ module icache
     output reg          cpu_ren,        // 输出给主存的读使能信号
     output reg  [31:0]  cpu_raddr,      // 输出给主存的读地址
     input  wire         dev_rvalid,     // 来自主存的数据有效信号
-    input  wire [127:0] dev_rdata   // 来自主存的读数据  128
+    input  wire [127:0] dev_rdata,   // 来自主存的读数据  128
+    input  wire         ren_received
 );
 
     wire [31:0] addr_1_1 = inst_addr;
@@ -51,6 +54,7 @@ module icache
     reg [6:0] pi_exception_cause_2;
 
     reg [31:0] pred_addr_2;
+    reg [1:0]  pred_taken_2;   
 
     wire [150:0]ram1_data_block1;
     wire [150:0]ram1_data_block2;
@@ -65,16 +69,16 @@ module icache
     reg [1:0] use_bit [63:0];
     wire [5:0] refill_index = dealing1 ? addr_1_2[9:4] : dealing2 ? addr_2_2[9:4] : 6'b0;
     wire [21:0] refill_tag = dealing1 ? addr_1_2[31:10] : dealing2 ? addr_2_2[31:10] : 22'b0;
-    wire we1 = (dev_rvalid==1) & (use_bit[refill_index]==2'b10)& !BPU_flush & req_2;
-    wire we2 = (dev_rvalid==1) & (use_bit[refill_index]==2'b01)& !BPU_flush & req_2;
+    wire we1 = (dev_rvalid==1) & (use_bit[refill_index]==2'b10)& !flush & req_2;
+    wire we2 = (dev_rvalid==1) & (use_bit[refill_index]==2'b01)& !flush & req_2;
     wire [150:0] refill_data = {{1'b1,refill_tag},dev_rdata};
 
     //第一个1代表ram1，第二个1代表index1
-    wire hit1_1 = !BPU_flush & (tag_1_2==ram1_tag1) & req_2 & ram1_data_block1[150];  
-    wire hit2_1 = !BPU_flush & (tag_1_2==ram2_tag1) & req_2 & ram2_data_block1[150];
+    wire hit1_1 = !flush & (tag_1_2==ram1_tag1) & req_2 & ram1_data_block1[150];  
+    wire hit2_1 = !flush & (tag_1_2==ram2_tag1) & req_2 & ram2_data_block1[150];
     wire hit1 = hit1_1 | hit2_1;    //index1
-    wire hit1_2 = !BPU_flush & (tag_2_2==ram1_tag2) & req_2 & ram1_data_block2[150];
-    wire hit2_2 = !BPU_flush & (tag_2_2==ram2_tag2) & req_2 & ram2_data_block2[150];
+    wire hit1_2 = !flush & (tag_2_2==ram1_tag2) & req_2 & ram1_data_block2[150];
+    wire hit2_2 = !flush & (tag_2_2==ram2_tag2) & req_2 & ram2_data_block2[150];
     wire hit2 = hit1_2 | hit2_2;    //index2
 
     wire [127:0] hit1_data = {128{hit1_1}}&ram1_data_block1[127:0] | {128{hit2_1}}&ram2_data_block1[127:0];
@@ -104,7 +108,7 @@ module icache
     
     always @(posedge clk)
     begin
-        if(rst | BPU_flush)
+        if(rst | flush)
         begin
             addr_1_2 <= 32'b0;
             addr_2_2 <= 32'b0;
@@ -115,11 +119,12 @@ module icache
             tag_2_2 <= 22'b0; 
 
             pred_addr_2 <= 32'b0;
+            pred_taken_2 <= 2'b0;
 
             pi_is_exception_2 <= 1'b0;
             pi_exception_cause_2 <= 7'b0;
         end
-        else if(!suspend & !BPU_flush)
+        else if(!suspend & !flush)
         begin
             addr_1_2 <= addr_1_1;
             addr_2_2 <= addr_2_1;
@@ -130,6 +135,7 @@ module icache
             tag_2_2 <= tag_2_1;
 
             pred_addr_2 <= BPU_pred_addr;
+            pred_taken_2 <= BPU_pred_taken;
 
             pi_is_exception_2 <= pi_is_exception;
             pi_exception_cause_2 <= pi_exception_cause;
@@ -166,6 +172,7 @@ module icache
     );
 
     assign pred_addr = pred_addr_2;
+    assign pred_taken = pred_taken_2;
 
     always @(*)
     begin
@@ -201,7 +208,7 @@ module icache
     begin
         index1_delay <= index1;
         index2_delay <= index2;
-        if(rst | BPU_flush)
+        if(rst | flush)
         begin
             dealing1 <= 1'b0;
             dealing2 <= 1'b0;
@@ -223,7 +230,7 @@ module icache
                 cpu_ren <= 1'b1;
                 dealing2 <= 1'b1;
             end
-            else cpu_ren <= 1'b0;
+            else if(ren_received) cpu_ren <= 1'b0;
             if(dev_rvalid)
             begin
                 if(dealing1)

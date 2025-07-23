@@ -328,7 +328,7 @@ module execute (
         .data_mem(data1),
         .csr_write_en_mem(csr_write_en[0]),
         .csr_addr_mem(csr_addr1),
-        .csr_write_data_mem(csr_write_data1),
+        .csr_write_data_mem(csr_write_data1),//////////////////////////////////
         .is_llw_scw_mem(is_llw_scw[0])
     );
 

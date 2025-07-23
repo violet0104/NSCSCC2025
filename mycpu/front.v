@@ -15,6 +15,7 @@ module front
     input wire [31:0] pc_for_buffer1,               //pc给指令缓存的信号
     input wire [31:0] pc_for_buffer2,               
     input wire [31:0] pred_addr_for_buffer,
+    input wire [1:0] pred_taken_for_buffer,
     input wire icache_pc_suspend,
     input wire [31:0] inst_for_buffer1,
     input wire [31:0] inst_for_buffer2,
@@ -24,17 +25,20 @@ module front
     input wire [1:0] fb_flush,
     input wire [1:0] fb_pause,
     input wire fb_interrupt,            //中断信号
-    input wire [31:0] fb_new_pc,        //中断后新的pc地址
+//    input wire [31:0] fb_new_pc,        //中断后新的pc地址
     
     //与icache的交互
     output wire BPU_flush,
     output reg [31:0] pi_pc,                //前端给icache的pc地址
     output wire [31:0] BPU_pred_addr,
+    output wire [1:0] pred_taken,
     output wire inst_rreq_to_icache,            //前端给icache的指令使能信号
     output reg pi_is_exception,             //前端给icache的异常信号
     output reg [6:0] pi_exception_cause,    //前端给icache的异常原因
 
     //和backend的交互
+    output wire fb_pred_taken1,
+    output wire fb_pred_taken2,
     output wire [31:0] fb_pc_out1,              //前端给后端的pc地址
     output wire [31:0] fb_pc_out2,              
     output wire [31:0] fb_inst_out1,            //前端给后端的指令
@@ -54,6 +58,7 @@ module front
 
 
     //我新加的信号**************************
+    input  wire [31:0]         new_pc,
     input  wire [1:0]           ex_is_bj ,          // 两条指令是否是跳转指令
     input  wire [31:0]          ex_pc1 ,            // ex 阶段的 pc
     input  wire [31:0]          ex_pc2 ,             
@@ -75,12 +80,13 @@ module front
     reg inst_en2;
     //我新加的信号**********************************
     wire instbuffer_stall;
-    wire [103:0] data_out1;
-    wire [103:0] data_out2;
-    wire [1:0] pred_taken;
+    wire [104:0] data_out1;
+    wire [104:0] data_out2;
+    
     wire BPU_pred_taken;
     //***************************************
-
+    assign fb_pred_taken1 = data_out1[104];
+    assign fb_pred_taken2 = data_out2[104];
     assign fb_pre_branch_addr1 = data_out1[103:72];
     assign fb_pre_branch_addr2 = data_out2[103:72];
     assign fb_pc_out1 = data_out1[71:40];
@@ -106,7 +112,6 @@ module front
     assign BPU_pred_taken = pred_taken[0] | pred_taken[1];
     
     wire stall;
-    wire [31:0] new_pc;
     
     pc u_pc 
     (
@@ -136,7 +141,7 @@ module front
         .pred_addr(pre_addr),
 
         .BPU_flush(BPU_flush),
-        .new_pc(new_pc),
+//        .new_pc(new_pc),
 
         .ex_is_bj_1(ex_is_bj[0]),     //等后端给我的信号，ex阶段的指令是否是跳转指令
         .ex_pc_1(ex_pc1),
@@ -165,6 +170,7 @@ module front
         .inst1(inst_for_buffer1),
         .inst2(inst_for_buffer2),
         .pred_addr(pred_addr_for_buffer),
+        .pred_taken(pred_taken_for_buffer),
 
         .pc_is_exception_in1(pi_icache_is_exception1),
         .pc_is_exception_in2(pi_icache_is_exception2),

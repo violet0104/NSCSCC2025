@@ -337,7 +337,7 @@ module alu (
             end
 
             `ALU_LDH, `ALU_LDHU: begin
-                ren_o = 1'b1;
+                ren_o = (addr_mem[1:0] == 2'b00) || (addr_mem[1:0] == 2'b10);
                 ex_mem_exception = (addr_mem[1:0] == 2'b01) || (addr_mem[1:0] == 2'b11);
                 mem_is_valid = 1'b1;
                 wdata_o = 32'b0;
@@ -345,7 +345,7 @@ module alu (
             end
 
             `ALU_LDW, `ALU_LLW: begin
-                ren_o = 1'b1;
+                ren_o = (addr_mem[1:0] == 2'b00);
                 ex_mem_exception = (addr_mem[1:0] != 2'b00);
                 mem_is_valid = 1'b1;
                 wdata_o = 32'b0;
@@ -412,20 +412,19 @@ module alu (
                 ex_mem_exception = (addr_mem[1: 0] != 2'b00);
                 mem_is_valid = 1'b1;
                 wdata_o = reg_data2;
-                wstrb_o = 4'b1111;
+                wstrb_o = (addr_mem[1: 0] == 2'b00) ? 4'b1111 : 4'b0000;
             end
 
             `ALU_SCW: begin
                 ren_o = 1'b0;
                 ex_mem_exception = (addr_mem[1:0] != 2'b00);
+                wstrb_o = (addr_mem[1:0] == 2'b00) ? 4'b1111 : 4'b0000;
                 if (LLbit) begin
                     mem_is_valid = 1'b1;
                     wdata_o = reg_data2;
-                    wstrb_o = 4'b1111;
                 end else begin
                     mem_is_valid = 1'b0;
                     wdata_o = 32'b0;
-                    wstrb_o = 4'b1111;
                 end
             end
 
@@ -491,7 +490,7 @@ module alu (
     end
     
     // 寄存器数据
-    assign reg_write_en_mem = reg_write_en_i;
+    assign reg_write_en_mem = !ex_mem_exception ? reg_write_en_i : 1'b0;
     assign reg_write_addr_mem = reg_write_addr_i;
 
     always @(*) begin

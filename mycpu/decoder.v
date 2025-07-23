@@ -96,7 +96,7 @@ module decoder (
     wire pre_taken1_i;
     assign pre_taken1_i = pretaken[0];
     wire pre_taken2_i;
-    assign pre_takne2_i = pretaken[1];
+    assign pre_taken2_i = pretaken[1];
 
     wire  [31:0] pc_out1;
     wire  [31:0] pc_out2;

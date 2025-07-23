@@ -79,7 +79,7 @@ module id_1R_I26
                 alusel = `ALU_SEL_CSR;
                 inst_valid = 1'b1;
                 if(rj == 5'b0) begin
-                    aluop = `ALU_RDCNTID;
+                    aluop = `ALU_RDCNTVLW;
                     reg_write_addr = rd;
                     csr_read_en = 1'b0;
                 end else begin
