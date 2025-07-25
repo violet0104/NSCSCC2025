@@ -130,6 +130,9 @@ module front
         .inst_rreq_to_icache(inst_rreq_to_icache)
     );
 
+    wire ex_valid1 = ex_valid[0];
+    wire ex_valid2 = ex_valid[1];
+
     BPU u_BPU
     (
         .cpu_clk(cpu_clk),
@@ -145,10 +148,10 @@ module front
 
         .ex_is_bj_1(ex_is_bj[0]),     //等后端给我的信号，ex阶段的指令是否是跳转指令
         .ex_pc_1(ex_pc1),
-        .ex_valid1(ex_valid[0]),
+        .ex_valid1(ex_valid1),
         .ex_is_bj_2(ex_is_bj[1]),
         .ex_pc_2(ex_pc2),
-        .ex_valid2(ex_valid[1]),
+        .ex_valid2(ex_valid2),
         .real_taken1(real_taken[0]),
         .real_taken2(real_taken[1]),
         .real_addr1(real_addr1),

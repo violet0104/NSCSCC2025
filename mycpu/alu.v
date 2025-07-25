@@ -201,7 +201,7 @@ module alu (
     wire [31:0] quotient;
     reg [31:0] div_data1;
     reg [31:0] div_data2;
-    wire divide_by_zero;    // 这个信号好像还没用到，与异常有关
+    wire is_running;
 
     assign is_div = (aluop_i == `ALU_DIVW || aluop_i == `ALU_DIVWU
                     || aluop_i == `ALU_MODW || aluop_i == `ALU_MODWU) && !div_done;
@@ -211,30 +211,34 @@ module alu (
 
     always @(posedge clk) 
     begin
-        if (is_div)
+        if (start_div)
+        begin
+            start_div <= 1'b0;
+        end 
+        else if(is_div && !is_running)
         begin
             start_div <= 1'b1;
             div_data1 <= reg_data1;
             div_data2 <= reg_data2;
-        end 
-        else if(div_done)
-        begin
+        end
+        else begin
             start_div <= 1'b0;
         end
-    end
+    end 
 
     div_alu u_div_alu 
     (
         .clk(clk),
         .rst(rst),
-        .valid_in(start_div),
-        .a(div_data1),
-        .b(div_data2),
-        .sign(signed_div),
-        .rest(remainder),
-        .div(quotient),
-        .div_zero_error(divide_by_zero),
-        .valid_out(div_done)
+        .op(signed_div),
+        .dividend(div_data1),
+        .divisor(div_data2),
+        .start(start_div),
+
+        .is_running(is_running),
+        .quotient_out(quotient),
+        .remainder_out(remainder),
+        .done(div_done)
     );
 
     // 结果选择
@@ -253,7 +257,6 @@ module alu (
             end
         endcase
     end
-
     // branch alu
     wire [31:0] branch_alu_res;
 

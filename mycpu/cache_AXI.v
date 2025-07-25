@@ -9,12 +9,14 @@ module cache_AXI
     output reg inst_rvalid_o,
     output reg [127:0] inst_rdata_o,
     output wire icache_ren_received,
+    output wire icache_flush_flag_valid,
 
     //dcache read
     input wire data_ren_i,
     input wire [31:0] data_araddr_i,
     output reg data_rvalid_o,
     output reg [127:0] data_rdata_o,
+    output wire dcache_ren_received,
 
     //dcache write
     input wire [3:0] data_wen_i,
@@ -36,11 +38,11 @@ module cache_AXI
     input wire [3:0] duncache_wen_i,
     input wire [31:0] duncache_wdata_i,
     input wire [31:0] duncache_waddr_i,
-    output reg duncache_write_resp,  //dcacheä¸­çš„duncache_write_finish
+    output reg duncache_write_resp,  //dcacheÖĞµÄduncache_write_finish
 
     //AXI communicate
     output wire axi_ce_o,
-    output wire [3:0] axi_wsel_o,   // è¿æ¥æ€»çº¿çš„wstrb
+    output wire [3:0] axi_wsel_o,   // Á¬½Ó×ÜÏßµÄwstrb
 
     //AXI read
     input wire [31:0] rdata_i,
@@ -51,7 +53,7 @@ module cache_AXI
     output wire [7:0] axi_rlen_o,
 
     //AXI write
-    input wire wdata_resp_i,  // å†™å“åº”ä¿¡å·
+    input wire wdata_resp_i,  // Ğ´ÏìÓ¦ĞÅºÅ
     output wire axi_wen_o,
     output wire [31:0] axi_waddr_o,
     output reg [31:0] axi_wdata_o,
@@ -70,64 +72,76 @@ module cache_AXI
     localparam  write_UNCACHE = 2'b10;
 
     reg [1:0] read_state;
+    reg [1:0] next_read_state;
     reg [1:0] write_state;
+    reg [1:0] next_write_state;
     reg [1:0] read_count;
     reg [1:0] write_count;
 
     assign axi_ce_o = rst ? 1'b0 : 1'b1;
     assign dev_rrdy_o = read_state == read_FREE;
     assign dev_wrdy_o = write_state == write_FREE;
-    assign icache_ren_received = read_state == read_ICACHE;
+    assign icache_ren_received = read_state == read_FREE & next_read_state == read_ICACHE;
+    assign dcache_ren_received = read_state == read_FREE & next_read_state == read_DCACHE;
+    assign icache_flush_flag_valid = read_state == read_ICACHE | next_read_state == read_ICACHE;
 
-    //read state machine
     always @(posedge clk)
     begin
         if(rst)
         begin
             read_state <= read_FREE;
-        end
-        else
-        begin
-            case(read_state)
-            read_FREE:begin
-                if(duncache_ren_i) read_state <= read_UNCACHE;
-                else if(data_ren_i) read_state <= read_DCACHE;
-                else if(inst_ren_i) read_state <= read_ICACHE;
-            end
-            read_ICACHE:begin
-                if(rdata_valid_i & read_count == 2'b11) read_state <= read_FREE;
-            end
-            read_DCACHE:begin
-                if(rdata_valid_i & read_count == 2'b11) read_state <= read_FREE;
-            end
-            read_UNCACHE:begin
-                if(rdata_valid_i) read_state <= read_FREE;
-            end
-            endcase
-        end
-    end 
-    //write state machine
-    always @(posedge clk)
-    begin
-        if(rst)
-        begin
             write_state <= write_FREE;
         end
         else
         begin
-            case(write_state)
-            write_FREE:begin
-                if(|duncache_wen_i) write_state <= write_UNCACHE;
-                else if(|data_wen_i) write_state <= write_BUSY;
-            end
-            write_BUSY:begin
-                if(wdata_resp_i & write_count == 2'b11) write_state <= write_FREE;
-            end
-            write_UNCACHE:begin
-                if(wdata_resp_i) write_state <= write_FREE;
-            end
-            endcase
+            read_state <= next_read_state;
+            write_state <= next_write_state;
         end
+    end
+
+    //read state machine
+    always @(*)
+    begin
+        case(read_state)
+        read_FREE:begin
+            if(duncache_ren_i) next_read_state = read_UNCACHE;
+            else if(data_ren_i) next_read_state = read_DCACHE;
+            else if(inst_ren_i) next_read_state = read_ICACHE;
+            else next_read_state = read_FREE;
+        end
+        read_ICACHE:begin
+            if(rdata_valid_i & read_count == 2'b11) next_read_state = read_FREE;
+            else next_read_state = read_ICACHE;
+        end
+        read_DCACHE:begin
+            if(rdata_valid_i & read_count == 2'b11) next_read_state = read_FREE;
+            else next_read_state = read_DCACHE;
+        end
+        read_UNCACHE:begin
+            if(rdata_valid_i) next_read_state = read_FREE;
+            else next_read_state = read_UNCACHE;
+        end
+        endcase
+
+    end 
+    //write state machine
+    always @(*)
+    begin
+        case(write_state)
+        write_FREE:begin
+            if(|duncache_wen_i) next_write_state = write_UNCACHE;
+            else if(|data_wen_i) next_write_state = write_BUSY;
+            else next_write_state = write_FREE;
+        end
+        write_BUSY:begin
+            if(wdata_resp_i & write_count == 2'b11) next_write_state = write_FREE;
+            else next_write_state = write_BUSY;
+        end
+        write_UNCACHE:begin
+            if(wdata_resp_i) next_write_state = write_FREE;
+            else next_write_state = write_UNCACHE;
+        end
+        endcase
     end
 
     //read and write counter
@@ -227,8 +241,8 @@ module cache_AXI
     end
 
     //AXI
-    assign axi_wen_o = write_state != write_FREE; //ä¸€ç›´ç»´æŒç›´åˆ°ä»è®¾å¤‡æ¥å—å®Œæˆ
-    assign axi_wvalid_o = write_state != write_FREE; //è¿™ä¸ªä¿¡å·å’Œä¸Šé¢çš„ä¿¡å·é‡åˆäº†ï¼Œè¿æ¥åˆ°åé¢çš„axi_interface,ä½†axi_interfaceä¸­ä¹Ÿæ²¡æœ‰ç”¨åˆ°è¿™ä¸ªä¿¡å·ï¼Œæ„ä¹‰ä¸æ˜
+    assign axi_wen_o = write_state != write_FREE; //Ò»Ö±Î¬³ÖÖ±µ½´ÓÉè±¸½ÓÊÜÍê³É
+    assign axi_wvalid_o = write_state != write_FREE; //Õâ¸öĞÅºÅºÍÉÏÃæµÄĞÅºÅÖØºÏÁË£¬Á¬½Óµ½ºóÃæµÄaxi_interface,µ«axi_interfaceÖĞÒ²Ã»ÓĞÓÃµ½Õâ¸öĞÅºÅ£¬ÒâÒå²»Ã÷
     assign axi_wlen_o = (write_state == write_UNCACHE) ? 8'h0 : 8'h3;
     assign axi_rlen_o = (read_state == read_UNCACHE ) ? 8'h0 : 8'h3;
     assign axi_wsel_o = (write_state == write_UNCACHE) ? duncache_wen_i : 4'b1111;

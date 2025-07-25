@@ -8,20 +8,21 @@ module dcache
     input wire [31:0] vaddr,
     input wire [31:0] write_data,
     output reg [31:0] rdata,
-    output reg rdata_valid,    // è¾“å‡ºç»™CPUçš„æ•°æ®æœ‰æ•ˆä¿¡å·ï¼ˆé«˜ç”µå¹³è¡¨ç¤ºDCacheå·²å‡†å¤‡å¥½æ•°æ®ï¼‰
+    output reg rdata_valid,    // Êä³ö¸øCPUµÄÊı¾İÓĞĞ§ĞÅºÅ£¨¸ßµçÆ½±íÊ¾DCacheÒÑ×¼±¸ºÃÊı¾İ£©
     output wire dcache_ready,   
     //to write BUS
-    input  wire         dev_wrdy,       // é—ä¸»å­˜/å¤–è®¾çš„å†™å°±ç»ªä¿¡å·ï¼ˆé«˜ç”µå¹³è¡¨ç¤ºä¸»å­˜/å¤–è®¾å¯æ¥æ”¶DCacheçš„å†™è¯·æ±‚ï¼‰
+    input  wire         dev_wrdy,       // é–Ö÷´æ/ÍâÉèµÄĞ´¾ÍĞ÷ĞÅºÅ£¨¸ßµçÆ½±íÊ¾Ö÷´æ/ÍâÉè¿É½ÓÊÕDCacheµÄĞ´ÇëÇó£©
     input  wire         write_finish,
-    output reg  [ 3:0]  cpu_wen,        // è¾“å‡ºç»™ä¸»å­˜/å¤–è®¾çš„å†™ä½¿èƒ½ä¿¡å·
-    output reg  [31:0]  cpu_waddr,      // è¾“å‡ºç»™ä¸»å­˜/å¤–è®¾çš„å†™åœ°å€
-    output reg  [127:0]  cpu_wdata,      // è¾“å‡ºç»™ä¸»å­˜/å¤–è®¾çš„å†™æ•°æ®
+    output reg  [ 3:0]  cpu_wen,        // Êä³ö¸øÖ÷´æ/ÍâÉèµÄĞ´Ê¹ÄÜĞÅºÅ
+    output reg  [31:0]  cpu_waddr,      // Êä³ö¸øÖ÷´æ/ÍâÉèµÄĞ´µØÖ·
+    output reg  [127:0]  cpu_wdata,      // Êä³ö¸øÖ÷´æ/ÍâÉèµÄĞ´Êı¾İ
     //to Read Bus
-    input  wire         dev_rrdy,       // ä¸»å­˜/å¤–è®¾çš„è¯»å°±ç»ªä¿¡å·ï¼ˆé«˜ç”µå¹³è¡¨ç¤ºä¸»å­˜/å¤–è®¾å¯æ¥æ”¶DCacheçš„è¯»è¯·æ±‚ï¼‰
-    output reg          cpu_ren,        // è¾“å‡ºç»™ä¸»å­˜/å¤–è®¾çš„è¯»ä½¿èƒ½ä¿¡å·
-    output reg  [31:0]  cpu_raddr,      // è¾“å‡ºç»™ä¸»å­˜/å¤–è®¾çš„è¯»åœ°å€
-    input  wire         dev_rvalid,     // æ¥è‡ªä¸»å­˜/å¤–è®¾çš„æ•°æ®æœ‰æ•ˆä¿¡å·
-    input  wire [127:0] dev_rdata,       // æ¥è‡ªä¸»å­˜/å¤–è®¾çš„è¯»æ•°æ®
+    input  wire         dev_rrdy,       // Ö÷´æ/ÍâÉèµÄ¶Á¾ÍĞ÷ĞÅºÅ£¨¸ßµçÆ½±íÊ¾Ö÷´æ/ÍâÉè¿É½ÓÊÕDCacheµÄ¶ÁÇëÇó£©
+    output reg          cpu_ren,        // Êä³ö¸øÖ÷´æ/ÍâÉèµÄ¶ÁÊ¹ÄÜĞÅºÅ
+    output reg  [31:0]  cpu_raddr,      // Êä³ö¸øÖ÷´æ/ÍâÉèµÄ¶ÁµØÖ·
+    input  wire         dev_rvalid,     // À´×ÔÖ÷´æ/ÍâÉèµÄÊı¾İÓĞĞ§ĞÅºÅ
+    input  wire [127:0] dev_rdata,       // À´×ÔÖ÷´æ/ÍâÉèµÄ¶ÁÊı¾İ
+    input  wire         ren_received,
 
     input wire uncache_rvalid,
     input wire [31:0] uncache_rdata,
@@ -39,17 +40,17 @@ module dcache
     localparam ASKMEM = 3'b001;
     localparam DIRTY_WRITE = 3'b010;
     localparam RETURN = 3'b011;
-    localparam REFILL = 3'b100;
+    localparam REFILL = 3'b100;   //Ğ´»ØÊı¾İ¿é£¬ÏÂÒ»¸öclkÔÙ´ÎĞ´write_data
     localparam UNCACHE = 3'b101;
     
     reg [2:0] state;
     reg [2:0] next_state;
     reg [1:0] dirty [63:0];
-    reg [1:0] use_bit [63:0];  //2'b10æ”¹ç¬¬ä¸€ä¸ª
+    reg [1:0] use_bit [63:0];  //2'b10¸ÄµÚÒ»¸ö
     
     wire [31:0] vaddr_1 = vaddr;      
     wire [5:0] index_1 ;
-    //è¿™é‡Œçš„2è¡¨ç¤ºç›¸æ¯”è¾“å…¥å»¶æ—¶äº†ä¸€ä¸ªclk
+    //ÕâÀïµÄ2±íÊ¾Ïà±ÈÊäÈëÑÓÊ±ÁËÒ»¸öclk
     reg [5:0] index_2;
     reg [31:0] paddr_2;
     reg [31:0] w_data_2;
@@ -57,51 +58,45 @@ module dcache
     reg ren_2;
     reg uncache_2;
 
-    wire [150:0] data_block1;
-    wire [150:0] data_block2;
-    wire [21:0] ram_tag1 = data_block1[149:128];
-    wire [21:0] ram_tag2 = data_block2[149:128];
+    wire [127:0] data_block1;  
+    wire [127:0] data_block2;  
+    wire [22:0] ram_tag1;
+    wire [22:0] ram_tag2;
     wire [1:0] offset_2 = paddr_2[3:2];
     wire [21:0] tag_2 = paddr_2[31:10];
     wire is_load = ren_2;
     wire is_store = |wen_2;
     wire req_2 = is_load | is_store;
-    wire hit1 = req_2 & (tag_2 == ram_tag1) & data_block1[150];
-    wire hit2 = req_2 & (tag_2 == ram_tag2) & data_block2[150];
+    wire hit1 = req_2 & (tag_2 == ram_tag1[21:0]) & ram_tag1[22];
+    wire hit2 = req_2 & (tag_2 == ram_tag2[21:0]) & ram_tag2[22];
     wire hit = hit1 | hit2;
     wire dirty_index = use_bit[index_2] != 2'b10;
-    wire [127:0] hit_data = {128{hit1}}&data_block1[127:0] | {128{hit2}}&data_block2[127:0];
-
+    wire [127:0] hit_data = {128{hit1}}&data_block1 | {128{hit2}}&data_block2;//
+  
     wire write_dirty = !hit & req_2 & dirty[index_2][dirty_index];
     wire ask_mem = !hit & req_2 & !dirty[index_2][dirty_index];
     wire read_index_choose = next_state == IDLE;
-    wire [127:0] attach_block_choose = hit1 ? data_block1[127:0] : data_block2[127:0];
-    reg [127:0] attach_write_data;  //æœ€ç»ˆè¦å†™å›ramçš„æ‹¼æ¥å®Œæˆçš„æ•°æ®å—
-    reg [31:0] block_word_choose;   //æ ¹æ®è¾“å…¥åœ°å€çš„offsetæ¥é€‰åˆ™data blockä¸­çš„å“ªä¸€ä¸ªå­—
-    wire [31:0] wen_2_choose = {{8{wen_2[3]}},{8{wen_2[2]}},{8{wen_2[1]}},{8{wen_2[0]}}}; //æ ¹æ®wenæ¥å°†éœ€è¦å†™å…¥ramçš„éƒ¨åˆ†ï¼ˆwenå¯¹åº”ä½ä¸º1ï¼‰ä¸è¯¥å­—ä¸­ä¸éœ€è¦å†™å…¥ä¸”æ¥è‡ªblockçš„ï¼ˆwenå¯¹åº”ä½ä¸º0ï¼‰è¿›è¡Œæ‹¼æ¥
-    wire [31:0] wen_attach_data = (wen_2_choose&w_data_2)|((~wen_2_choose)&block_word_choose);
+    
+    reg [127:0] attach_write_data;  //×îÖÕÒªĞ´»ØramµÄÆ´½ÓÍê³ÉµÄÊı¾İ¿é
+    reg [15:0] we1_choose;   //×÷Ğ´Ê¹ÄÜÑÚÂë£¬Ò»Î»¿ØÖÆÒ»¸ö×Ö½ÚµÄĞ´Èë
+    reg [15:0] we2_choose;
+
     always @(*)
     begin
         case(offset_2)
-        2'b00:block_word_choose = attach_block_choose[31:0];
-        2'b01:block_word_choose = attach_block_choose[63:32];
-        2'b10:block_word_choose = attach_block_choose[95:64];
-        2'b11:block_word_choose = attach_block_choose[127:96];
-        default:block_word_choose = 32'b0;
-        endcase
-        case(offset_2)
-        2'b00:attach_write_data = {attach_block_choose[127:32],wen_attach_data};
-        2'b01:attach_write_data = {attach_block_choose[127:64],wen_attach_data,attach_block_choose[31:0]};
-        2'b10:attach_write_data = {attach_block_choose[127:96],wen_attach_data,attach_block_choose[63:0]};
-        2'b11:attach_write_data = {wen_attach_data,attach_block_choose[95:0]};
-        default:attach_write_data = 128'b0;
+        2'b00:attach_write_data = dev_rvalid ? dev_rdata : {96'b0,w_data_2};
+        2'b01:attach_write_data = dev_rvalid ? dev_rdata : {64'b0,w_data_2,32'b0};
+        2'b10:attach_write_data = dev_rvalid ? dev_rdata : {32'b0,w_data_2,64'b0};
+        2'b11:attach_write_data = dev_rvalid ? dev_rdata : {w_data_2,96'b0};
+        default:;
         endcase
     end
+    
     assign index_1 = read_index_choose ? vaddr_1[9:4] : index_2;
-    wire write_ram_choose = dev_rvalid;
-    wire [150:0] write_ram_data = write_ram_choose ? {1'b1,tag_2,dev_rdata} : {1'b1,tag_2,attach_write_data};
+    wire [127:0] write_ram_data = dev_rvalid ? dev_rdata : attach_write_data;
+    wire [22:0] write_ram_tag = {1'b1,tag_2};
 
-    assign dcache_ready = next_state == IDLE;
+    assign dcache_ready = next_state == IDLE & state != UNCACHE;
     integer i;
 
     always @(posedge clk) 
@@ -120,11 +115,12 @@ module dcache
             else next_state = IDLE;
         end
         ASKMEM:begin
-            if(dev_rvalid) next_state = REFILL;
+            if(dev_rvalid & ren_2) next_state = RETURN;
+            else if(dev_rvalid) next_state = REFILL;
             else next_state = ASKMEM;
         end
         DIRTY_WRITE:begin 
-            if(!write_dirty) next_state = ASKMEM;  //æ”¹æˆdev_wrdy?
+            if(!write_dirty) next_state = ASKMEM;  //¸Ä³Édev_wrdy?
             else next_state = DIRTY_WRITE;
         end
         RETURN:begin
@@ -169,10 +165,10 @@ module dcache
             end
 
         end
-        else if((state == IDLE | state == RETURN) & (req_2 & hit | !req_2) & (next_state != UNCACHE))  //é—è·¨å–é‹å©šå¹é‘èŠ¥æ™¸é–ºå‚˜å€–ç€šåœ­æ†°æ¸šâ‚¬éæ’»å¼¬éŠˆå——î¶é—è·¨å–é‹å©šå¹ç»Œæ¼·ate == `RETURN
+        else if((next_state == IDLE) & (req_2 & hit | !req_2))  //é–¿ç†¸æ»é·çƒ½æ•“é‚ã‚†å«¹ç‘•ä¾¢ãæ•“é‚ã‚†å«¹é–¿ç†¸æ»é·ç©tate == `RETURN
         begin
-            paddr_2 <= vaddr_1;                         //é—è·¨å–æ¾¹æ¬æ½éî„€î¶é—è·¨å–é‹å©šå¹é‘èŠ¥æ™¸é–ºå‚˜å€–ç€šå½’æŸ¨é”å‘Šç®é–¹é£å…˜éæ’¶æ‚°å¦¤â‚¬é¤æ ­å¹é‘èŠ¥æ™¸é–ºå‚˜å€–ç€šå½’æŸ¨é”å‘Šç®é–¹é£å…˜éæ’»å¼¬éŠˆå——î¶é—è·¨å–•é¡¢æ»ˆå´™éŠˆå——î¶é—è·¨å––å¦¯ä¾€î””æ´ãˆ î¶é—è·¨å–é‹å©šå¹é‘èŠ¥æ™¸é–¹æ´»åæµœçƒ½å¹é‘èŠ¥æ™¸é–ºå‚˜å€–ç€šå½’æŸ¨é•å‚›å«¹
-            uncache_2 <= vaddr_1[31:16] == 16'hbfaf & (ren | (|wen));     //é—è·¨å–é‹å©šå¹é¤îˆ£æ´£é—è·¨å–é‹å©šå¹é‘èŠ¥æ™¸é–ºå‚˜å€–ç€šå½’æŸ¨é”å‘Šç®é–¹é£å…˜éæ’»å¼¬éŠˆå——î¶
+            paddr_2 <= vaddr_1;                         //é–¿ç†·å£™æˆç‚¬å«¹é–¿ç†¸æ»é·çƒ½æ•“é‚ã‚†å«¹é–¿ç†¸æ»é·çƒ½æ•“ç›æ¥¢ãåš–é·çƒ½æ•“é‚ã‚†å«¹é–¿ç†¸æ»é·çƒ½æ•“é‚ã‚†å«¹é–¿ç†»î”œé‘ã‚†å«¹é–¿ç†¼æ¨é¡åº¢å«¹é–¿ç†¸æ»é·çƒ½æ•“é»î…§äº·é·çƒ½æ•“é‚ã‚†å«¹é–¿ç‡‚æ‹·
+            uncache_2 <= vaddr_1[31:16] == 16'hbfaf & (ren | (|wen));     //é–¿ç†¸æ»é·ç–¯î›¦é–¿ç†¸æ»é·çƒ½æ•“é‚ã‚†å«¹é–¿ç†¸æ»é·çƒ½æ•“é‚ã‚†å«¹
             w_data_2 <= write_data;
             wen_2 <= wen;
             ren_2 <= ren;
@@ -184,17 +180,17 @@ module dcache
                 else dirty[index_2][1] <= 1'b1;
             end
         end
-        else if(state == DIRTY_WRITE)   //è¿™æ®µåé¢å¯æ”¹case
+        else if(state == DIRTY_WRITE)   //Õâ¶ÎºóÃæ¿É¸Äcase
         begin
             if(dev_wrdy & !dealing)
             begin
                 cpu_wen <= 4'b1111;
-                cpu_waddr <= paddr_2;
+                cpu_waddr <= use_bit[index_2] == 2'b10 ? {ram_tag1,index_2,4'b0} : {ram_tag2,index_2,4'b0};
                 dealing <= 1'b1;
                 dirty[index_2][dirty_index] <= 1'b0;
                 case(use_bit[index_2])
-                2'b10:cpu_wdata <= data_block1[127:0];
-                2'b01:cpu_wdata <= data_block2[127:0];
+                2'b10:cpu_wdata <= data_block1;
+                2'b01:cpu_wdata <= data_block2;
                 default:cpu_wdata <= 128'b0;
                 endcase
             end
@@ -212,7 +208,7 @@ module dcache
                 cpu_raddr <= paddr_2;
                 dealing <= 1'b1;
             end
-            else if(cpu_ren != 1'b0)
+            else if(ren_received)
             begin
                 cpu_ren <= 1'b0;
             end
@@ -237,8 +233,8 @@ module dcache
             else uncache_dealing <= 1'b1;
         end
     end
-
-    reg [31:0] hit_data_word_choose; //æ ¹æ®offsetæ¥é€‰å‡ºcacheå—çš„4ä¸ªå­—é‡Œå…·ä½“é€‰å“ªä¸€ä¸ª
+//
+    reg [31:0] hit_data_word_choose; //¸ù¾İoffsetÀ´Ñ¡³öcache¿éµÄ4¸ö×ÖÀï¾ßÌåÑ¡ÄÄÒ»¸ö
     always @(*)
     begin
         case(offset_2)
@@ -249,7 +245,7 @@ module dcache
         default:hit_data_word_choose = 32'b0;
         endcase
     end
-
+//
     always @(posedge clk)
     begin
         if(rst)
@@ -278,8 +274,35 @@ module dcache
         end
     end
 
-    wire we1 = (dev_rvalid & (use_bit[index_2]==2'b10)) | (hit1 & is_store);
-    wire we2 = (dev_rvalid & (use_bit[index_2]==2'b01)) | (hit2 & is_store);
+    wire we1 = (dev_rvalid & (use_bit[index_2]==2'b10)) | (hit1 & is_store & state != RETURN);
+    wire we2 = (dev_rvalid & (use_bit[index_2]==2'b01)) | (hit2 & is_store & state != RETURN);
+
+    always @(*)
+    begin
+        case(offset_2)
+        2'b00:begin
+            we1_choose = {16{dev_rvalid & (use_bit[index_2]==2'b10)}} | ({16{(hit1 & is_store)}} & {12'b0,wen_2}) & {16{state != RETURN}};
+            we2_choose = {16{dev_rvalid & (use_bit[index_2]==2'b01)}} | ({16{(hit2 & is_store)}} & {12'b0,wen_2}) & {16{state != RETURN}};
+        end
+        2'b01:begin
+            we1_choose = {16{dev_rvalid & (use_bit[index_2]==2'b10)}} | ({16{(hit1 & is_store)}} & {8'b0,wen_2,4'b0}) & {16{state != RETURN}};
+            we2_choose = {16{dev_rvalid & (use_bit[index_2]==2'b01)}} | ({16{(hit2 & is_store)}} & {8'b0,wen_2,4'b0}) & {16{state != RETURN}};
+        end
+        2'b10:begin
+            we1_choose = {16{dev_rvalid & (use_bit[index_2]==2'b10)}} | ({16{(hit1 & is_store)}} & {4'b0,wen_2,8'b0}) & {16{state != RETURN}};
+            we2_choose = {16{dev_rvalid & (use_bit[index_2]==2'b01)}} | ({16{(hit2 & is_store)}} & {4'b0,wen_2,8'b0}) & {16{state != RETURN}};
+        end
+        2'b11:begin
+            we1_choose = {16{dev_rvalid & (use_bit[index_2]==2'b10)}} | ({16{(hit1 & is_store)}} & {wen_2,12'b0}) & {16{state != RETURN}};
+            we2_choose = {16{dev_rvalid & (use_bit[index_2]==2'b01)}} | ({16{(hit2 & is_store)}} & {wen_2,12'b0}) & {16{state != RETURN}};
+        end
+        default:begin
+            we1_choose = 16'b0;
+            we2_choose = 16'b0;
+        end
+        endcase
+    end
+    /*
     dcache_ram ram1
     (
         .clk(clk),
@@ -300,6 +323,53 @@ module dcache
         .rst(rst),
         .data_in(write_ram_data),
         .data_out(data_block2)
+    );
+    */
+
+    dcache_dram data_ram1  //128
+    (
+        .clka(clk),
+        .addra(index_2),
+        .dina(write_ram_data),
+        .wea(we1_choose),
+
+        .clkb(clk),
+        .addrb(index_1),
+        .doutb(data_block1)
+    );
+
+    dcache_dram data_ram2
+    (
+        .clka(clk),
+        .addra(index_2),
+        .dina(write_ram_data),
+        .wea(we2_choose),
+
+        .clkb(clk),
+        .addrb(index_1),
+        .doutb(data_block2)
+    );
+    dcache_bram tag_bram1
+    (
+        .clka(clk),
+        .addra(index_2),
+        .dina(write_ram_tag),
+        .wea(we1),
+
+        .clkb(clk),
+        .addrb(index_1),
+        .doutb(ram_tag1)
+    );
+    dcache_bram tag_bram2
+    (
+        .clka(clk),
+        .addra(index_2),
+        .dina(write_ram_tag),
+        .wea(we2),
+
+        .clkb(clk),
+        .addrb(index_1),
+        .doutb(ram_tag2)
     );
 
     assign uncache_ren = (state == UNCACHE) & dev_rrdy & ren_2 & !uncache_rvalid;

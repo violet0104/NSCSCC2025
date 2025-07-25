@@ -333,12 +333,14 @@ module mycpu_top(
     );
 
     wire icache_ren_received;
+    wire dcache_ren_received;
+    wire icache_flush_flag_valid;
 
     icache u_icache
     (
         .clk(aclk),
         .rst(rst),   
-        .flush(BPU_flush | flush_o[1]),       
+        .flush(flush_o[1]),       
     // Interface to CPU
         .inst_rreq(inst_rreq),  // 闁跨喐鏋婚幏鐑芥晸閺傘倖瀚笴PU闁跨喐鏋婚幏宄板絿閹稿洭鏁撻弬銈嗗闁跨喐鏋婚幏锟?
         .inst_addr(inst_addr),      // 闁跨喐鏋婚幏鐑芥晸閺傘倖瀚笴PU闁跨喐鏋婚幏宄板絿閹稿洭鏁撻弬銈嗗閸р偓
@@ -366,7 +368,8 @@ module mycpu_top(
         .cpu_raddr(icache_araddr),      
         .dev_rvalid(icache_rvalid),     
         .dev_rdata(icache_rdata),
-        .ren_received(icache_ren_received)   
+        .ren_received(icache_ren_received),
+        .flush_flag_valid(icache_flush_flag_valid)   
     );
 
     wire debug_wb_valid1;
@@ -408,6 +411,7 @@ module mycpu_top(
         .cpu_raddr(dcache_araddr),      
         .dev_rvalid(dcache_rvalid),     
         .dev_rdata(dcache_axi_data_block),
+        .ren_received(dcache_ren_received),
     //duncache to cache_axi
         .uncache_rvalid(duncache_rvalid),
         .uncache_rdata(duncache_rdata),
@@ -495,12 +499,14 @@ module mycpu_top(
         .inst_rvalid_o(icache_rvalid),
         .inst_rdata_o(icache_rdata),
         .icache_ren_received(icache_ren_received),
+        .icache_flush_flag_valid(icache_flush_flag_valid),
 
     //dcache read
         .data_ren_i(dcache_ren),
         .data_araddr_i(dcache_araddr),
         .data_rvalid_o(dcache_rvalid),
         .data_rdata_o(dcache_axi_data_block),
+        .dcache_ren_received(dcache_ren_received),
 
     //dcache write
         .data_wen_i(dcache_wen),
