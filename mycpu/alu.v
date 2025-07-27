@@ -149,7 +149,11 @@ module alu (
     assign pause_ex_mul = is_mul && !mul_done;      // 乘法未完成时暂停
 
     always @(posedge clk) begin
-        if (start_mul) begin
+        if (rst) begin
+            start_mul <= 1'b0 ;
+            mul_data1 <= 32'b0;
+            mul_data2 <= 32'b0;
+        end else if (start_mul) begin
             start_mul <= 1'b0;
         end else if (is_mul) begin
             start_mul <= 1'b1;
@@ -211,7 +215,12 @@ module alu (
 
     always @(posedge clk) 
     begin
-        if (start_div)
+        if (rst) begin
+            start_div <= 1'b0 ;
+            div_data1 <= 32'b0;
+            div_data2 <= 32'b0;
+        end
+        else if (start_div)
         begin
             start_div <= 1'b0;
         end 

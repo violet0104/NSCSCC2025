@@ -8,20 +8,20 @@ module dcache
     input wire [31:0] vaddr,
     input wire [31:0] write_data,
     output reg [31:0] rdata,
-    output reg rdata_valid,    // Êä³ö¸øCPUµÄÊý¾ÝÓÐÐ§ÐÅºÅ£¨¸ßµçÆ½±íÊ¾DCacheÒÑ×¼±¸ºÃÊý¾Ý£©
+    output reg rdata_valid,    // ï¿½ï¿½ï¿½ï¿½ï¿½CPUï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð§ï¿½ÅºÅ£ï¿½ï¿½ßµï¿½Æ½ï¿½ï¿½Ê¾DCacheï¿½ï¿½×¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý£ï¿½
     output wire dcache_ready,   
     //to write BUS
-    input  wire         dev_wrdy,       // é–Ö÷´æ/ÍâÉèµÄÐ´¾ÍÐ÷ÐÅºÅ£¨¸ßµçÆ½±íÊ¾Ö÷´æ/ÍâÉè¿É½ÓÊÕDCacheµÄÐ´ÇëÇó£©
+    input  wire         dev_wrdy,       // ï¿½ï¿½ï¿½ï¿½ï¿½/ï¿½ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½ï¿½ï¿½ÅºÅ£ï¿½ï¿½ßµï¿½Æ½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½/ï¿½ï¿½ï¿½ï¿½É½ï¿½ï¿½ï¿½DCacheï¿½ï¿½Ð´ï¿½ï¿½ï¿½ï¿½
     input  wire         write_finish,
-    output reg  [ 3:0]  cpu_wen,        // Êä³ö¸øÖ÷´æ/ÍâÉèµÄÐ´Ê¹ÄÜÐÅºÅ
-    output reg  [31:0]  cpu_waddr,      // Êä³ö¸øÖ÷´æ/ÍâÉèµÄÐ´µØÖ·
-    output reg  [127:0]  cpu_wdata,      // Êä³ö¸øÖ÷´æ/ÍâÉèµÄÐ´Êý¾Ý
+    output reg  [ 3:0]  cpu_wen,        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½/ï¿½ï¿½ï¿½ï¿½ï¿½Ð´Ê¹ï¿½ï¿½ï¿½Åºï¿½
+    output reg  [31:0]  cpu_waddr,      // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½/ï¿½ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½Ö·
+    output reg  [127:0]  cpu_wdata,      // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½/ï¿½ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½ï¿½
     //to Read Bus
-    input  wire         dev_rrdy,       // Ö÷´æ/ÍâÉèµÄ¶Á¾ÍÐ÷ÐÅºÅ£¨¸ßµçÆ½±íÊ¾Ö÷´æ/ÍâÉè¿É½ÓÊÕDCacheµÄ¶ÁÇëÇó£©
-    output reg          cpu_ren,        // Êä³ö¸øÖ÷´æ/ÍâÉèµÄ¶ÁÊ¹ÄÜÐÅºÅ
-    output reg  [31:0]  cpu_raddr,      // Êä³ö¸øÖ÷´æ/ÍâÉèµÄ¶ÁµØÖ·
-    input  wire         dev_rvalid,     // À´×ÔÖ÷´æ/ÍâÉèµÄÊý¾ÝÓÐÐ§ÐÅºÅ
-    input  wire [127:0] dev_rdata,       // À´×ÔÖ÷´æ/ÍâÉèµÄ¶ÁÊý¾Ý
+    input  wire         dev_rrdy,       // ï¿½ï¿½ï¿½ï¿½/ï¿½ï¿½ï¿½ï¿½Ä¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÅºÅ£ï¿½ï¿½ßµï¿½Æ½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½/ï¿½ï¿½ï¿½ï¿½É½ï¿½ï¿½ï¿½DCacheï¿½Ä¶ï¿½ï¿½ï¿½ï¿½ï¿½
+    output reg          cpu_ren,        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½/ï¿½ï¿½ï¿½ï¿½Ä¶ï¿½Ê¹ï¿½ï¿½ï¿½Åºï¿½
+    output reg  [31:0]  cpu_raddr,      // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½/ï¿½ï¿½ï¿½ï¿½Ä¶ï¿½ï¿½ï¿½Ö·
+    input  wire         dev_rvalid,     // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½/ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð§ï¿½Åºï¿½
+    input  wire [127:0] dev_rdata,       // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½/ï¿½ï¿½ï¿½ï¿½Ä¶ï¿½ï¿½ï¿½ï¿½ï¿½
     input  wire         ren_received,
 
     input wire uncache_rvalid,
@@ -40,17 +40,17 @@ module dcache
     localparam ASKMEM = 3'b001;
     localparam DIRTY_WRITE = 3'b010;
     localparam RETURN = 3'b011;
-    localparam REFILL = 3'b100;   //Ð´»ØÊý¾Ý¿é£¬ÏÂÒ»¸öclkÔÙ´ÎÐ´write_data
+    localparam REFILL = 3'b100;   //Ð´ï¿½ï¿½ï¿½ï¿½ï¿½Ý¿é£¬ï¿½ï¿½Ò»ï¿½ï¿½clkï¿½Ù´ï¿½Ð´write_data
     localparam UNCACHE = 3'b101;
     
     reg [2:0] state;
     reg [2:0] next_state;
     reg [1:0] dirty [63:0];
-    reg [1:0] use_bit [63:0];  //2'b10¸ÄµÚÒ»¸ö
+    reg [1:0] use_bit [63:0];  //2'b10ï¿½Äµï¿½Ò»ï¿½ï¿½
     
     wire [31:0] vaddr_1 = vaddr;      
     wire [5:0] index_1 ;
-    //ÕâÀïµÄ2±íÊ¾Ïà±ÈÊäÈëÑÓÊ±ÁËÒ»¸öclk
+    //ï¿½ï¿½ï¿½ï¿½ï¿½2ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½Ò»ï¿½ï¿½clk
     reg [5:0] index_2;
     reg [31:0] paddr_2;
     reg [31:0] w_data_2;
@@ -77,8 +77,8 @@ module dcache
     wire ask_mem = !hit & req_2 & !dirty[index_2][dirty_index];
     wire read_index_choose = next_state == IDLE;
     
-    reg [127:0] attach_write_data;  //×îÖÕÒªÐ´»ØramµÄÆ´½ÓÍê³ÉµÄÊý¾Ý¿é
-    reg [15:0] we1_choose;   //×÷Ð´Ê¹ÄÜÑÚÂë£¬Ò»Î»¿ØÖÆÒ»¸ö×Ö½ÚµÄÐ´Èë
+    reg [127:0] attach_write_data;  //ï¿½ï¿½ï¿½ï¿½ÒªÐ´ï¿½ï¿½ramï¿½ï¿½Æ´ï¿½ï¿½ï¿½ï¿½Éµï¿½ï¿½ï¿½ï¿½Ý¿ï¿½
+    reg [15:0] we1_choose;   //ï¿½ï¿½Ð´Ê¹ï¿½ï¿½ï¿½ï¿½ï¿½ë£¬Ò»Î»ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Ö½Úµï¿½Ð´ï¿½ï¿½
     reg [15:0] we2_choose;
 
     always @(*)
@@ -120,7 +120,7 @@ module dcache
             else next_state = ASKMEM;
         end
         DIRTY_WRITE:begin 
-            if(!write_dirty) next_state = ASKMEM;  //¸Ä³Édev_wrdy?
+            if(!write_dirty) next_state = ASKMEM;  //ï¿½Ä³ï¿½dev_wrdy?
             else next_state = DIRTY_WRITE;
         end
         RETURN:begin
@@ -141,7 +141,7 @@ module dcache
     reg dealing;
     reg uncache_dealing;
 
-    always @(posedge clk or negedge rst)
+    always @(posedge clk)
     begin
         if(rst)
         begin
@@ -157,17 +157,16 @@ module dcache
             cpu_wdata <= 128'b0;
             dealing <= 1'b0;
             uncache_dealing <= 1'b0;
+            uncache_2 <= 1'b0;
 
             for(i=0;i<64;i=i+1)
             begin
                 dirty[i] <= 2'b00;
-                use_bit[i] <= 2'b10;
             end
-
         end
-        else if((next_state == IDLE) & (req_2 & hit | !req_2))  //é–¿ç†¸æž»éŽ·çƒ½æ•“é‚ã‚†å«¹ç‘•ä¾¢ãæ•“é‚ã‚†å«¹é–¿ç†¸æž»éŽ·ç©tate == `RETURN
+        else if((next_state == IDLE) & (req_2 & hit | !req_2))  //é–¿ç†¸æž»éŽ·çƒ½æ•“é‚ã‚†å«¹ç‘•ä¾¢ï¿½æ•“é‚ã‚†å«¹é–¿ç†¸æž»éŽ·ç©tate == `RETURN
         begin
-            paddr_2 <= vaddr_1;                         //é–¿ç†·å£™æˆç‚¬å«¹é–¿ç†¸æž»éŽ·çƒ½æ•“é‚ã‚†å«¹é–¿ç†¸æž»éŽ·çƒ½æ•“ç›æ¥¢ãåš–éŽ·çƒ½æ•“é‚ã‚†å«¹é–¿ç†¸æž»éŽ·çƒ½æ•“é‚ã‚†å«¹é–¿ç†»î”œé‘ã‚†å«¹é–¿ç†¼æ¨é¡åº¢å«¹é–¿ç†¸æž»éŽ·çƒ½æ•“éŽ»î…§äº·éŽ·çƒ½æ•“é‚ã‚†å«¹é–¿ç‡‚æ‹·
+            paddr_2 <= vaddr_1;                         //é–¿ç†·å£™æˆç‚¬å«¹é–¿ç†¸æž»éŽ·çƒ½æ•“é‚ã‚†å«¹é–¿ç†¸æž»éŽ·çƒ½æ•“ç›æ¥¢ï¿½åš–éŽ·çƒ½æ•“é‚ã‚†å«¹é–¿ç†¸æž»éŽ·çƒ½æ•“é‚ã‚†å«¹é–¿ç†»î”œé‘ã‚†å«¹é–¿ç†¼æ¨é¡åº¢å«¹é–¿ç†¸æž»éŽ·çƒ½æ•“éŽ»î…§äº·éŽ·çƒ½æ•“é‚ã‚†å«¹é–¿ç‡‚æ‹·
             uncache_2 <= vaddr_1[31:16] == 16'hbfaf & (ren | (|wen));     //é–¿ç†¸æž»éŽ·ç–¯î›¦é–¿ç†¸æž»éŽ·çƒ½æ•“é‚ã‚†å«¹é–¿ç†¸æž»éŽ·çƒ½æ•“é‚ã‚†å«¹
             w_data_2 <= write_data;
             wen_2 <= wen;
@@ -180,7 +179,7 @@ module dcache
                 else dirty[index_2][1] <= 1'b1;
             end
         end
-        else if(state == DIRTY_WRITE)   //Õâ¶ÎºóÃæ¿É¸Äcase
+        else if(state == DIRTY_WRITE)   //ï¿½ï¿½Îºï¿½ï¿½ï¿½É¸ï¿½case
         begin
             if(dev_wrdy & !dealing)
             begin
@@ -234,7 +233,7 @@ module dcache
         end
     end
 //
-    reg [31:0] hit_data_word_choose; //¸ù¾ÝoffsetÀ´Ñ¡³öcache¿éµÄ4¸ö×ÖÀï¾ßÌåÑ¡ÄÄÒ»¸ö
+    reg [31:0] hit_data_word_choose; //ï¿½ï¿½ï¿½ï¿½offsetï¿½ï¿½Ñ¡ï¿½ï¿½cacheï¿½ï¿½ï¿½4ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¡ï¿½ï¿½Ò»ï¿½ï¿½
     always @(*)
     begin
         case(offset_2)
@@ -252,6 +251,10 @@ module dcache
         begin
             rdata <= 32'b0;
             rdata_valid <= 1'b0;
+            for(i=0;i<64;i=i+1)
+            begin
+                use_bit[i] <= 2'b10;
+            end
         end
         else if(state == UNCACHE & uncache_rvalid)
         begin

@@ -6,7 +6,7 @@ module pc
     input wire clk,
     input wire rst,
     input wire stall,     //停顿信号
-    input wire iuncache,  //控制是否使用缓存的的信号，决定使用pc4还是pc8
+    input wire iuncache,  //控制是否使用缓存的的信号，决定使用pc4还是pc8（这个没用到？？）
 
     //后端给的分支真实情况
     input wire flush,     //强制更新信号

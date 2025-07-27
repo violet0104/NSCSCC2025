@@ -595,7 +595,7 @@ module csr (
         end
     end
 
-    //tval
+    //tval（这个不知道要不要复位？？）
     always @(posedge clk) begin
         if (tcfg_wen) begin
             tval <= {csr_write_data_i[31:2], 2'b0};

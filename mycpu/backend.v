@@ -5,11 +5,10 @@
 module backend (
     input wire clk,
     input wire rst,
-/*****************************
-    不知道什么意思
+
     // from outer
     input wire [7:0] is_hwi,
-******************************/
+
 
     // 来自前端的信号
     input wire [31:0] pc_i1,
@@ -28,7 +27,7 @@ module backend (
     input wire [6:0] instbuffer_exception_cause1_i,
     input wire [6:0] instbuffer_exception_cause2_i,
 
-    input wire bpu_flush,      // 分支预测错误，清空译码队列
+    input wire bpu_flush,      // 分支预测错误，清空译码队列（这个没用到？？）
 
 
 /*****************************
@@ -1152,7 +1151,7 @@ module backend (
     
         // from outer（不知道是什么）
         .is_ipi(1'b0), //接0
-        .is_hwi(8'b0),//mytop输入的
+        .is_hwi(is_hwi),//mytop输入的
 
 
         // 和ctrl的接口

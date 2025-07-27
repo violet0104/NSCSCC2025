@@ -66,7 +66,7 @@ module execute (
     // 和dcache的接口
     input wire dcache_pause_i,       // 写/读dache 暂停信号 （接dache的write_finish）          
       
-    output wire [3:0]  ren_o,                // dcache读使能信号
+    output wire ren_o,                // dcache读使能信号
     output wire [3:0]  wstrb_o,              // dcache写使能信号
     output wire [31:0] virtual_addr_o,      // dcache虚拟地址
     output wire [31:0] wdata_o,             // dcache写数据
@@ -229,7 +229,7 @@ module execute (
 
     assign dcache_pause = dcache_pause_i;
 
-    assign ren_o = dcache_pause_i ? 4'h0 : (valid_o[0] ? ren1 : ren2);
+    assign ren_o = dcache_pause_i ? 1'b0 : (valid_o[0] ? ren1 : ren2);
     assign wstrb_o = dcache_pause_i ? 4'h0  : (valid_o[0] ? wstrb1 : wstrb2);
     assign virtual_addr_o = dcache_pause_i ? 32'h0 : (valid_o[0] ? virtual_addr1: virtual_addr2);
     assign wdata_o = dcache_pause_i ? 32'b0 : (valid_o[0] ? wdata1 : wdata2);
@@ -503,16 +503,11 @@ module execute (
             dispatch_exception_cause2_o <= 7'b0;
             execute_exception_cause1_o <= 7'b0;
             execute_exception_cause2_o <= 7'b0; 
-            is_privilege_mem[0] <= 1'b0;
-            is_privilege_mem[1] <= 1'b0;
-            is_ertn_mem[0] <= 1'b0;
-            is_ertn_mem[1] <= 1'b0;
-            is_idle_mem[0] <= 1'b0;
-            is_idle_mem[1] <= 1'b0;
-            valid_mem[0] <= 1'b0;
-            valid_mem[1] <= 1'b0;
-            reg_write_en_mem[0] <= 1'b0;
-            reg_write_en_mem[1] <= 1'b0;
+            is_privilege_mem <= 2'b0;
+            is_ertn_mem      <= 2'b0;
+            is_idle_mem      <= 2'b0;
+            valid_mem        <= 2'b0;
+            reg_write_en_mem <= 2'b0;
             reg_write_addr1_mem <= 5'b0;
             reg_write_addr2_mem <= 5'b0;
             reg_write_data1_mem <= 32'b0;
@@ -523,14 +518,12 @@ module execute (
             addr2_mem  <= 32'b0;
             data1_mem  <= 32'b0;
             data2_mem  <= 32'b0;
-            csr_write_en_mem[0] <= 1'b0;
-            csr_write_en_mem[1] <= 1'b0;
+            csr_write_en_mem <= 2'b0;
             csr_addr1_mem <= 14'b0;
             csr_addr2_mem <= 14'b0;
             csr_write_data1_mem <= 32'b0;
             csr_write_data2_mem <= 32'b0;
-            is_llw_scw_mem[0] <= 1'b0;
-            is_llw_scw_mem[1] <= 1'b0;
+            is_llw_scw_mem <= 2'b0;
         end 
         else if (!pause) 
         begin

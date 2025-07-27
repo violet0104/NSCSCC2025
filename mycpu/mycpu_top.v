@@ -50,12 +50,11 @@ module mycpu_top(
     output wire [31:0] debug_wb_pc,    
     output wire [ 3:0] debug_wb_rf_we,
     output wire [ 4:0] debug_wb_rf_wnum,
-    output wire [31:0] debug_wb_rf_wdata,
-    output wire [31:0] debug_wb_inst
+    output wire [31:0] debug_wb_rf_wdata
 
 );
     wire rst;
-    assign rst = ~aresetn;
+    assign rst = !aresetn;
 
     wire icache_ren;
     wire [31:0] icache_araddr;
@@ -95,7 +94,7 @@ module mycpu_top(
     wire [2:0] cache_brust_size;
     assign cache_brust_size = 3'b010;
 
-    //icache  闁跨喐鏋婚幏宄板闁跨喐鏋婚幏閿嬆侀柨鐔告灮閹烽攱鍘遍柨鐔告灮閹风兘鏁撻弬銈嗗閽樻洟鏁撻敓锟?**********************
+    //icache  闁跨喐鏋婚幏宄板闁跨喐鏋婚幏閿嬆侀柨鐔告灮閹烽攱鍘遍柨鐔告灮閹风兘鏁撻弬銈嗗閽樻洟鏁撻敓�??**********************
     wire BPU_flush;
     wire inst_rreq;
     wire [31:0] inst_addr;
@@ -153,18 +152,18 @@ module mycpu_top(
     wire [7:0] flush_o;
     wire [7:0] pause_o;
 
-    // 闁跨喐鏋婚幏椋庡剨闁跨噦鎷? dcache 闁跨喐鏋婚幏鐑芥晸閼存氨灏ㄩ幏锟?
+    // 闁跨喐鏋婚幏椋庡剨闁跨噦�?? dcache 闁跨喐鏋婚幏鐑芥晸閼存氨灏ㄩ幏锟?
     wire  backend_dcache_ren;
     wire [3:0]  backend_dcache_wen;
     wire [31:0] backend_dcache_addr;
     wire [31:0] backend_dcache_write_data;
 
-    // dcache 闁跨喐鏋婚幏鐑芥晸閺傘倖瀚圭拠鎾晸閺傘倖瀚归挊鏇㈡晸閿燂拷
+    // dcache 闁跨喐鏋婚幏鐑芥晸閺傘�?��?�圭拠鎾晸閺傘倖�?�归挊鏇㈡晸閿燂�?
     wire [31:0] dcache_backend_rdata;
     wire dcache_backend_rdata_valid;
     wire dcache_ready;
 
-    // dcache-AXI 闁跨喐鏋婚幏鐑芥晸閺傘倖瀚? cache 闁跨喐甯撮崠鈩冨闁跨喕鍓奸悮瀛樺
+    // dcache-AXI 闁跨喐鏋婚幏鐑芥晸閺傘�?��??? cache 闁跨喐甯撮崠鈩冨闁跨喕鍓奸悮�?�樺�?
     wire dev_rrdy_to_cache;
     wire dev_wrdy_to_cache;
 
@@ -183,15 +182,15 @@ module mycpu_top(
 
     front u_front
     (
-        // 闁跨喐鏋婚幏鐑芥晸閺傘倖瀚?
+        // 闁跨喐鏋婚幏鐑芥晸閺傘�?��???
         .cpu_clk(aclk),
         .cpu_rst(rst),
 
-        .iuncache(iuncache),//闁跨喐鏋婚幏椋庣叀闁跨喐鏋婚幏鐑芥晸閼存氨灏ㄩ幏鐑芥晸閺傘倖瀚瑰┃锟?       //(闁跨喐鏋婚幏鐑芥晸缁茬垜ncache闁跨喕鍓奸悮瀛樺)
+        .iuncache(iuncache),//闁跨喐鏋婚幏椋庣�?闁跨喐鏋婚幏鐑芥晸閼存氨灏ㄩ幏鐑芥晸閺傘倖�?�瑰┃锟?       //(闁跨喐鏋婚幏鐑芥晸缁茬垜ncache闁跨喕鍓奸悮瀛樺�?)
 
-        // 闁跨喐鏋婚幏鐑芥晸閺傘倖瀚? icache 闁跨喐鏋婚幏鐑芥晸閼存氨灏ㄩ幏锟?
+        // 闁跨喐鏋婚幏鐑芥晸閺傘�?��??? icache 闁跨喐鏋婚幏鐑芥晸閼存氨灏ㄩ幏锟?
         .pred_taken(BPU_pred_taken),
-        .pi_icache_is_exception1(pi_icache_is_exception1),      //闁跨喐鏋婚幏绌抍ache闁跨喐鏋婚幏鐑芥晸閺傘倖瀚归柨鐔告灮閹风兘鏁撻弬銈嗗闁跨喐鏋婚幏鐑芥晸閺傘倖瀚归柨鐔告灮閹烽攱浼?
+        .pi_icache_is_exception1(pi_icache_is_exception1),      //闁跨喐鏋婚幏绌抍ache闁跨喐鏋婚幏鐑芥晸閺傘�?��?�归柨鐔告灮閹风兘鏁撻弬銈嗗闁跨喐鏋婚幏鐑芥晸閺傘倖�?�归柨鐔告灮閹烽攱浼?
         .pi_icache_is_exception2(pi_icache_is_exception2),
         .pi_icache_exception_cause1(pi_icache_exception_cause1),  
         .pi_icache_exception_cause2(pi_icache_exception_cause2),
@@ -205,7 +204,7 @@ module mycpu_top(
         .icache_inst_valid(icache_inst_valid),
 
     // *******************
-        .fb_flush({flush_o[2],flush_o[0]}), //闁跨喐鏋婚幏鐑芥晸閺傘倖瀚归柨鐔告灮閹风兘鏁撻弬銈嗗闁跨喕濞囬搴㈠闁跨喕顢滆皭閵堝繑瀚归柨鐔告灮閹风兘鏁撶憲鐕傜礉绾板瀚归柨鐔兼應閻氬瓨瀚归柨鐔告灮閹风兘鏁撶憴鎺戝簻閹烽攱婀愰柨鐔告灮閹峰嘲浼旈柨鐔虹lush闁跨喕鍓奸崣鍑ょ秶閹风兘鏁撶憴鎺楁交閹风兘鏁撻懘姘娇閸栤剝瀚归柨鐔告灮閹峰嘲鍨归崢濠氭晸閺傘倖瀚归崜宥夋晸閸撹法顣幏绌妏u闁跨喐鏋婚幏鐑芥晸閺傘倖瀚圭痪閬嶆晸閺傘倖瀚归柨鐔告灮閹峰嘲宓忛搹楣冩晸缁叉姬ush闁跨喕鍓奸崣椋庮暜閹风兘鏁撻弬銈嗗闁跨喓鍗抽敐蹇斿闁跨喐鏋婚幏鐑芥晸閺傘倖瀚规稉鈧柨鐔告灮閹峰嘲骞撻柨鐔告灮閹风⿴ront/pc闁跨喐鏋婚幏鐑芥晸閺傘倖瀚归柨鐔峰建绾板瀚箌閸撳秹鏁撻弬銈嗗闁跨喓绂巄_flush
+        .fb_flush({flush_o[2],flush_o[0]}), //闁跨喐鏋婚幏鐑芥晸閺傘�?��?�归柨鐔告灮閹风兘鏁撻弬銈嗗闁跨喕濞囬搴㈠闁跨喕顢滆皭閵堝繑�?�归柨鐔告灮閹风兘鏁撶憲鐕傜礉绾板瀚归柨鐔兼應閻氬瓨�?�归柨鐔告灮閹风兘鏁撶憴鎺戝簻閹烽攱�?愰柨鐔告灮閹峰嘲浼旈柨鐔虹lush闁跨喕鍓奸崣鍑ょ秶閹风兘鏁撶憴鎺楁交閹风兘鏁撻懘姘娇閸栤剝瀚归柨鐔告灮閹峰嘲鍨归崢濠氭晸閺傘�?��?�归崜宥夋晸閸撹法顣�?幏绌妏u闁跨喐鏋婚幏鐑芥晸閺傘�?��?�圭痪閬嶆晸閺傘倖�?�归柨鐔告灮閹峰嘲宓忛搹楣冩晸缁叉姬ush闁跨喕鍓奸崣椋庮暜閹风兘鏁撻弬銈嗗闁跨喓鍗抽敐蹇斿闁跨喐鏋婚幏鐑芥晸閺傘倖�?�规稉鈧柨鐔告灮閹峰嘲骞撻柨鐔告灮閹风⿴ront/pc闁跨喐鏋婚幏鐑芥晸閺傘�?��?�归柨鐔峰建绾板�?�箌閸撳秹鏁撻弬銈嗗闁跨喓绂巄_flush
         .fb_pause({pause_o[2],pause_o[0]}),
         .fb_interrupt(1'b0),       
 //        .fb_new_pc(32'b0),
@@ -218,7 +217,7 @@ module mycpu_top(
         .pi_is_exception(pi_is_exception),
         .pi_exception_cause(pi_exception_cause),
 
-        // 闁跨喐鏋婚幏鐑芥晸閻ㄥ棛灏ㄩ幏鐤嚛闁跨喐鏋婚幏鐤闁跨噦鎷?
+        // 闁跨喐鏋婚幏鐑芥晸閻ㄥ棛灏ㄩ幏鐤嚛闁跨喐鏋婚幏鐤闁跨噦�??
         .ex_is_bj(ex_is_bj),
         .ex_pc1(ex_pc1),
         .ex_pc2(ex_pc2),
@@ -230,7 +229,7 @@ module mycpu_top(
         .pred_addr2(ex_pred_addr2),
         .get_data_req(get_data_req),
 
-        // 闁跨喐鏋婚幏鐑芥晸閺傘倖瀚归柨鐔告灮閹风兘鏁撻崜璺暜閹风兘鏁撻懘姘卞皑閹凤拷
+        // 闁跨喐鏋婚幏鐑芥晸閺傘�?��?�归柨鐔告灮閹风兘鏁撻崜璺暜閹风兘鏁撻懘姘卞皑閹凤�?
         .fb_pred_taken1(fb_pred_taken1),
         .fb_pred_taken2(fb_pred_taken2),
         .fb_pc_out1(fb_pc1),
@@ -252,8 +251,11 @@ module mycpu_top(
     backend u_backend(
         .clk(aclk),
         .rst(rst),
+
+        // from outer
+        .is_hwi(ext_int),
         
-        // 闁跨喐鏋婚幏鐑芥晸閺傘倖瀚归崜宥夋晸閸撹法顣幏鐑芥晸閼存氨灏ㄩ幏锟?
+        // 闁跨喐鏋婚幏鐑芥晸閺傘�?��?�归崜宥夋晸閸撹法顣�?幏鐑芥晸閼存氨灏ㄩ幏�??
         .new_pc(new_pc_from_ctrl),
         .pc_i1(fb_pc1),
         .pc_i2(fb_pc2),
@@ -270,9 +272,9 @@ module mycpu_top(
         .instbuffer_exception_cause1_i(fb_instbuffer_exception_cause1),
         .instbuffer_exception_cause2_i(fb_instbuffer_exception_cause2),
 
-        .bpu_flush(BPU_flush),   // 闁跨喐鏋婚幏閿嬫暜妫板嫰鏁撻弬銈嗗闁跨喐鏋婚幏鐑芥晸閺傘倖瀚归柨鐔告灮閹风兘鏁撻弬銈嗗闁跨喐鏋婚幏鐑芥晸閺傘倖瀚归柨鐕傛嫹
+        .bpu_flush(BPU_flush),   // 闁跨喐鏋婚幏閿嬫暜妫板嫰鏁撻弬銈嗗闁跨喐鏋婚幏鐑芥晸閺傘�?��?�归柨鐔告灮閹风兘鏁撻弬銈嗗闁跨喐鏋婚幏鐑芥晸閺傘倖�?�归柨鐕傛嫹
     
-        // 闁跨喐鏋婚幏鐑芥晸閺傘倖瀚归柨鐔活潡鐢喗瀚圭拠鎾晸閺傘倖瀚归挊鏇㈡晸閿燂拷
+        // 闁跨喐鏋婚幏鐑芥晸閺傘�?��?�归柨鐔活潡鐢喗�?�圭拠鎾晸閺傘倖�?�归挊鏇㈡晸閿燂�?
         .ex_bpu_is_bj(ex_is_bj),
         .ex_pc1(ex_pc1),
         .ex_pc2(ex_pc2),
@@ -302,18 +304,18 @@ module mycpu_top(
         .csr_datm(),
 ***********************************/
 
-        // 闁跨喐鏋婚幏鐑芥晸閺傘倖瀚归柨鐕傛嫹 dcache 闁跨喐鏋婚幏鐑芥晸閼存氨灏ㄩ幏锟?
+        // 闁跨喐鏋婚幏鐑芥晸閺傘�?��?�归柨鐕傛嫹 dcache 闁跨喐鏋婚幏鐑芥晸閼存氨灏ㄩ幏锟?
         .ren_o(backend_dcache_ren),
         .wstrb_o(backend_dcache_wen),
         .virtual_addr_o(backend_dcache_addr),
         .wdata_o(backend_dcache_write_data),
 
-        // dcache 闁跨喐鏋婚幏鐑芥晸閹搭亞顣幏鐑芥晸閼存氨灏ㄩ幏锟?
+        // dcache 闁跨喐鏋婚幏鐑芥晸閹搭亞顣幏鐑芥晸閼存氨灏ㄩ幏�??
         .rdata_i(dcache_rdata),
         .rdata_valid_i(dcache_backend_rdata_valid),
         .dcache_pause_i(~dcache_ready),
 
-        // 闁跨喐鏋婚幏绌媡rl闁跨喐鏋婚幏鐑芥晸閺傘倖瀚归柨鐔告灮閹风柉妫旈悧娑㈡晸閿燂拷8娴ｅ秹鏁撻弬銈嗗
+        // 闁跨喐鏋婚幏绌媡rl闁跨喐鏋婚幏鐑芥晸閺傘�?��?�归柨鐔告灮閹风柉妫旈悧娑㈡晸閿燂拷8娴ｅ秹鏁撻弬銈嗗�?
         .flush_o(flush_o),
         .pause_o(pause_o),
         
@@ -342,8 +344,8 @@ module mycpu_top(
         .rst(rst),   
         .flush(flush_o[1]),       
     // Interface to CPU
-        .inst_rreq(inst_rreq),  // 闁跨喐鏋婚幏鐑芥晸閺傘倖瀚笴PU闁跨喐鏋婚幏宄板絿閹稿洭鏁撻弬銈嗗闁跨喐鏋婚幏锟?
-        .inst_addr(inst_addr),      // 闁跨喐鏋婚幏鐑芥晸閺傘倖瀚笴PU闁跨喐鏋婚幏宄板絿閹稿洭鏁撻弬銈嗗閸р偓
+        .inst_rreq(inst_rreq),  // 闁跨喐鏋婚幏鐑芥晸閺傘�?��?�笴PU闁跨喐鏋婚幏宄板絿閹稿洭鏁撻弬銈嗗闁跨喐鏋婚幏�??
+        .inst_addr(inst_addr),      // 闁跨喐鏋婚幏鐑芥晸閺傘�?��?�笴PU闁跨喐鏋婚幏宄板絿閹稿洭鏁撻弬銈嗗閸�?�?
         .BPU_pred_addr(BPU_pred_addr),
         .BPU_pred_taken(BPU_pred_taken),
 
@@ -389,13 +391,13 @@ module mycpu_top(
         .clk(aclk),
         .rst(rst),
 
-        // 闁跨喐鏋婚幏鐑芥晸閻ㄥ棛灏ㄩ幏鐤嚛闁跨喐鏋婚幏鐤闁跨噦鎷?
+        // 闁跨喐鏋婚幏鐑芥晸閻ㄥ棛灏ㄩ幏鐤嚛闁跨喐鏋婚幏鐤闁跨噦�??
         .ren(backend_dcache_ren),
         .wen(backend_dcache_wen),
         .vaddr(backend_dcache_addr),
         .write_data(backend_dcache_write_data),
 
-        // 闁跨喐鏋婚幏鐑芥晸閺傘倖瀚归柨鐔告灮閹风兘鏁撻崜璺暜閹风兘鏁撻懘姘卞皑閹凤拷
+        // 闁跨喐鏋婚幏鐑芥晸閺傘�?��?�归柨鐔告灮閹风兘鏁撻崜璺暜閹风兘鏁撻懘姘卞皑閹凤�?
         .rdata(dcache_rdata),
         .rdata_valid(dcache_backend_rdata_valid),    
         .dcache_ready(dcache_ready),  
@@ -455,7 +457,7 @@ module mycpu_top(
         .arprot(arprot),   
         .arvalid(arvalid),       
         .arready(arready),         
-    //R闁跨喐鏋婚幏鐑芥晸閺傘倖瀚归柨鐔告灮閹凤拷
+    //R闁跨喐鏋婚幏鐑芥晸閺傘�?��?�归柨鐔告灮閹凤�?
         .rid(rid),
         .rdata(rdata),   
         .rresp(rresp),    
@@ -464,7 +466,7 @@ module mycpu_top(
         .rready(rready),
         .rdata_o(axi_rdata),
         .rdata_valid_o(axi_rdata_valid),         
-    //AW閸愭瑩鏁撻弬銈嗗閸р偓
+    //AW閸愭瑩鏁撻弬銈嗗閸р�?
         .awid(awid),     
         .awaddr(awaddr),  
         .awlen(awlen),    
@@ -531,7 +533,7 @@ module mycpu_top(
 
     //AXI communicate
         .axi_ce_o(axi_ce_o),
-        .axi_wsel_o(axi_wsel),   // 闁跨喐鏋婚幏鐑芥晸閺傘倖瀚归柨鐔告灮閹风兘鏁撶粩顓狀暜閹风strb
+        .axi_wsel_o(axi_wsel),   // 闁跨喐鏋婚幏鐑芥晸閺傘�?��?�归柨鐔告灮閹风兘鏁撶粩顓狀暜閹风strb
 
     //AXI read
         .rdata_i(axi_rdata),
@@ -542,7 +544,7 @@ module mycpu_top(
         .axi_rlen_o(axi_rlen),
 
     //AXI write
-        .wdata_resp_i(axi_wdata_resp),  // 閸愭瑩鏁撻弬銈嗗鎼存棃鏁撻懘姘卞皑閹凤拷
+        .wdata_resp_i(axi_wdata_resp),  // 閸愭瑩鏁撻弬銈嗗鎼存棃鏁撻懘姘卞皑閹凤�?
         .axi_wen_o(axi_wen),
         .axi_waddr_o(axi_waddr),
         .axi_wdata_o(axi_wdata),
@@ -565,22 +567,11 @@ module mycpu_top(
     assign valid2 = debug_wb_valid2;
 
 
-    debug_FIFO debug
-    (
-        .clk(aclk),
-        .rst(rst),
-        .valid1(valid1),
-        .data1(data1),
-        .valid2(valid2),
-        .data2(data2),
-        .data_out(debug_data_out),
-        .valid_out(debug_valid_out)
-    );
+
 
     assign debug_wb_pc = debug_data_out[31:0];  
     assign debug_wb_rf_we = {4{debug_data_out[101]}};
     assign debug_wb_rf_wnum = debug_data_out[100:96];
     assign debug_wb_rf_wdata = debug_data_out[95:64];
-    assign debug_wb_inst = debug_data_out[63:32];
 
 endmodule

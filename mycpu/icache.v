@@ -5,8 +5,8 @@ module icache
     input  wire         rst,       // low active
     input  wire         flush,
     // Interface to CPU
-    input  wire         inst_rreq,      // ����CPU��ȡָ����
-    input  wire [31:0]  inst_addr,      // ����CPU��ȡָ��ַ
+    input  wire         inst_rreq,      // 锟斤拷锟斤拷CPU锟斤拷取指锟斤拷锟斤�?
+    input  wire [31:0]  inst_addr,      // 锟斤拷锟斤拷CPU锟斤拷取指锟斤拷坢�
     input  wire [31:0]  BPU_pred_addr,
     input  wire [1:0]   BPU_pred_taken,
 
@@ -15,7 +15,7 @@ module icache
 
     output wire [31:0]  pred_addr,
     output wire [1:0]   pred_taken,
-    output reg          inst_valid,     // �����CPU��ָ����Ч�ź�
+    output reg          inst_valid,     // 锟斤拷锟斤拷锟紺PU锟斤拷指锟斤拷锟斤拷效锟脚猴�?
     output reg  [31:0]  inst_out1,       // 
     output reg  [31:0]  inst_out2,
     output reg  [31:0]  pc1,
@@ -26,11 +26,11 @@ module icache
     output reg  [6:0]   pc_exception_cause_out2,
     output wire         pc_suspend,  
     // Interface to Read Bus
-    input  wire         dev_rrdy,       // ��������źţ��ߵ�ƽ��ʾ����ɽ���ICache�Ķ�����
-    output reg          cpu_ren,        // ���������Ķ�ʹ���ź�
-    output reg  [31:0]  cpu_raddr,      // ���������Ķ���ַ
-    input  wire         dev_rvalid,     // ���������������Ч�ź�
-    input  wire [127:0] dev_rdata,   // ��������Ķ�����  128
+    input  wire         dev_rrdy,       // 锟斤拷锟斤拷锟斤拷锟斤拷藕牛锟斤拷叩锟狡斤拷锟绞撅拷锟斤拷锟缴斤拷锟斤拷ICache锟侥讹拷锟斤拷锟斤拷
+    output reg          cpu_ren,        // 锟斤拷锟斤拷锟斤拷锟斤拷锟侥讹拷使锟斤拷锟脚猴拷
+    output reg  [31:0]  cpu_raddr,      // 锟斤拷锟斤拷锟斤拷锟斤拷锟侥讹拷锟斤拷址
+    input  wire         dev_rvalid,     // 锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟叫э拷藕锟�?
+    input  wire [127:0] dev_rdata,   // 锟斤拷锟斤拷锟斤拷锟斤拷亩锟斤拷锟斤拷锟�?  128
     input  wire         ren_received,
     input  wire         flush_flag_valid
 );
@@ -79,14 +79,14 @@ module icache
     wire [21:0] refill_tag = state == DEALING1 ? addr_1_2[31:10] :  addr_2_2[31:10];
 
 
-    wire [5:0]index1 = (next_state != IDLE) ? addr_1_2[9:4] : index_1_1;
-    wire [5:0]index2 = (next_state != IDLE) ? addr_2_2[9:4] : index_2_1;
+    wire [5:0]index1 = (state == REFILL | (state == IDLE & (inst_valid | !req_2))) ? index_1_1 : addr_1_2[9:4];
+    wire [5:0]index2 = (state == REFILL | (state == IDLE & (inst_valid | !req_2))) ? index_2_1 : addr_2_2[9:4];
     reg [5:0]index1_delay;
     reg [5:0]index2_delay;
 
     wire [150:0] refill_data = {{1'b1,refill_tag},dev_rdata};
 
-    //��һ��1����ram1���ڶ���1����index1
+    //锟斤拷一锟斤�?1锟斤拷锟斤拷ram1锟斤拷锟节讹拷锟斤拷1锟斤拷锟斤拷index1
     wire hit_ram1_index1 = !flush & (tag_1_2==ram1_tag1) & req_2 & ram1_data_block1[150];  
     wire hit_ram2_index1 = !flush & (tag_1_2==ram2_tag1) & req_2 & ram2_data_block1[150];
     wire hit_index1 = hit_ram1_index1 | hit_ram2_index1;    //index1
@@ -162,7 +162,7 @@ module icache
                 DEALING1:begin
                     if(!dev_rvalid & flush_flag_valid)
                     begin
-                        flush_flag <= 1'b1;     //flush������������������������һ��dev_rvalid
+                        flush_flag <= 1'b1;     //flush锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷丢�锟斤拷dev_rvalid
                     end
                 end
                 DEALING2:begin

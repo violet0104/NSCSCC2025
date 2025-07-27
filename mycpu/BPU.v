@@ -7,7 +7,7 @@
 module BPU 
 (
     input  wire         cpu_clk    ,
-    input  wire         cpu_rstn   ,
+    input  wire         cpu_rstn   ,        // 改成cpu_rst（高电平有效）
     input  wire [31:0]  if_pc      ,        // IF闂備浇娉曢崰鏍熸担鐑樺閻熸瑥瀚绂
     // predict branch direction and target
     output wire         pred_taken1,

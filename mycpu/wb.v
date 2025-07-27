@@ -146,24 +146,20 @@ module wb
 
     always @(posedge clk) begin
         if(rst || pause_mem) begin
-            ctrl_reg_write_en[0] <= 1'b0;
-            ctrl_reg_write_en[1] <= 1'b0;
-            ctrl_reg_write_addr1 <= 1'b0;
-            ctrl_reg_write_addr2 <= 1'b0; 
+            ctrl_reg_write_en    <= 2'b0;
+            ctrl_reg_write_addr1 <= 5'b0;
+            ctrl_reg_write_addr2 <= 5'b0; 
             ctrl_reg_write_data1 <= 32'b0;
             ctrl_reg_write_data2 <= 32'b0;
-            ctrl_csr_write_en[0] <= 1'b0;
-            ctrl_csr_write_en[1] <= 1'b0; 
+            ctrl_csr_write_en    <= 2'b0;
             ctrl_csr_addr1 <= 14'b0;
             ctrl_csr_addr2 <= 14'b0;
             ctrl_csr_write_data1 <= 32'b0;
             ctrl_csr_write_data2 <= 32'b0;
-            ctrl_is_llw_scw[0] <= 1'b0;
-            ctrl_is_llw_scw[1] <= 1'b0;
-            commit_valid_out[0] <= 1'b0;
-            commit_valid_out[1] <= 1'b0;
-            is_exception1_o <= 5'b0;
-            is_exception2_o <= 5'b0;
+            ctrl_is_llw_scw     <= 2'b0;
+            commit_valid_out    <= 2'b0;
+            is_exception1_o <= 6'b0;
+            is_exception2_o <= 6'b0;
             pc_exception_cause1_o <= 7'b0;
             pc_exception_cause2_o <= 7'b0;
             instbuffer_exception_cause1_o <= 7'b0;
@@ -180,12 +176,9 @@ module wb
             commit_pc_out2 <= 32'b0;
             commit_addr_out1 <= 32'b0;
             commit_addr_out2 <= 32'b0;
-            commit_idle_out[0] <= 1'b0;
-            commit_idle_out[1] <= 1'b0;
-            commit_ertn_out[0] <= 1'b0;
-            commit_ertn_out[1] <= 1'b0;
-            commit_is_privilege_out[0] <= 1'b0;
-            commit_is_privilege_out[1] <= 1'b0;
+            commit_idle_out  <= 2'b0;
+            commit_ertn_out  <= 2'b0;
+            commit_is_privilege_out <= 2'b0;
         end 
         else begin
             wb_inst1 <= mem_inst1;

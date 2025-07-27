@@ -83,7 +83,9 @@ assign unsigned_divisor  = negate_if(divisor, negate_divisor);
 
      // 除数移位寄存器
     always @(posedge clk) begin
-        if (running) 
+        if (rst)
+            shifted_divisor <= 32'b0;
+        else if (running) 
             shifted_divisor <= {2'b0, shifted_divisor[31:2]}; // 运行状态：每次迭代右移2位（相当于除4）
         else
             // 初始化：左移使除数对齐被除数最高有效位
@@ -110,7 +112,8 @@ assign unsigned_divisor  = negate_if(divisor, negate_divisor);
 
 // 商寄存器更新逻辑
     always @(posedge clk) begin
-        if (start) quotient <= 32'b0; //启动时清零
+        if (rst)         quotient <= 32'b0;
+        else if (start)  quotient <= 32'b0; //启动时清零
         else if (running) 
         // 运行状态：将新商位移入寄存器低2位
         quotient <= {quotient[29:0], new_quotient_bits};
@@ -118,7 +121,8 @@ assign unsigned_divisor  = negate_if(divisor, negate_divisor);
 
 // 余数寄存器更新逻辑
     always @(posedge clk) begin
-        if (start | (running & |new_quotient_bits)) begin 
+        if (rst)    remainder <= 32'b0;
+        else if (start | (running & |new_quotient_bits)) begin 
             case ({
                 ~running, sub_1x_overflow
             })
@@ -133,12 +137,13 @@ assign unsigned_divisor  = negate_if(divisor, negate_divisor);
 // 迭代次数控制器
     assign {terminate, cycles_remaining_next} = cycles_remaining - 1;
     always @(posedge clk) begin
-        cycles_remaining <= running ? cycles_remaining_next : CLZ_delta[CLZ_W-1:1];
+        if (rst) cycles_remaining <= 4'b0;      // 不知道是不是这样写
+        else cycles_remaining <= running ? cycles_remaining_next : CLZ_delta[CLZ_W-1:1];
     end
 
 // 运行状态机控制
     always @(posedge clk) begin
-        if (rst) running <= 0;// 同步复位
+        if (rst) running <= 1'b0;// 同步复位
         else 
         // 状态转换：
             //   保持运行直到终止 | 新启动且除数不大于被除数
@@ -160,10 +165,18 @@ assign unsigned_divisor  = negate_if(divisor, negate_divisor);
     reg divisor_greater_than_dividend_delay;
 
     always @(posedge clk) begin
-        running_delay <= running;
-        terminate_delay <= terminate;
-        start_delay <= start;
-        divisor_greater_than_dividend_delay <= divisor_greater_than_dividend;
+        if (rst) begin
+            running_delay <= 1'b0;
+            terminate_delay <= 1'b0;
+            start_delay <= 1'b0;
+            divisor_greater_than_dividend_delay <= 1'b0;
+        end
+        else begin
+            running_delay <= running;
+            terminate_delay <= terminate;
+            start_delay <= start;
+            divisor_greater_than_dividend_delay <= divisor_greater_than_dividend;
+        end
     end
 
 // 结果输出组合逻辑

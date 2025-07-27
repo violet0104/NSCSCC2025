@@ -24,7 +24,7 @@ module front
     //*******************
     input wire [1:0] fb_flush,
     input wire [1:0] fb_pause,
-    input wire fb_interrupt,            //中断信号
+    input wire fb_interrupt,            //中断信号（这个没用到？？）
 //    input wire [31:0] fb_new_pc,        //中断后新的pc地址
     
     //与icache的交互
@@ -58,7 +58,7 @@ module front
 
 
     //我新加的信号**************************
-    input  wire [31:0]         new_pc,
+    input  wire [31:0]          new_pc,
     input  wire [1:0]           ex_is_bj ,          // 两条指令是否是跳转指令
     input  wire [31:0]          ex_pc1 ,            // ex 阶段的 pc
     input  wire [31:0]          ex_pc2 ,             
@@ -71,15 +71,15 @@ module front
     input  wire                 get_data_req     
     //*************************************
 );
-    reg [1:0] is_branch;
+    reg [1:0] is_branch;            // 这个没用到？？
     wire [31:0] pre_addr;
     wire [31:0] pc_out;
     wire is_exception;
     wire [6:0] exception_cause;
-    reg inst_en1;
-    reg inst_en2;
+    reg inst_en1;           // 这个没用到？？
+    reg inst_en2;           // 这个没用到？？
     //我新加的信号**********************************
-    wire instbuffer_stall;
+    wire instbuffer_stall;      // 这个没用到？？
     wire [104:0] data_out1;
     wire [104:0] data_out2;
     

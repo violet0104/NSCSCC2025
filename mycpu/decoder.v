@@ -6,47 +6,47 @@ module decoder (
     input wire clk,
     input wire rst,
 
-    input wire flush, //强制更新信号
+    input wire flush, //ǿ�Ƹ����ź�
 
-    // 前端传递的数据
+    // ǰ�˴��ݵ�����
     input wire [31:0] pc1,
     input wire [31:0] pc2,
     input wire [31:0] inst1,
     input wire [31:0] inst2,
-    input wire [1:0]  valid,                        //  前端传递的数据有效信号
-    input wire [1:0]  pretaken,                     // 鍓前端传递的分支预测结果（是否跳转）
-    input wire [31:0] pre_addr_in1 ,           // 前端传递的分支预测目标地址
+    input wire [1:0]  valid,                        //  ǰ�˴��ݵ�������Ч�ź�
+    input wire [1:0]  pretaken,                     // �ǰ�˴��ݵķ�֧Ԥ�������Ƿ���ת��
+    input wire [31:0] pre_addr_in1 ,           // ǰ�˴��ݵķ�֧Ԥ��Ŀ���ַ
     input wire [31:0] pre_addr_in2 ,
 
-    input wire [1:0]  is_exception_in1 ,          // 第一条指令的异常信号
-    input wire [1:0]  is_exception_in2 ,          // 第二条指令的异常信号
+    input wire [1:0]  is_exception_in1 ,          // ��һ��ָ����쳣�ź�
+    input wire [1:0]  is_exception_in2 ,          // �ڶ���ָ����쳣�ź�
 
-    input wire [6:0]  pc_exception_cause_in1 ,        // 异常原因
+    input wire [6:0]  pc_exception_cause_in1 ,        // �쳣ԭ��
     input wire [6:0]  pc_exception_cause_in2 ,        
 
     input wire [6:0]  instbuffer_exception_cause_in1 ,   
     input wire [6:0]  instbuffer_exception_cause_in2 ,
 
-    //来自 dispatch 的信号
-    input wire [1:0] invalid_en,  // 无效信号
+    //���� dispatch ���ź�
+    input wire [1:0] invalid_en,  // ��Ч�ź�
 
 
-    // 输出给前端的取指请求信号
+    // �����ǰ�˵�ȡָ�����ź�
     output wire get_data_req,   
     output wire pause_decoder,
 
 
-    //  输出给 dispatch 的信号
-    output reg  [1:0]  dispatch_id_valid,       // pc有效信号
+    //  ����� dispatch ���ź�
+    output reg  [1:0]  dispatch_id_valid,       // pc��Ч�ź�
 
     output reg  [31:0] dispatch_pc_out1 ,
     output reg  [31:0] dispatch_pc_out2 ,
     output reg  [31:0] dispatch_inst_out1 ,
     output reg  [31:0] dispatch_inst_out2 ,
 
-    output reg  [2:0]  is_exception_o1 ,            //  是否异常
+    output reg  [2:0]  is_exception_o1 ,            //  �Ƿ��쳣
     output reg  [2:0]  is_exception_o2 ,         
-    output reg  [6:0]  pc_exception_cause_o1 ,         // 常原因
+    output reg  [6:0]  pc_exception_cause_o1 ,         // ��ԭ��
     output reg  [6:0]  pc_exception_cause_o2 ,
     output reg  [6:0]  instbuffer_exception_cause_o1,
     output reg  [6:0]  instbuffer_exception_cause_o2,
@@ -60,32 +60,32 @@ module decoder (
     output reg  [31:0] dispatch_imm1 ,
     output reg  [31:0] dispatch_imm2 ,
 
-    output reg  [1:0]  dispatch_reg_read_en1,           // 第一条指令的读使能
-    output reg  [1:0]  dispatch_reg_read_en2,           // 第二条指令的读使能
-    output reg  [4:0]  dispatch_reg_read_addr1_1 ,      // 第一条指令的两个读地址
+    output reg  [1:0]  dispatch_reg_read_en1,           // ��һ��ָ��Ķ�ʹ��
+    output reg  [1:0]  dispatch_reg_read_en2,           // �ڶ���ָ��Ķ�ʹ��
+    output reg  [4:0]  dispatch_reg_read_addr1_1 ,      // ��һ��ָ�����������ַ
     output reg  [4:0]  dispatch_reg_read_addr1_2 ,
-    output reg  [4:0]  dispatch_reg_read_addr2_1 ,      // 第二条指令的两个读地址
+    output reg  [4:0]  dispatch_reg_read_addr2_1 ,      // �ڶ���ָ�����������ַ
     output reg  [4:0]  dispatch_reg_read_addr2_2,
-    output reg  [1:0]  dispatch_reg_writen_en,          // 寄存器写使能信号（2位）
-    output reg  [4:0]  dispatch_reg_write_addr1 ,       // 寄存器写地址
+    output reg  [1:0]  dispatch_reg_writen_en,          // �Ĵ���дʹ���źţ�2λ��
+    output reg  [4:0]  dispatch_reg_write_addr1 ,       // �Ĵ���д��ַ
     output reg  [4:0]  dispatch_reg_write_addr2 ,
 
-    output reg  [1:0]  dispatch_id_pre_taken,           // 分支预测结果（是否跳转）
-    output reg  [31:0] dispatch_id_pre_addr1,       // 分支预测目标地址
+    output reg  [1:0]  dispatch_id_pre_taken,           // ��֧Ԥ�������Ƿ���ת��
+    output reg  [31:0] dispatch_id_pre_addr1,       // ��֧Ԥ��Ŀ���ַ
     output reg  [31:0] dispatch_id_pre_addr2,
 
-    output reg  [1:0]  dispatch_is_privilege,           //是否是特权指令
-    output reg  [1:0]  dispatch_csr_read_en,            //CSR读使能
-    output reg  [1:0]  dispatch_csr_write_en,           //CSR写使能
-    output reg  [13:0] dispatch_csr_addr1,          //CSR地址
+    output reg  [1:0]  dispatch_is_privilege,           //�Ƿ�����Ȩָ��
+    output reg  [1:0]  dispatch_csr_read_en,            //CSR��ʹ��
+    output reg  [1:0]  dispatch_csr_write_en,           //CSRдʹ��
+    output reg  [13:0] dispatch_csr_addr1,          //CSR��ַ
     output reg  [13:0] dispatch_csr_addr2,
-    output reg  [1:0]  dispatch_is_cnt,                 //是否是计数器
-    output reg  [4:0]  dispatch_invtlb_op1,               //TLB无效操作
+    output reg  [1:0]  dispatch_is_cnt,                 //�Ƿ��Ǽ�����
+    output reg  [4:0]  dispatch_invtlb_op1,               //TLB��Ч����
     output reg  [4:0]  dispatch_invtlb_op2
 );
 
-    //内部信号
-    wire  id_valid1;       //ID阶段有效信号
+    //�ڲ��ź�
+    wire  id_valid1;       //ID�׶���Ч�ź�
     wire  id_valid2;
 
     wire  valid1_i ;
@@ -103,9 +103,9 @@ module decoder (
     wire  [31:0] inst_out1;
     wire  [31:0] inst_out2;
 
-    wire  [2:0] is_exception1;               //是否异常
+    wire  [2:0] is_exception1;               //�Ƿ��쳣
     wire  [2:0] is_exception2;              
-    wire  [6:0] pc_exception_cause1;         //异常原因
+    wire  [6:0] pc_exception_cause1;         //�쳣ԭ��
     wire  [6:0] pc_exception_cause2;
     wire  [6:0] instbuffer_exception_cause1; 
     wire  [6:0] instbuffer_exception_cause2;
@@ -119,36 +119,36 @@ module decoder (
     wire  [31:0] imm1;
     wire  [31:0] imm2;
 
-    wire  [1:0]  reg_read_en1;          // 第一条指令的读使能
-    wire  [1:0]  reg_read_en2;          // 第二条指令的读使能
-    wire  [4:0]  reg_read_addr1_1;      // 第一条指令的读地址
+    wire  [1:0]  reg_read_en1;          // ��һ��ָ��Ķ�ʹ��
+    wire  [1:0]  reg_read_en2;          // �ڶ���ָ��Ķ�ʹ��
+    wire  [4:0]  reg_read_addr1_1;      // ��һ��ָ��Ķ���ַ
     wire  [4:0]  reg_read_addr1_2;
-    wire  [4:0]  reg_read_addr2_1;      // 第二条指令的读地址
+    wire  [4:0]  reg_read_addr2_1;      // �ڶ���ָ��Ķ���ַ
     wire  [4:0]  reg_read_addr2_2;
     wire  [1:0]  reg_writen_en; 
     wire  [4:0]  reg_write_addr1;
     wire  [4:0]  reg_write_addr2;
 
-    wire  id_pre_taken1;       // ID 阶段预测分支是否跳转
+    wire  id_pre_taken1;       // ID �׶�Ԥ���֧�Ƿ���ת
     wire  id_pre_taken2;
-    wire  [31:0] pre_addr1;     // ID 阶段预测分支跳转地址
+    wire  [31:0] pre_addr1;     // ID �׶�Ԥ���֧��ת��ַ
     wire  [31:0] pre_addr2;
 
-    wire  is_privilege1;       // 是否是特权指令
+    wire  is_privilege1;       // �Ƿ�����Ȩָ��
     wire  is_privilege2;
-    wire  csr_read_en1 ;        // CSR读使能
+    wire  csr_read_en1 ;        // CSR��ʹ��
     wire  csr_read_en2 ;
-    wire  csr_write_en1;       //CSR写使能
+    wire  csr_write_en1;       //CSRдʹ��
     wire  csr_write_en2;
     wire  [13:0] csr_addr1;     // CSR
     wire  [13:0] csr_addr2;
-    wire  is_cnt1;             // 否是计数器
+    wire  is_cnt1;             // ���Ǽ�����
     wire  is_cnt2;
-    wire  [4:0]  invtlb_op1;         // TLB无效\
+    wire  [4:0]  invtlb_op1;         // TLB��Ч\
     wire  [4:0]  invtlb_op2;
 
     id u_id_0 (
-        // 输入信号
+        // �����ź�
         .valid(valid1_i),
 
         .pre_taken(pre_taken1_i),
@@ -162,7 +162,7 @@ module decoder (
         .instbuffer_exception_cause(instbuffer_exception_cause_in1),
 
 
-        // 输出信号
+        // ����ź�
         .id_valid(id_valid1),
 
         .pc_out(pc_out1),
@@ -241,7 +241,7 @@ module decoder (
         .invtlb_op(invtlb_op2) 
     );
     /////////////////////////////////////////////
-    // 入队数据，如果要添加信号，加信号加在最前面并且修改`DECODE_DATA_WIDTH的值
+    // ������ݣ����Ҫ�����źţ����źż�����ǰ�沢���޸�`DECODE_DATA_WIDTH��ֵ
     wire [`DECODE_DATA_WIDTH - 1:0] enqueue_data1;
     wire [`DECODE_DATA_WIDTH - 1:0] enqueue_data2;
     assign  enqueue_data1 =  {
@@ -304,13 +304,13 @@ module decoder (
 
                                 id_valid2};           // 0      
 
-    // 出队数据
+    // ��������
     wire [`DECODE_DATA_WIDTH - 1:0] dequeue_data1;
     wire [`DECODE_DATA_WIDTH - 1:0] dequeue_data2;
 
     wire fifo_rst;
     assign fifo_rst = rst || flush;
-    reg [1:0] enqueue_en;   //入队使能信号
+    reg [1:0] enqueue_en;   //���ʹ���ź�
     wire get_data_req_o;
     wire full;
     wire empty;
@@ -333,7 +333,7 @@ module decoder (
         .empty(empty)
     );
     
-    // 传递给前端的取指请求信号
+    // ���ݸ�ǰ�˵�ȡָ�����ź�
     assign get_data_req = get_data_req_o;
 
     always @(*) begin
@@ -342,7 +342,7 @@ module decoder (
     end
 
 
-    // 分解出队数据
+    // �ֽ��������
     always @(*) begin
         dispatch_id_valid[0]        =   dequeue_data1[0];
         dispatch_id_valid[1]        =   dequeue_data2[0];

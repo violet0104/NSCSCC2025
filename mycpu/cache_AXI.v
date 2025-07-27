@@ -38,11 +38,11 @@ module cache_AXI
     input wire [3:0] duncache_wen_i,
     input wire [31:0] duncache_wdata_i,
     input wire [31:0] duncache_waddr_i,
-    output reg duncache_write_resp,  //dcacheÖÐµÄduncache_write_finish
+    output reg duncache_write_resp,  //dcacheï¿½Ðµï¿½duncache_write_finish
 
     //AXI communicate
     output wire axi_ce_o,
-    output wire [3:0] axi_wsel_o,   // Á¬½Ó×ÜÏßµÄwstrb
+    output wire [3:0] axi_wsel_o,   // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ßµï¿½wstrb
 
     //AXI read
     input wire [31:0] rdata_i,
@@ -53,7 +53,7 @@ module cache_AXI
     output wire [7:0] axi_rlen_o,
 
     //AXI write
-    input wire wdata_resp_i,  // Ð´ÏìÓ¦ÐÅºÅ
+    input wire wdata_resp_i,  // Ð´ï¿½ï¿½Ó¦ï¿½Åºï¿½
     output wire axi_wen_o,
     output wire [31:0] axi_waddr_o,
     output reg [31:0] axi_wdata_o,
@@ -177,6 +177,7 @@ module cache_AXI
         begin
             inst_rvalid_o <= 1'b0;
             data_rvalid_o <= 1'b0;
+            duncache_rvalid_o <= 1'b0;
         end
         else
         begin
@@ -241,8 +242,8 @@ module cache_AXI
     end
 
     //AXI
-    assign axi_wen_o = write_state != write_FREE; //Ò»Ö±Î¬³ÖÖ±µ½´ÓÉè±¸½ÓÊÜÍê³É
-    assign axi_wvalid_o = write_state != write_FREE; //Õâ¸öÐÅºÅºÍÉÏÃæµÄÐÅºÅÖØºÏÁË£¬Á¬½Óµ½ºóÃæµÄaxi_interface,µ«axi_interfaceÖÐÒ²Ã»ÓÐÓÃµ½Õâ¸öÐÅºÅ£¬ÒâÒå²»Ã÷
+    assign axi_wen_o = write_state != write_FREE; //Ò»Ö±Î¬ï¿½ï¿½Ö±ï¿½ï¿½ï¿½ï¿½ï¿½è±¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    assign axi_wvalid_o = write_state != write_FREE; //ï¿½ï¿½ï¿½ï¿½ÅºÅºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Åºï¿½ï¿½Øºï¿½ï¿½Ë£ï¿½ï¿½ï¿½ï¿½Óµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½axi_interface,ï¿½ï¿½axi_interfaceï¿½ï¿½Ò²Ã»ï¿½ï¿½ï¿½Ãµï¿½ï¿½ï¿½ï¿½ï¿½ÅºÅ£ï¿½ï¿½ï¿½ï¿½å²»ï¿½ï¿½
     assign axi_wlen_o = (write_state == write_UNCACHE) ? 8'h0 : 8'h3;
     assign axi_rlen_o = (read_state == read_UNCACHE ) ? 8'h0 : 8'h3;
     assign axi_wsel_o = (write_state == write_UNCACHE) ? duncache_wen_i : 4'b1111;
