@@ -1,35 +1,36 @@
 module icache_ram
 (
     input clk,
-    input we,
-    input [5:0] w_index,
-    input [5:0] r_index1,
-    input [5:0] r_index2,
-    input [150:0] data_in,
+    input we1,
+    input we2,
+    input [2:0] index1,
+    input [2:0] index2,
+    input [153:0] data_in,
     input rst,
-    output reg [150:0] data_out1,
-    output reg [150:0] data_out2
+    output reg [153:0] data_out1,
+    output reg [153:0] data_out2
 );
 
-(* ram_style = "block" *)reg [150:0] data [63:0];
+reg [153:0] data [7:0];
 
 integer i;
-always @(posedge clk or negedge rst)
+always @(posedge clk)
 begin
     if(rst)
     begin
-        for (i = 0; i < 64; i = i + 1)
+        for (i = 0; i < 8; i = i + 1)
         begin
-            data[i] <= 151'b0;  // 151位全0
+            data[i] <= 154'b0;  // 151位全0
         end
-        data_out1 <= 151'b0;
-        data_out2 <= 151'b0;
+        data_out1 <= 154'b0;
+        data_out2 <= 154'b0;
     end
     else
     begin
-        data_out1 <= (we && w_index==r_index1) ? data_in : data[r_index1];
-        data_out2 <= (we && w_index==r_index2) ? data_in : data[r_index2];
-        if(we) data[w_index] <= data_in;
+        data_out1 <= (we1 | index1==index2 & we2) ? data_in : data[index1];
+        data_out2 <= (we2 | index1==index2 & we1) ? data_in : data[index2];
+        if(we1) data[index1] <= data_in;
+        else if(we2) data[index2] <= data_in;
     end
 end
 

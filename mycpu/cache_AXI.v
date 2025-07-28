@@ -35,7 +35,8 @@ module cache_AXI
     output reg [31:0] duncache_rdata_o,
 
     //duncache write channel
-    input wire [3:0] duncache_wen_i,
+    input wire duncache_wen_i,
+    input wire [3:0] duncache_wstrb,
     input wire [31:0] duncache_wdata_i,
     input wire [31:0] duncache_waddr_i,
     output reg duncache_write_resp,  //dcache�е�duncache_write_finish
@@ -129,7 +130,7 @@ module cache_AXI
     begin
         case(write_state)
         write_FREE:begin
-            if(|duncache_wen_i) next_write_state = write_UNCACHE;
+            if(duncache_wen_i) next_write_state = write_UNCACHE;
             else if(|data_wen_i) next_write_state = write_BUSY;
             else next_write_state = write_FREE;
         end
@@ -246,7 +247,7 @@ module cache_AXI
     assign axi_wvalid_o = write_state != write_FREE; //����źź�������ź��غ��ˣ����ӵ������axi_interface,��axi_interface��Ҳû���õ�����źţ����岻��
     assign axi_wlen_o = (write_state == write_UNCACHE) ? 8'h0 : 8'h3;
     assign axi_rlen_o = (read_state == read_UNCACHE ) ? 8'h0 : 8'h3;
-    assign axi_wsel_o = (write_state == write_UNCACHE) ? duncache_wen_i : 4'b1111;
+    assign axi_wsel_o = (write_state == write_UNCACHE) ? duncache_wstrb : 4'b1111;    //////////////////////////
     assign axi_waddr_o = write_state == write_UNCACHE ? duncache_waddr_i : {data_awaddr_i[31:4],4'b0};
     assign axi_wlast_o = ((write_state == write_BUSY) & write_count == 2'b11) | write_state == write_UNCACHE;
 

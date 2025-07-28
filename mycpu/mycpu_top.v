@@ -94,7 +94,7 @@ module mycpu_top(
     wire [2:0] cache_brust_size;
     assign cache_brust_size = 3'b010;
 
-    //icache  闁跨喐鏋婚幏宄板闁跨喐鏋婚幏閿嬆侀柨鐔告灮閹烽攱鍘遍柨鐔告灮閹风兘鏁撻弬銈嗗閽樻洟鏁撻敓�??**********************
+    //icache  闂傚倷娴囧▔鏇㈠窗閹版澘鍑犲┑鐘宠壘缁狀垳鈧懓瀚姗€路閸涘瓨鈷戦悹鎭掑妼閺嬫垿鏌＄€ｎ亶鐓兼鐐茬箻閺屻劎鈧絽妫旂欢姘跺蓟閵娾晜鍋勯柛娑橈功娴煎嫰姊洪崷顓炲幋闁衡偓闁秴鍌ㄩ梺顒€绉甸悡銉╂煟閺傛寧鍟為柣蹇ｅ櫍閺岀喐顦版惔鈥冲箣闂佽桨鐒﹂幑鍥ь嚕椤掑嫬围闁糕剝顨忔导鎾绘⒑閼恒儔鎴澝洪悢鐓庢瀬闁瑰墽绮弲鎼佹晸閿燂拷??**********************
     wire BPU_flush;
     wire inst_rreq;
     wire [31:0] inst_addr;
@@ -117,7 +117,7 @@ module mycpu_top(
     //*************************************************
 
 
-    // 閸撳秹鏁撻崜鍧楁交閹风兘鏁撻弬銈嗗鐠囨挳鏁撻弬銈嗗閽樻洟鏁撻敓锟?
+    // 闂備礁鎲￠幐鍝ョ矓瑜版帒鏋侀柟鎹愵嚙缁€鍫ユ煕瑜庨〃鍡樼閵堝鐓欏瀣閸樻挳鏌℃担瑙勫磳鐎殿噮鍓熸俊鍫曞幢濡ゅ﹣绱﹂梺鑽ゅТ濞诧箓骞愰幎钘夋瀬闁规崘顕уΛ姗€鏌曢崼婵囶棞妞ゅ繐鐖奸弻锕€螣缂佹顦伴梺杞扮劍閹瑰洭寮幘缁樻櫢?
     wire fb_pred_taken1;
     wire fb_pred_taken2;
     wire [31:0]fb_pc1;
@@ -137,7 +137,7 @@ module mycpu_top(
     wire [6:0] fb_instbuffer_exception_cause1;
     wire [6:0] fb_instbuffer_exception_cause2;
 
-    // 闁跨喐鏋婚幏椋庡剨闁跨喕顫楃敮顔藉鐠囨挳鏁撻弬銈嗗閽樻洟鏁撻敓锟?
+    // 闂傚倷娴囧▔鏇㈠窗閹版澘鍑犲┑鐘宠壘缁狀垰顪冪€ｎ亪顎楅柛鎾卞姂濮婅櫣鎹勯妸銉︾亞濡炪値鍋呴〃鍫ュ极椤曗偓椤㈡瑩鎸婃径妯圭处闂佽崵濮村ú锕傚箰閹惰棄鏋侀柟鎹愵嚙濡﹢鏌曢崼婵囶棞妞ゅ繐鐖奸弻锕€螣缂佹顦伴梺杞扮劍閹瑰洭寮幘缁樻櫢?
     wire iuncache;
     wire [1:0]ex_is_bj;
     wire [31:0]ex_pc1;
@@ -152,18 +152,18 @@ module mycpu_top(
     wire [7:0] flush_o;
     wire [7:0] pause_o;
 
-    // 闁跨喐鏋婚幏椋庡剨闁跨噦�?? dcache 闁跨喐鏋婚幏鐑芥晸閼存氨灏ㄩ幏锟?
+    // 闂傚倷娴囧▔鏇㈠窗閹版澘鍑犲┑鐘宠壘缁狀垰顪冪€ｎ亪顎楅柛鎾卞姂濮婅櫣鎹勯妸銉︾彚闁跨噦鎷�?? dcache 闂傚倷娴囧▔鏇㈠窗閹版澘鍑犲┑鐘宠壘缁狀垶鏌ｉ幋锝呅撻柡鍛倐閺屻倗鈧稒蓱閻ㄦ垿鎮樿箛瀣妤犵偛绻橀弫锟�?
     wire  backend_dcache_ren;
     wire [3:0]  backend_dcache_wen;
     wire [31:0] backend_dcache_addr;
     wire [31:0] backend_dcache_write_data;
 
-    // dcache 闁跨喐鏋婚幏鐑芥晸閺傘�?��?�圭拠鎾晸閺傘倖�?�归挊鏇㈡晸閿燂�?
+    // dcache 闂傚倷娴囧▔鏇㈠窗閹版澘鍑犲┑鐘宠壘缁狀垶鏌ｉ幋锝呅撻柡鍛倐閺岋繝宕掑鍫熷?闁跨喐鏋婚幏锟�?闁跨喕妫勫﹢閬嶅箯閻樿绠绘い鏃囧Г濞呫垽姊洪崫鍕偓鍫曞磹閺嶅灚瀚�?闁跨喕妫勭紞濠囧箰婵犲洤鍗抽柕蹇婂墲濞呫垽姊虹捄銊ユ珢闁跨噦鎷�?
     wire [31:0] dcache_backend_rdata;
     wire dcache_backend_rdata_valid;
     wire dcache_ready;
 
-    // dcache-AXI 闁跨喐鏋婚幏鐑芥晸閺傘�?��??? cache 闁跨喐甯撮崠鈩冨闁跨喕鍓奸悮�?�樺�?
+    // dcache-AXI 闂傚倷娴囧▔鏇㈠窗閹版澘鍑犲┑鐘宠壘缁狀垶鏌ｉ幋锝呅撻柡鍛倐閺岋繝宕掑鍫熷?闁跨喐鏋婚幏锟�??? cache 闂傚倷娴囧▔鏇㈠窗閹邦喗鏆滈柟缁㈠枛缁€宀勬煃閳轰礁鏆欐い蹇撶埣濮婅櫣鎹勯妸銉︾亞闂佸憡鎸搁妶鎼佸箖椤曞棙瀚�?闁跨喕濮ら敋闁跨噦鎷�?
     wire dev_rrdy_to_cache;
     wire dev_wrdy_to_cache;
 
@@ -173,24 +173,33 @@ module mycpu_top(
     wire [31:0] duncache_raddr;
 
     wire duncache_write_finish;
-    wire [3:0] duncache_wen;
+    wire duncache_wen;
     wire [31:0] duncache_wdata;
     wire [31:0] duncache_waddr;
     
     wire [31:0] new_pc_from_ctrl;
     wire [1:0] BPU_pred_taken;
 
+    //鍚庣鐨刢sr杈撳叆缁檛rans_addr鐨勪俊鍙�
+    wire [31:0] csr_dmw0;//dmw0锛屾湁鏁堜綅鏄痆27:25]锛屽彲鑳戒細浣滀负鏈€鍚庤浆鎹㈠嚭鏉ョ殑鍦板潃鐨勬渶楂樹笁浣�
+    wire [31:0] csr_dmw1;//dmw1锛屾湁鏁堜綅鏄痆27:25]锛屽彲鑳戒細浣滀负鏈€鍚庤浆鎹㈠嚭鏉ョ殑鍦板潃鐨勬渶楂樹笁浣�
+    wire        csr_da;
+    wire        csr_pg;
+    wire [1:0]  csr_plv;
+
+    //trans_addr to dcache
+    wire [31:0] ret_data_paddr;
     front u_front
     (
-        // 闁跨喐鏋婚幏鐑芥晸閺傘�?��???
+        // 闂傚倷娴囧▔鏇㈠窗閹版澘鍑犲┑鐘宠壘缁狀垶鏌ｉ幋锝呅撻柡鍛倐閺岋繝宕掑鍫熷?闁跨喐鏋婚幏锟�???
         .cpu_clk(aclk),
         .cpu_rst(rst),
 
-        .iuncache(iuncache),//闁跨喐鏋婚幏椋庣�?闁跨喐鏋婚幏鐑芥晸閼存氨灏ㄩ幏鐑芥晸閺傘倖�?�瑰┃锟?       //(闁跨喐鏋婚幏鐑芥晸缁茬垜ncache闁跨喕鍓奸悮瀛樺�?)
+        .iuncache(iuncache),//闂傚倷娴囧▔鏇㈠窗閹版澘鍑犲┑鐘宠壘缁狀垰顪冪€ｎ亝鎹ｉ柨鐕傛嫹?闂傚倷娴囧▔鏇㈠窗閹版澘鍑犲┑鐘宠壘缁狀垶鏌ｉ幋锝呅撻柡鍛倐閺屻倗鈧稒蓱閻ㄦ垿鎮樿箛瀣妤犵偛绻橀幃婊堟嚍閵夛附顏熼梻浣告惈閸婂爼宕愰弽鍨?闁跨喓鏅幊鎾诲煘閸愵喗鏅�?       //(闂傚倷娴囧▔鏇㈠窗閹版澘鍑犲┑鐘宠壘缁狀垶鏌ｉ幋锝呅撻柡鍛憸缁辨帡鎳犻鈧悘濉禼ache闂傚倷娴囧▔鏇㈠窗閺囥垹绀堝┑鍌氭啞閸嬫牠鎮楀☉娅亪鏁撻敓锟�?)
 
-        // 闁跨喐鏋婚幏鐑芥晸閺傘�?��??? icache 闁跨喐鏋婚幏鐑芥晸閼存氨灏ㄩ幏锟?
+        // 闂傚倷娴囧▔鏇㈠窗閹版澘鍑犲┑鐘宠壘缁狀垶鏌ｉ幋锝呅撻柡鍛倐閺岋繝宕掑鍫熷?闁跨喐鏋婚幏锟�??? icache 闂傚倷娴囧▔鏇㈠窗閹版澘鍑犲┑鐘宠壘缁狀垶鏌ｉ幋锝呅撻柡鍛倐閺屻倗鈧稒蓱閻ㄦ垿鎮樿箛瀣妤犵偛绻橀弫锟�?
         .pred_taken(BPU_pred_taken),
-        .pi_icache_is_exception1(pi_icache_is_exception1),      //闁跨喐鏋婚幏绌抍ache闁跨喐鏋婚幏鐑芥晸閺傘�?��?�归柨鐔告灮閹风兘鏁撻弬銈嗗闁跨喐鏋婚幏鐑芥晸閺傘倖�?�归柨鐔告灮閹烽攱浼?
+        .pi_icache_is_exception1(pi_icache_is_exception1),      //闂傚倷娴囧▔鏇㈠窗閹版澘鍑犲┑鐘宠壘缁狀垳绱掔仦鎯ь瀴ache闂傚倷娴囧▔鏇㈠窗閹版澘鍑犲┑鐘宠壘缁狀垶鏌ｉ幋锝呅撻柡鍛倐閺岋繝宕掑鍫熷?闁跨喐鏋婚幏锟�?闁跨喕妫勭紞濠囧蓟閵娾晜鍋勯柛娑橈功娴煎嫰姊鸿ぐ鎺濇闁稿繑锕㈠顐﹀箻鐠囧弶顥濋梺闈涚墕濡顢旈崼鏇熲拺閻犳亽鍔岄弸鎴︽煛鐎ｎ亶鐓兼鐐茬箻閹粓鎳為妷锔筋仧闂備礁鎼崐鍫曞磹閺嶅灚瀚�?闁跨喕妫勭紞濠囧蓟閵娾晜鍋勯柛娑橈功娴煎嫰姊洪崷顓炲幋闁衡偓鏉堛劌顕�?
         .pi_icache_is_exception2(pi_icache_is_exception2),
         .pi_icache_exception_cause1(pi_icache_exception_cause1),  
         .pi_icache_exception_cause2(pi_icache_exception_cause2),
@@ -204,7 +213,7 @@ module mycpu_top(
         .icache_inst_valid(icache_inst_valid),
 
     // *******************
-        .fb_flush({flush_o[2],flush_o[0]}), //闁跨喐鏋婚幏鐑芥晸閺傘�?��?�归柨鐔告灮閹风兘鏁撻弬銈嗗闁跨喕濞囬搴㈠闁跨喕顢滆皭閵堝繑�?�归柨鐔告灮閹风兘鏁撶憲鐕傜礉绾板瀚归柨鐔兼應閻氬瓨�?�归柨鐔告灮閹风兘鏁撶憴鎺戝簻閹烽攱�?愰柨鐔告灮閹峰嘲浼旈柨鐔虹lush闁跨喕鍓奸崣鍑ょ秶閹风兘鏁撶憴鎺楁交閹风兘鏁撻懘姘娇閸栤剝瀚归柨鐔告灮閹峰嘲鍨归崢濠氭晸閺傘�?��?�归崜宥夋晸閸撹法顣�?幏绌妏u闁跨喐鏋婚幏鐑芥晸閺傘�?��?�圭痪閬嶆晸閺傘倖�?�归柨鐔告灮閹峰嘲宓忛搹楣冩晸缁叉姬ush闁跨喕鍓奸崣椋庮暜閹风兘鏁撻弬銈嗗闁跨喓鍗抽敐蹇斿闁跨喐鏋婚幏鐑芥晸閺傘倖�?�规稉鈧柨鐔告灮閹峰嘲骞撻柨鐔告灮閹风⿴ront/pc闁跨喐鏋婚幏鐑芥晸閺傘�?��?�归柨鐔峰建绾板�?�箌閸撳秹鏁撻弬銈嗗闁跨喓绂巄_flush
+        .fb_flush({flush_o[2],flush_o[0]}), //闂傚倷娴囧▔鏇㈠窗閹版澘鍑犲┑鐘宠壘缁狀垶鏌ｉ幋锝呅撻柡鍛倐閺岋繝宕掑鍫熷?闁跨喐鏋婚幏锟�?闁跨喕妫勭紞濠囧蓟閵娾晜鍋勯柛娑橈功娴煎嫰姊鸿ぐ鎺濇闁稿繑锕㈠顐﹀箻鐠囧弶顥濋梺闈涚墕濡顢旈崼鏇熲拺閻犳亽鍔岄弸娆忊攽閻愬弶鍠樻い銏℃⒐閹棃濮€閻欌偓娴兼捇姊绘担鑺ョ《闁哥姵娲熼妴浣糕堪閸℃瑦鐦旈梻渚€娼ч悧鍡欐崲閹搭垱瀚�?闁跨喕妫勭紞濠囧蓟閵娾晜鍋勯柛娑橈功娴煎嫰姊鸿ぐ鎺濇闁稿繑锕㈠顐﹀箻閼搁潧鏆遍梺缁樻礀閸婅崵绮堟径宀€妫柡澶嬵儥濡插綊鎮楀顒傜Ш闁哄被鍔戦幃銏ゅ礂閸忕厧娅濋梻浣虹帛閼归箖鎮洪…鎺撳?闁跨喕妫勭紞濠囧蓟閵娾晜鍋勯柛娑橈功娴煎嫰姊鸿ぐ鎺濇闁稿繑锕㈠顐﹀箻閼搁潧鏋傞梺鍦劋閸ㄧ數鑺辨繝姘厵闁绘垼濮ら弫閬嶆晸閿燂拷?闁规壆澧楅悡銉╂煟閺傛寧鍟為柣蹇ｅ櫍閺岀喎鐣￠弶鎸幮╂繛鏉戝悑濡啴寮婚妸鈺傚亜闁惧繗顕栧ú绨倁sh闂傚倷娴囧▔鏇㈠窗閺囥垹绀堝┑鍌溓归惌妤呮煕閹存瑥鈧绮旈崼鏇熺厵濡炲楠搁崢鎾煛娴ｈ灏甸柟鍙夋尦楠炴帒螖娴ｉ攱鍞夐梻浣哥秺椤ユ捇宕楀鈧顐﹀箻缂佹ê娈楀┑顔斤供閸撴瑦绻涢崶顒佺厱闁哄秲鍊曟晶鏌ユ倵濮橆剛绉洪柡灞诲姂閹垽宕ㄦ繝鍕磿闂備胶鎳撻崲鏌ュ床閺屻儱鍨傜憸鐗堝笒閸屻劌鈹戦悩宕囶暡闁哄懏鎮傞弻锟犲磼濮楀牊瀚�?闁跨喐鏋婚幏锟�?闁跨喕妫勭紞濠傜暦濠婂喚鍚嬪璺侯儐濞呫垽姊洪崨濠冨磩婵炲娲熼妴鍌炴晸閿燂拷?妤犵偛绻掔划姘繆瀵牠姊绘担鑺ョ《闁哥姵鍔欏鍛婄節濮橆剛顔嗛梺缁樺灱婵倝寮查幖浣圭厸闁稿本锕幏锟�?闁跨喐鏋婚幏锟�?闁跨喕妫勫﹢閬嶆儉椤忓牊鐒肩€广儱妫欏▍銏ゆ⒑閸濆嫬鈧爼宕愰弽鍨?闁跨喕妫勭紞濠囧蓟閵娾晜鍋勯柛娑橈功娴煎嫰姊洪悷鏉挎Щ闁搞垺褰冮悾浣冪疀濞戞瑦鍎俊銈忕到閸燁垶寮查崫銉х＜闁告瑥顦ⅲush闂傚倷娴囧▔鏇㈠窗閺囥垹绀堝┑鍌溓归惌妤€顪冪€ｎ亜鐦ㄩ柡鍡樼矒閺岀喐顦版惔鈥冲箣闂佽桨鐒﹂幑鍥ь嚕椤掑嫬围闁糕剝顨忔导鎾绘⒒娴ｈ姤纭堕柛鐘虫崌瀹曪繝骞庨懞銉︽珳闂婎偄娲﹂弻銊╊敂閸洘鈷戦悹鎭掑妼閺嬫垿鏌＄€ｎ亶鐓兼鐐茬箻閹粓鎳為妷锔筋仧闂備礁鎼崐鍫曞磹閺嶅灚瀚�?闁跨喎鈧噥娼愮紒瀣樀閸┾偓妞ゆ帒瀚悡銉╂煟閺傛寧鍟為柣蹇ｅ櫍閺岀喎鐣￠弶鎸幮╁Δ鐘靛仦閹瑰洭寮婚妸鈺傚亜闁告稑锕︽导鍕⒑瑜版帩妫戞顏嗩棝ont/pc闂傚倷娴囧▔鏇㈠窗閹版澘鍑犲┑鐘宠壘缁狀垶鏌ｉ幋锝呅撻柡鍛倐閺岋繝宕掑鍫熷?闁跨喐鏋婚幏锟�?闁跨喕妫勭紞濠囧蓟閵娾晜鍋勭€瑰嫭婢樼紓鎾剁磼閻愵剚绶叉い锕€搴滈幏锟�?闁跨喓鏅悾顒勬⒑閸涘﹥灏紒澶婄秺瀵偊骞樼拠鍙夘棟闂侀潧鐗嗗Λ妤咁敂閸洘鈷戦悹鎭掑妼閺嬫梻绱掗崒姘扁攭_flush
         .fb_pause({pause_o[2],pause_o[0]}),
         .fb_interrupt(1'b0),       
 //        .fb_new_pc(32'b0),
@@ -217,7 +226,7 @@ module mycpu_top(
         .pi_is_exception(pi_is_exception),
         .pi_exception_cause(pi_exception_cause),
 
-        // 闁跨喐鏋婚幏鐑芥晸閻ㄥ棛灏ㄩ幏鐤嚛闁跨喐鏋婚幏鐤闁跨噦�??
+        // 闂傚倷娴囧▔鏇㈠窗閹版澘鍑犲┑鐘宠壘缁狀垶鏌ｉ幋锝呅撻柡鍛倐閺岋綁濡搁妷锔绘￥闁诲繐绻堥崝鎴︾嵁韫囨稒鍋い鏍电到濞堫垶姊绘担鑺ョ《闁哥姵鍔欏鍛婄節濮橆剛顔嗛梺姹囧€ら崹閬嵥夊▎鎾粹拺閻犳亽鍔屽▍鎰版晸閿燂拷??
         .ex_is_bj(ex_is_bj),
         .ex_pc1(ex_pc1),
         .ex_pc2(ex_pc2),
@@ -229,7 +238,7 @@ module mycpu_top(
         .pred_addr2(ex_pred_addr2),
         .get_data_req(get_data_req),
 
-        // 闁跨喐鏋婚幏鐑芥晸閺傘�?��?�归柨鐔告灮閹风兘鏁撻崜璺暜閹风兘鏁撻懘姘卞皑閹凤�?
+        // 闂傚倷娴囧▔鏇㈠窗閹版澘鍑犲┑鐘宠壘缁狀垶鏌ｉ幋锝呅撻柡鍛倐閺岋繝宕掑鍫熷?闁跨喐鏋婚幏锟�?闁跨喕妫勭紞濠囧蓟閵娾晜鍋勯柛娑橈功娴煎嫰姊鸿ぐ鎺濇闁稿繑锕㈠顐﹀箻鐠囪尙顦柣鐘辫閻撳牓寮冲⿰鍫熺厵濡炲楠搁崢鎾煛娴ｈ宕岄柟铏～婵嬪础閻愬灚顓婚梻浣烘嚀閸ゆ牠鏁撻敓锟�?
         .fb_pred_taken1(fb_pred_taken1),
         .fb_pred_taken2(fb_pred_taken2),
         .fb_pc_out1(fb_pc1),
@@ -255,7 +264,7 @@ module mycpu_top(
         // from outer
         .is_hwi(ext_int),
         
-        // 闁跨喐鏋婚幏鐑芥晸閺傘�?��?�归崜宥夋晸閸撹法顣�?幏鐑芥晸閼存氨灏ㄩ幏�??
+        // 闂傚倷娴囧▔鏇㈠窗閹版澘鍑犲┑鐘宠壘缁狀垶鏌ｉ幋锝呅撻柡鍛倐閺岋繝宕掑鍫熷?闁跨喐鏋婚幏锟�?闁跨喕妫勭紞濠傜暦濠婂喚鍚嬪璺侯儐濞呫垽姊洪崨濠冨磩婵炲娲熼妴鍌炴晸閿燂拷?妤犵偛绻橀幃婊堟嚍閵夛附顏熼梻浣哄帶閻°劌顫濋妸褌鐒婇柕濞炬櫅缁狀垶鏁撻敓锟�??
         .new_pc(new_pc_from_ctrl),
         .pc_i1(fb_pc1),
         .pc_i2(fb_pc2),
@@ -272,9 +281,9 @@ module mycpu_top(
         .instbuffer_exception_cause1_i(fb_instbuffer_exception_cause1),
         .instbuffer_exception_cause2_i(fb_instbuffer_exception_cause2),
 
-        .bpu_flush(BPU_flush),   // 闁跨喐鏋婚幏閿嬫暜妫板嫰鏁撻弬銈嗗闁跨喐鏋婚幏鐑芥晸閺傘�?��?�归柨鐔告灮閹风兘鏁撻弬銈嗗闁跨喐鏋婚幏鐑芥晸閺傘倖�?�归柨鐕傛嫹
+        .bpu_flush(BPU_flush),   // 闂傚倷娴囧▔鏇㈠窗閹版澘鍑犲┑鐘宠壘缁狀垶姊洪崹顕呭剱闁哄棙绮岃灋闁哄鐏濋顓㈡煛娴ｈ宕岀€殿噮鍓熸俊鍫曞幢濡ゅ﹣绱﹂梻鍌欐祰濞夋洟宕伴幇鏉垮嚑濠电姵鑹剧粻顖炴煟閹达絽袚闁哄懏鎮傞弻锟犲磼濮楀牊瀚�?闁跨喐鏋婚幏锟�?闁跨喕妫勭紞濠囧蓟閵娾晜鍋勯柛娑橈功娴煎嫰姊鸿ぐ鎺濇闁稿繑锕㈠顐﹀箻鐠囧弶顥濋梺闈涚墕濡顢旈崼鏇熲拺閻犳亽鍔岄弸鎴︽煛鐎ｎ亶鐓兼鐐茬箻閹粓鎳為妷锔筋仧闂備礁鎼崐鍫曞磹閺嶅灚瀚�?闁跨喕妫勭紞濠囧蓟閵娾晜鍋嗛柛灞剧☉椤忥拷
     
-        // 闁跨喐鏋婚幏鐑芥晸閺傘�?��?�归柨鐔活潡鐢喗�?�圭拠鎾晸閺傘倖�?�归挊鏇㈡晸閿燂�?
+        // 闂傚倷娴囧▔鏇㈠窗閹版澘鍑犲┑鐘宠壘缁狀垶鏌ｉ幋锝呅撻柡鍛倐閺岋繝宕掑鍫熷?闁跨喐鏋婚幏锟�?闁跨喕妫勭紞濠囧蓟閵娾晜鍋勬繛鑼帛閸嬨儵鏌ｉ姀鈺佺伇闁哥姵顨愰幏锟�?闁跨喕妫勫﹢閬嶅箯閻樿绠绘い鏃囧Г濞呫垽姊洪崫鍕偓鍫曞磹閺嶅灚瀚�?闁跨喕妫勭紞濠囧箰婵犲洤鍗抽柕蹇婂墲濞呫垽姊虹捄銊ユ珢闁跨噦鎷�?
         .ex_bpu_is_bj(ex_is_bj),
         .ex_pc1(ex_pc1),
         .ex_pc2(ex_pc2),
@@ -285,6 +294,11 @@ module mycpu_top(
         .ex_bpu_branch_pred_addr1(ex_pred_addr1),
         .ex_bpu_branch_pred_addr2(ex_pred_addr2),
         .get_data_req_o(get_data_req),
+        .csr_dmw0(csr_dmw0),
+        .csr_dmw1(csr_dmw1),
+        .csr_da(csr_da),
+        .csr_pg(csr_pg),
+        .csr_plv(csr_plv),
 
 /*******************************
         .tlbidx(),
@@ -295,27 +309,22 @@ module mycpu_top(
         .asid(),
         .ecode(),
 
-        .csr_dme0(),
-        .csr_dme1(),
-        .csr_da(),
-        .csr_pg(),
-        .csr_plv(),
         .csr_datf(),
         .csr_datm(),
 ***********************************/
 
-        // 闁跨喐鏋婚幏鐑芥晸閺傘�?��?�归柨鐕傛嫹 dcache 闁跨喐鏋婚幏鐑芥晸閼存氨灏ㄩ幏锟?
+        // 闂傚倷娴囧▔鏇㈠窗閹版澘鍑犲┑鐘宠壘缁狀垶鏌ｉ幋锝呅撻柡鍛倐閺岋繝宕掑鍫熷?闁跨喐鏋婚幏锟�?闁跨喕妫勭紞濠囧蓟閵娾晜鍋嗛柛灞剧☉椤忥拷 dcache 闂傚倷娴囧▔鏇㈠窗閹版澘鍑犲┑鐘宠壘缁狀垶鏌ｉ幋锝呅撻柡鍛倐閺屻倗鈧稒蓱閻ㄦ垿鎮樿箛瀣妤犵偛绻橀弫锟�?
         .ren_o(backend_dcache_ren),
         .wstrb_o(backend_dcache_wen),
         .virtual_addr_o(backend_dcache_addr),
         .wdata_o(backend_dcache_write_data),
 
-        // dcache 闁跨喐鏋婚幏鐑芥晸閹搭亞顣幏鐑芥晸閼存氨灏ㄩ幏�??
+        // dcache 闂傚倷娴囧▔鏇㈠窗閹版澘鍑犲┑鐘宠壘缁狀垶鏌ｉ幋锝呅撻柡鍛倐閺岀喖骞栭婵堟晼濡炪倧缍嗛崳锝夌嵁韫囨稒鍊婚柤鎭掑劜濞呫垽姊洪悡搴ｆ憼婵ǜ鍔庢禍鎼佸Ω閳轰胶顔嗛柨鐕傛嫹??
         .rdata_i(dcache_rdata),
         .rdata_valid_i(dcache_backend_rdata_valid),
         .dcache_pause_i(~dcache_ready),
 
-        // 闁跨喐鏋婚幏绌媡rl闁跨喐鏋婚幏鐑芥晸閺傘�?��?�归柨鐔告灮閹风柉妫旈悧娑㈡晸閿燂拷8娴ｅ秹鏁撻弬銈嗗�?
+        // 闂傚倷娴囧▔鏇㈠窗閹版澘鍑犲┑鐘宠壘缁狀垳绱掔仦绛嬧偓鈧瑀l闂傚倷娴囧▔鏇㈠窗閹版澘鍑犲┑鐘宠壘缁狀垶鏌ｉ幋锝呅撻柡鍛倐閺岋繝宕掑鍫熷?闁跨喐鏋婚幏锟�?闁跨喕妫勭紞濠囧蓟閵娾晜鍋勯柛娑橈功娴煎嫰姊鸿ぐ鎺濇闁哄苯顦灋闁哄啫鐗婇崑瀣箾閹存瑥鐏柡鍛倐閺屻劑鎮ら崒娑橆伓8濠电偠鎻徊鐣岀矓瑜版帒鏋侀柟鎹愵嚙濡﹢鏌曢崼婵囶棞闁跨噦鎷�?
         .flush_o(flush_o),
         .pause_o(pause_o),
         
@@ -344,8 +353,8 @@ module mycpu_top(
         .rst(rst),   
         .flush(flush_o[1]),       
     // Interface to CPU
-        .inst_rreq(inst_rreq),  // 闁跨喐鏋婚幏鐑芥晸閺傘�?��?�笴PU闁跨喐鏋婚幏宄板絿閹稿洭鏁撻弬銈嗗闁跨喐鏋婚幏�??
-        .inst_addr(inst_addr),      // 闁跨喐鏋婚幏鐑芥晸閺傘�?��?�笴PU闁跨喐鏋婚幏宄板絿閹稿洭鏁撻弬銈嗗閸�?�?
+        .inst_rreq(inst_rreq),  // 闂傚倷娴囧▔鏇㈠窗閹版澘鍑犲┑鐘宠壘缁狀垶鏌ｉ幋锝呅撻柡鍛倐閺岋繝宕掑鍫熷?闁跨喐鏋婚幏锟�?闁跨喓鏅寤漊闂傚倷娴囧▔鏇㈠窗閹版澘鍑犲┑鐘宠壘缁狀垳鈧懓瀚妯煎緤閸ф鐓欑紒瀣閸犳﹢鏌℃担瑙勫磳鐎殿噮鍓熸俊鍫曞幢濡ゅ﹣绱﹂梻鍌欐祰濞夋洟宕伴幇鏉垮嚑濠电姵鑹剧粻顖炴晸閿燂拷??
+        .inst_addr(inst_addr),      // 闂傚倷娴囧▔鏇㈠窗閹版澘鍑犲┑鐘宠壘缁狀垶鏌ｉ幋锝呅撻柡鍛倐閺岋繝宕掑鍫熷?闁跨喐鏋婚幏锟�?闁跨喓鏅寤漊闂傚倷娴囧▔鏇㈠窗閹版澘鍑犲┑鐘宠壘缁狀垳鈧懓瀚妯煎緤閸ф鐓欑紒瀣閸犳﹢鏌℃担瑙勫磳鐎殿噮鍓熸俊鍫曞幢濡ゅ﹣绱﹂梻渚€娼婚幏锟�?闁跨噦鎷�?
         .BPU_pred_addr(BPU_pred_addr),
         .BPU_pred_taken(BPU_pred_taken),
 
@@ -387,17 +396,19 @@ module mycpu_top(
     wire debug_wb_we1;
     wire debug_wb_we2;
 
+    wire [3:0] duncache_wstrb;
+
     dcache u_dcache(
         .clk(aclk),
         .rst(rst),
 
-        // 闁跨喐鏋婚幏鐑芥晸閻ㄥ棛灏ㄩ幏鐤嚛闁跨喐鏋婚幏鐤闁跨噦�??
+        // 闂傚倷娴囧▔鏇㈠窗閹版澘鍑犲┑鐘宠壘缁狀垶鏌ｉ幋锝呅撻柡鍛倐閺岋綁濡搁妷锔绘￥闁诲繐绻堥崝鎴︾嵁韫囨稒鍋い鏍电到濞堫垶姊绘担鑺ョ《闁哥姵鍔欏鍛婄節濮橆剛顔嗛梺姹囧€ら崹閬嵥夊▎鎾粹拺閻犳亽鍔屽▍鎰版晸閿燂拷??
         .ren(backend_dcache_ren),
         .wen(backend_dcache_wen),
         .vaddr(backend_dcache_addr),
         .write_data(backend_dcache_write_data),
 
-        // 闁跨喐鏋婚幏鐑芥晸閺傘�?��?�归柨鐔告灮閹风兘鏁撻崜璺暜閹风兘鏁撻懘姘卞皑閹凤�?
+        // 闂傚倷娴囧▔鏇㈠窗閹版澘鍑犲┑鐘宠壘缁狀垶鏌ｉ幋锝呅撻柡鍛倐閺岋繝宕掑鍫熷?闁跨喐鏋婚幏锟�?闁跨喕妫勭紞濠囧蓟閵娾晜鍋勯柛娑橈功娴煎嫰姊鸿ぐ鎺濇闁稿繑锕㈠顐﹀箻鐠囪尙顦柣鐘辫閻撳牓寮冲⿰鍫熺厵濡炲楠搁崢鎾煛娴ｈ宕岄柟铏～婵嬪础閻愬灚顓婚梻浣烘嚀閸ゆ牠鏁撻敓锟�?
         .rdata(dcache_rdata),
         .rdata_valid(dcache_backend_rdata_valid),    
         .dcache_ready(dcache_ready),  
@@ -420,10 +431,26 @@ module mycpu_top(
         .uncache_ren(duncache_ren),
         .uncache_raddr(duncache_raddr),
 
+        //trans_addr to dcache
+        .ret_data_paddr(ret_data_paddr),
+
         .uncache_write_finish(duncache_write_finish),
         .uncache_wen(duncache_wen),
+        .uncache_wstrb(duncache_wstrb),
         .uncache_wdata(duncache_wdata),
         .uncache_waddr(duncache_waddr)  
+    );
+        
+    addr_trans u_addr_trans(
+        .clk(aclk),
+        .rst(rst),
+        .data_vaddr(backend_dcache_addr),
+        .csr_da(csr_da),
+        .csr_pg(csr_pg),
+        .csr_dmw0(csr_dmw0),
+        .csr_dmw1(csr_dmw1),
+        .csr_plv(csr_plv),
+        .ret_data_paddr(ret_data_paddr)
     );
 
     axi_interface u_axi_interface(
@@ -457,7 +484,7 @@ module mycpu_top(
         .arprot(arprot),   
         .arvalid(arvalid),       
         .arready(arready),         
-    //R闁跨喐鏋婚幏鐑芥晸閺傘�?��?�归柨鐔告灮閹凤�?
+    //R闂傚倷娴囧▔鏇㈠窗閹版澘鍑犲┑鐘宠壘缁狀垶鏌ｉ幋锝呅撻柡鍛倐閺岋繝宕掑鍫熷?闁跨喐鏋婚幏锟�?闁跨喕妫勭紞濠囧蓟閵娾晜鍋勯柛娑橈功娴煎嫰姊洪悷鏉挎闁跨噦鎷�?
         .rid(rid),
         .rdata(rdata),   
         .rresp(rresp),    
@@ -466,7 +493,7 @@ module mycpu_top(
         .rready(rready),
         .rdata_o(axi_rdata),
         .rdata_valid_o(axi_rdata_valid),         
-    //AW閸愭瑩鏁撻弬銈嗗閸р�?
+    //AW闂備礁鎲￠崝鏍偡閳哄懎鏋侀柟鎹愵嚙濡﹢鏌曢崼婵囶棞妞ゅ繐鐖奸弻娑滎槷闁跨噦鎷�?
         .awid(awid),     
         .awaddr(awaddr),  
         .awlen(awlen),    
@@ -477,14 +504,14 @@ module mycpu_top(
         .awprot(awprot),   
         .awvalid(awvalid),        
         .awready(awready),        
-    //W閸愭瑩鏁撻弬銈嗗闁跨喐鏋婚幏锟?
+    //W闂備礁鎲￠崝鏍偡閳哄懎鏋侀柟鎹愵嚙濡﹢鏌曢崼婵囶棞妞ゅ繐鐖煎铏规崉閵娿儲鐎鹃梺鍝勵儏椤兘鐛箛娑欐櫢?
         .wid(wid),     
         .wdata(wdata),  
         .wstrb(wstrb),    
         .wlast(wlast),          
         .wvalid(wvalid),       
         .wready(wready),         
-    //閸愭瑩鏁撻弬銈嗗鎼达拷
+    //闂備礁鎲￠崝鏍偡閳哄懎鏋侀柟鎹愵嚙濡﹢鏌曢崼婵囶棞妞ゅ繐鐖奸獮鏍ㄦ綇閻愵剙顏�
         .bid(bid),      
         .bresp(bresp),    
         .bvalid(bvalid),        
@@ -527,13 +554,14 @@ module mycpu_top(
         .duncache_rdata_o(duncache_rdata),
 
         .duncache_wen_i(duncache_wen),
+        .duncache_wstrb(duncache_wstrb),
         .duncache_wdata_i(duncache_wdata),
         .duncache_waddr_i(duncache_waddr),
         .duncache_write_resp(duncache_write_finish),
 
     //AXI communicate
         .axi_ce_o(axi_ce_o),
-        .axi_wsel_o(axi_wsel),   // 闁跨喐鏋婚幏鐑芥晸閺傘�?��?�归柨鐔告灮閹风兘鏁撶粩顓狀暜閹风strb
+        .axi_wsel_o(axi_wsel),   // 闂傚倷娴囧▔鏇㈠窗閹版澘鍑犲┑鐘宠壘缁狀垶鏌ｉ幋锝呅撻柡鍛倐閺岋繝宕掑鍫熷?闁跨喐鏋婚幏锟�?闁跨喕妫勭紞濠囧蓟閵娾晜鍋勯柛娑橈功娴煎嫰姊鸿ぐ鎺濇闁稿繑锕㈠顐﹀箻閸撲礁宕ュ銈嗘尵婵參寮冲⿰鍫熺厵濡炲瀵掗悢鍗籺rb
 
     //AXI read
         .rdata_i(axi_rdata),
@@ -544,7 +572,7 @@ module mycpu_top(
         .axi_rlen_o(axi_rlen),
 
     //AXI write
-        .wdata_resp_i(axi_wdata_resp),  // 閸愭瑩鏁撻弬銈嗗鎼存棃鏁撻懘姘卞皑閹凤�?
+        .wdata_resp_i(axi_wdata_resp),  // 闂備礁鎲￠崝鏍偡閳哄懎鏋侀柟鎹愵嚙濡﹢鏌曢崼婵囶棞妞ゅ繐鐖奸獮鏍偓娑櫳戦ˉ鍫ユ煛娴ｈ宕岄柟铏～婵嬪础閻愬灚顓婚梻浣烘嚀閸ゆ牠鏁撻敓锟�?
         .axi_wen_o(axi_wen),
         .axi_waddr_o(axi_waddr),
         .axi_wdata_o(axi_wdata),
@@ -566,6 +594,17 @@ module mycpu_top(
     assign valid1 = debug_wb_valid1;
     assign valid2 = debug_wb_valid2;
 
+    debug_FIFO debug
+    (
+        .clk(aclk),
+        .rst(rst),
+        .valid1(valid1),
+        .data1(data1),
+        .valid2(valid2),
+        .data2(data2),
+        .data_out(debug_data_out),
+        .valid_out(debug_valid_out)
+    );
 
 
 
