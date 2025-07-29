@@ -5,8 +5,8 @@ module icache
     input  wire         rst,       // low active
     input  wire         flush,
     // Interface to CPU
-    input  wire         inst_rreq,      // 閿熸枻鎷烽敓鏂ゆ嫹CPU閿熸枻鎷峰彇鎸囬敓鏂ゆ嫹閿熸枻鎷?
-    input  wire [31:0]  inst_addr,      // 閿熸枻鎷烽敓鏂ゆ嫹CPU閿熸枻鎷峰彇鎸囬敓鏂ゆ嫹鍧€
+    input  wire         inst_rreq,      // 锟斤拷锟斤拷CPU锟斤拷取指锟斤拷锟斤�?
+    input  wire [31:0]  inst_addr,      // 锟斤拷锟斤拷CPU锟斤拷取指锟斤拷坢�
     input  wire [31:0]  BPU_pred_addr,
     input  wire [1:0]   BPU_pred_taken,
 
@@ -15,7 +15,7 @@ module icache
 
     output wire [31:0]  pred_addr,
     output wire [1:0]   pred_taken,
-    output reg          inst_valid,     // 閿熸枻鎷烽敓鏂ゆ嫹閿熺春PU閿熸枻鎷锋寚閿熸枻鎷烽敓鏂ゆ嫹鏁堥敓鑴氱尨鎷?
+    output reg          inst_valid,     // 锟斤拷锟斤拷锟紺PU锟斤拷指锟斤拷锟斤拷效锟脚猴�?
     output reg  [31:0]  inst_out1,       // 
     output reg  [31:0]  inst_out2,
     output reg  [31:0]  pc1,
@@ -26,28 +26,29 @@ module icache
     output reg  [6:0]   pc_exception_cause_out2,
     output wire         pc_suspend,  
     // Interface to Read Bus
-    input  wire         dev_rrdy,       // 閿熸枻鎷烽敓鏂ゆ嫹閿熸枻鎷烽敓鏂ゆ嫹钘曠墰閿熸枻鎷峰彥閿熺嫛鏂ゆ嫹閿熺粸鎾呮嫹閿熸枻鎷烽敓缂存枻鎷烽敓鏂ゆ嫹ICache閿熶茎璁规嫹閿熸枻鎷烽敓鏂ゆ嫹
-    output reg          cpu_ren,        // 閿熸枻鎷烽敓鏂ゆ嫹閿熸枻鎷烽敓鏂ゆ嫹閿熶茎璁规嫹浣块敓鏂ゆ嫹閿熻剼鐚存嫹
-    output reg  [31:0]  cpu_raddr,      // 閿熸枻鎷烽敓鏂ゆ嫹閿熸枻鎷烽敓鏂ゆ嫹閿熶茎璁规嫹閿熸枻鎷峰潃
-    input  wire         dev_rvalid,     // 閿熸枻鎷烽敓鏂ゆ嫹閿熸枻鎷烽敓鏂ゆ嫹閿熸枻鎷烽敓鏂ゆ嫹閿熸枻鎷烽敓鍙嶆嫹钘曢敓锟?
-    input  wire [127:0] dev_rdata,   // 閿熸枻鎷烽敓鏂ゆ嫹閿熸枻鎷烽敓鏂ゆ嫹浜╅敓鏂ゆ嫹閿熸枻鎷烽敓锟?  128
+    input  wire         dev_rrdy,       // 锟斤拷锟斤拷锟斤拷锟斤拷藕牛锟斤拷叩锟狡斤拷锟绞撅拷锟斤拷锟缴斤拷锟斤拷ICache锟侥讹拷锟斤拷锟斤拷
+    output reg          cpu_ren,        // 锟斤拷锟斤拷锟斤拷锟斤拷锟侥讹拷使锟斤拷锟脚猴拷
+    output reg  [31:0]  cpu_raddr,      // 锟斤拷锟斤拷锟斤拷锟斤拷锟侥讹拷锟斤拷址
+    input  wire         dev_rvalid,     // 锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟叫э拷藕锟�?
+    input  wire [127:0] dev_rdata,   // 锟斤拷锟斤拷锟斤拷锟斤拷亩锟斤拷锟斤拷锟�?  128
     input  wire         ren_received,
     input  wire         flush_flag_valid
 );
 
-    localparam IDLE = 2'b00;
-    localparam DEALING1 = 2'b01;
-    localparam DEALING2 = 2'b10;
-    localparam REFILL = 2'b11;
-    reg [1:0] state;
-    reg [1:0] next_state;
+    localparam IDLE = 3'b000;
+    localparam DEALING1 = 3'b001;
+    localparam DEALING2 = 3'b010;
+    localparam REFILL = 3'b011;
+    localparam UNCACHE = 3'b100;
+    reg [2:0] state;
+    reg [2:0] next_state;
 
     wire [31:0] addr_1_1 = inst_addr;
     wire [31:0] addr_2_1 = inst_addr + 4;
-    wire [5:0]  index_1_1 = addr_1_1[9:4];
-    wire [5:0]  index_2_1 = addr_2_1[9:4];
-    wire [21:0] tag_1_1 = addr_1_1[31:10];
-    wire [21:0] tag_2_1 = addr_2_1[31:10];
+    wire [2:0]  index_1_1 = addr_1_1[6:4];
+    wire [2:0]  index_2_1 = addr_2_1[6:4];
+    wire [24:0] tag_1_1 = addr_1_1[31:7];
+    wire [24:0] tag_2_1 = addr_2_1[31:7];
     wire [1:0] offset1_1 = addr_1_1[3:2];
     wire [1:0] offset2_1 = addr_2_1[3:2];
 
@@ -55,8 +56,8 @@ module icache
     reg [31:0] addr_2_2;
     reg [1:0] offset1_2;
     reg [1:0] offset2_2;
-    reg [21:0] tag_1_2;
-    reg [21:0] tag_2_2;
+    reg [24:0] tag_1_2;
+    reg [24:0] tag_2_2;
     reg req_2;
     reg pi_is_exception_2;
     reg [6:0] pi_exception_cause_2;
@@ -64,34 +65,34 @@ module icache
     reg [31:0] pred_addr_2;
     reg [1:0]  pred_taken_2;   
 
-    wire [150:0]ram1_data_block1;
-    wire [150:0]ram1_data_block2;
-    wire [150:0]ram2_data_block1;
-    wire [150:0]ram2_data_block2;
+    wire [153:0]ram1_data_block1;
+    wire [153:0]ram1_data_block2;
+    wire [153:0]ram2_data_block1;
+    wire [153:0]ram2_data_block2;
 
-    wire [21:0]ram1_tag1 = ram1_data_block1[149:128];
-    wire [21:0]ram1_tag2 = ram1_data_block2[149:128];
-    wire [21:0]ram2_tag1 = ram2_data_block1[149:128];
-    wire [21:0]ram2_tag2 = ram2_data_block2[149:128];
+    wire [24:0]ram1_tag1 = ram1_data_block1[152:128];
+    wire [24:0]ram1_tag2 = ram1_data_block2[152:128];
+    wire [24:0]ram2_tag1 = ram2_data_block1[152:128];
+    wire [24:0]ram2_tag2 = ram2_data_block2[152:128];
 
-    reg [1:0] use_bit [63:0];
+    reg [1:0] use_bit [7:0];
 
-    wire [21:0] refill_tag = state == DEALING1 ? addr_1_2[31:10] :  addr_2_2[31:10];
+    wire [24:0] refill_tag = state == DEALING1 ? addr_1_2[31:7] :  addr_2_2[31:7];
 
 
-    wire [5:0]index1 = (state == IDLE & (inst_valid | !req_2)) ? index_1_1 : addr_1_2[9:4];
-    wire [5:0]index2 = (state == IDLE & (inst_valid | !req_2)) ? index_2_1 : addr_2_2[9:4];
-    reg [5:0]index1_delay;
-    reg [5:0]index2_delay;
+    wire [2:0]index1 = (state == REFILL | (state == IDLE & (inst_valid | !req_2))) ? index_1_1 : addr_1_2[6:4];
+    wire [2:0]index2 = (state == REFILL | (state == IDLE & (inst_valid | !req_2))) ? index_2_1 : addr_2_2[6:4];
+    reg [2:0]index1_delay;
+    reg [2:0]index2_delay;
 
-    wire [150:0] refill_data = {{1'b1,refill_tag},dev_rdata};
+    wire [153:0] refill_data = {{1'b1,refill_tag},dev_rdata};
 
-    //閿熸枻鎷蜂竴閿熸枻鎷?1閿熸枻鎷烽敓鏂ゆ嫹ram1閿熸枻鎷烽敓鑺傝鎷烽敓鏂ゆ嫹1閿熸枻鎷烽敓鏂ゆ嫹index1
-    wire hit_ram1_index1 = !flush & (tag_1_2==ram1_tag1) & req_2 & ram1_data_block1[150];  
-    wire hit_ram2_index1 = !flush & (tag_1_2==ram2_tag1) & req_2 & ram2_data_block1[150];
+    //锟斤拷一锟斤�?1锟斤拷锟斤拷ram1锟斤拷锟节讹拷锟斤拷1锟斤拷锟斤拷index1
+    wire hit_ram1_index1 = !flush & (tag_1_2==ram1_tag1) & req_2 & ram1_data_block1[153];  
+    wire hit_ram2_index1 = !flush & (tag_1_2==ram2_tag1) & req_2 & ram2_data_block1[153];
     wire hit_index1 = hit_ram1_index1 | hit_ram2_index1;    //index1
-    wire hit_ram1_index2 = !flush & (tag_2_2==ram1_tag2) & req_2 & ram1_data_block2[150];
-    wire hit_ram2_index2 = !flush & (tag_2_2==ram2_tag2) & req_2 & ram2_data_block2[150];
+    wire hit_ram1_index2 = !flush & (tag_2_2==ram1_tag2) & req_2 & ram1_data_block2[153];
+    wire hit_ram2_index2 = !flush & (tag_2_2==ram2_tag2) & req_2 & ram2_data_block2[153];
     wire hit_index2 = hit_ram1_index2 | hit_ram2_index2;    //index2
 
     wire [127:0] hit1_data = {128{hit_ram1_index1}}&ram1_data_block1[127:0] | {128{hit_ram2_index1}}&ram2_data_block1[127:0];
@@ -102,7 +103,7 @@ module icache
     wire we_ram2_index1 = dev_rvalid & (use_bit[index1]==2'b01) & !flush & req_2 & state == DEALING1 & !flush_flag;
     wire we_ram2_index2 = dev_rvalid & (use_bit[index2]==2'b01) & !flush & req_2 & state == DEALING2 & !flush_flag;
 
-    assign pc_suspend = next_state != IDLE | state == REFILL;
+    assign pc_suspend = next_state != IDLE;
     integer i;
     reg flush_flag;
 
@@ -143,8 +144,8 @@ module icache
             req_2 <= 0;
             offset1_2 <= 2'b0;
             offset2_2 <= 2'b0;
-            tag_1_2 <= 22'b0;
-            tag_2_2 <= 22'b0; 
+            tag_1_2 <= 25'b0;
+            tag_2_2 <= 25'b0; 
 
             pred_addr_2 <= 32'b0;
             pred_taken_2 <= 2'b0;
@@ -162,7 +163,7 @@ module icache
                 DEALING1:begin
                     if(!dev_rvalid & flush_flag_valid)
                     begin
-                        flush_flag <= 1'b1;     //flush閿熸枻鎷烽敓鏂ゆ嫹閿熸枻鎷烽敓鏂ゆ嫹閿熸枻鎷烽敓鏂ゆ嫹閿熸枻鎷烽敓鏂ゆ嫹閿熸枻鎷烽敓鏂ゆ嫹閿熸枻鎷烽敓鏂ゆ嫹涓€閿熸枻鎷穌ev_rvalid
+                        flush_flag <= 1'b1;     //flush锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷丢�锟斤拷dev_rvalid
                     end
                 end
                 DEALING2:begin
@@ -177,7 +178,7 @@ module icache
             if(rst)
             begin
                 flush_flag <= 1'b0;
-                for(i=0;i<64;i=i+1)
+                for(i=0;i<8;i=i+1)
                 begin
                     use_bit[i] <= 2'b10;
                 end
@@ -188,7 +189,7 @@ module icache
                 case(state)
                 IDLE,REFILL:begin
                     if(dev_rvalid) flush_flag <= 1'b0;
-                    if(next_state == IDLE & state != REFILL)
+                    if(next_state == IDLE)
                     begin
                     addr_1_2 <= addr_1_1;
                     addr_2_2 <= addr_2_1;
@@ -249,8 +250,8 @@ module icache
     begin
         if(rst | flush)
         begin
-            index1_delay <= 6'b0;
-            index2_delay <= 6'b0;
+            index1_delay <= 3'b0;
+            index2_delay <= 3'b0;
         end
         else
         begin
@@ -258,33 +259,9 @@ module icache
             index2_delay <= index2;
         end
     end
-/*
-    icache_ram ram1
-    (
-        .clk(clk),
-        .we1(we_ram1_index1),
-        .we2(we_ram1_index2),
-        .rst(rst),
-        .index1(index1),
-        .index2(index2),
-        .data_in(refill_data),
-        .data_out1(ram1_data_block1),
-        .data_out2(ram1_data_block2)
-    );
 
-    icache_ram ram2
-    (
-        .clk(clk),
-        .we1(we_ram2_index1),
-        .we2(we_ram2_index2),
-        .index1(index1),
-        .index2(index2),
-        .rst(rst),
-        .data_in(refill_data),
-        .data_out1(ram2_data_block1),
-        .data_out2(ram2_data_block2)
-    );
-    */
+
+    
     assign pred_addr = pred_addr_2;
     assign pred_taken = pred_taken_2;
 
@@ -315,6 +292,32 @@ module icache
         endcase
     end
 
+    icache_ram ram1
+    (
+        .clk(clk),
+        .we1(we_ram1_index1),
+        .we2(we_ram1_index2),
+        .rst(rst),
+        .index1(index1),
+        .index2(index2),
+        .data_in(refill_data),
+        .data_out1(ram1_data_block1),
+        .data_out2(ram1_data_block2)
+    );
+
+    icache_ram ram2
+    (
+        .clk(clk),
+        .we1(we_ram2_index1),
+        .we2(we_ram2_index2),
+        .index1(index1),
+        .index2(index2),
+        .rst(rst),
+        .data_in(refill_data),
+        .data_out1(ram2_data_block1),
+        .data_out2(ram2_data_block2)
+    );
+/*
     bram ram1
     (
         .clka(clk),
@@ -347,6 +350,7 @@ module icache
         .doutb(ram2_data_block2),
         .enb(1'b1),
         .web(we_ram2_index2)
-    );
 
+    );
+*/
     endmodule

@@ -2,7 +2,7 @@ module csr (
     input wire clk,
     input wire rst,
 
-    // 和dispatch的接口
+    // 和dispatch的接�?
     input wire [1:0]  csr_read_en_i,
     input wire [13:0] csr_read_addr_i1,
     input wire [13:0] csr_read_addr_i2,
@@ -10,7 +10,7 @@ module csr (
     output reg [31:0] csr_read_data_o1,
     output reg [31:0] csr_read_data_o2,
 
-    // 来自wb的信号
+    // 来自wb的信�?
     input wire        is_llw_scw_i,
     input wire        csr_write_en_i,
     input wire [13:0] csr_write_addr_i,
@@ -31,14 +31,14 @@ module csr (
     //tlb相关输出
     output wire [31:0] tlbidx_o,  //7.5.1TLB索引寄存器，包含[4:0]为index,[29:24]为PS，[31]为NE
     output wire [31:0] tlbehi_o,  //7.5.2TLB表项高位，包含[31:13]为VPPN
-    output wire [31:0] tlbelo0_o,   //7.5.3TLB表项低位，包含写入TLB表项的内容
+    output wire [31:0] tlbelo0_o,   //7.5.3TLB表项低位，包含写入TLB表项的内�?
     output wire [31:0] tlbelo1_o,
-    output wire [9:0]  asid_o,  //7.5.4ASID的低9位
+    output wire [9:0]  asid_o,  //7.5.4ASID的低9�?
     //TLBFILL和TLBWR指令
-    output wire [5:0]  ecode_o,//7.5.1对于NE变量的描述中讲到，CSR.ESTAT.Ecode   (大概使能信号，若为111111则写使能，否则根据tlbindex_in.NE判断是否写使能？
+    output wire [5:0]  ecode_o,//7.5.1对于NE变量的描述中讲到，CSR.ESTAT.Ecode   (大概使能信号，若�?111111则写使能，否则根据tlbindex_in.NE判断是否写使能？
     //CSR信号
-    output wire [31:0] csr_dmw0_o,//dmw0，有效位是[27:25]，可能会作为最后转换出来的地址的最高三位
-    output wire [31:0] csr_dmw1_o,//dmw1，有效位是[27:25]，可能会作为最后转换出来的地址的最高三位
+    output wire [31:0] csr_dmw0_o,//dmw0，有效位是[27:25]，可能会作为�?后转换出来的地址的最高三�?
+    output wire [31:0] csr_dmw1_o,//dmw1，有效位是[27:25]，可能会作为�?后转换出来的地址的最高三�?
     output wire        csr_da_o,
     output wire        csr_pg_o,
     output wire [1:0]  csr_plv_o,
@@ -47,12 +47,12 @@ module csr (
     
     
     // from outer（不知道是什么）
-    input wire        is_ipi, //接0
-    input wire [7:0]  is_hwi,//mytop输入的
+    input wire        is_ipi, //�?0
+    input wire [7:0]  is_hwi,//mytop输入�?
 
 
-    // 和ctrl的接口
-    input wire        is_exception_i, //是否是异常
+    // 和ctrl的接�?
+    input wire        is_exception_i, //是否是异�?
     input wire [6:0]  exception_cause_i, //异常原因
     input wire [31:0] exception_pc_i, //异常PC地址
     input wire [31:0] exception_addr_i, //异常地址
@@ -64,8 +64,8 @@ module csr (
 
     output wire [31:0] eentry_o, //异常入口地址
     output wire [31:0] era_o, //异常返回地址
-    output wire [31:0] crmd_o, //控制寄存器 
-    output wire        is_interrupt_o, //是否是中断
+    output wire [31:0] crmd_o, //控制寄存�? 
+    output wire        is_interrupt_o, //是否是中�?
     output wire [31:0] tlbrentry_o
 );
     
@@ -97,6 +97,12 @@ module csr (
     reg [31:0] tlbrentry;
     reg [31:0] dmw0;
     reg [31:0] dmw1;
+    reg [31:0] cpucfg1;
+    reg [31:0] cpucfg2;
+    reg [31:0] cpucfg10;
+    reg [31:0] cpucfg11;
+    reg [31:0] cpucfg12;
+    reg [31:0] cpucfg13;
 
     reg llbit;
 
@@ -128,6 +134,7 @@ module csr (
     wire tlbrentry_wen;
     wire dmw0_wen;
     wire dmw1_wen;
+
 
     assign crmd_wen   = csr_write_en_i & (csr_write_addr_i == `CSR_CRMD);
     assign prmd_wen   = csr_write_en_i & (csr_write_addr_i == `CSR_PRMD);
@@ -295,7 +302,7 @@ module csr (
                     badv <= exception_pc_i;
                 end
                 default: begin
-                    badv <= badv; //其他异常不处理??????????????
+                    badv <= badv; //其他异常不处�???????????????
                 end
             endcase
         end 
@@ -512,6 +519,48 @@ module csr (
         end
     end
 
+    //cpucfg1
+    always @(posedge clk) begin
+        if (rst) begin
+            cpucfg1 <= 32'h1f1f4;
+        end 
+    end
+
+    //cpucfg2
+    always @(posedge clk) begin
+        if (rst) begin
+            cpucfg2 <= 32'h0;
+        end 
+    end
+
+    //cpucfg10
+    always @(posedge clk) begin
+        if (rst) begin
+            cpucfg10 <= 32'h5;
+        end 
+    end
+
+    //cpucfg11
+    always @(posedge clk) begin
+        if (rst) begin
+            cpucfg11 <= 32'h04080001;
+        end 
+    end
+
+    //cpucfg12
+    always @(posedge clk) begin
+        if (rst) begin
+            cpucfg12 <= 32'h04080001;
+        end 
+    end
+
+    //cpucfg13
+    always @(posedge clk) begin
+        if (rst) begin
+            cpucfg13 <= 32'h0;
+        end 
+    end
+
     //cpuid
     always @(posedge clk) begin
         if (rst) begin
@@ -707,6 +756,24 @@ module csr (
                     `CSR_DMW1: begin
                         csr_read_data_o1 = dmw1;
                     end
+                    `CSR_CPUCFG1: begin
+                        csr_read_data_o1 = cpucfg1;
+                    end
+                    `CSR_CPUCFG2: begin
+                        csr_read_data_o1 = cpucfg2;
+                    end
+                    `CSR_CPUCFG10: begin
+                        csr_read_data_o1 = cpucfg10;
+                    end
+                    `CSR_CPUCFG11: begin
+                        csr_read_data_o1 = cpucfg11;
+                    end
+                    `CSR_CPUCFG12: begin
+                        csr_read_data_o1 = cpucfg12;
+                    end
+                    `CSR_CPUCFG13: begin
+                        csr_read_data_o1 = cpucfg13;
+                    end
                     default: begin
                         csr_read_data_o1 = 32'b0;
                     end 
@@ -800,6 +867,24 @@ module csr (
                     end
                     `CSR_DMW1: begin 
                         csr_read_data_o2 = dmw1; 
+                    end
+                    `CSR_CPUCFG1: begin
+                        csr_read_data_o1 = cpucfg1;
+                    end
+                    `CSR_CPUCFG2: begin
+                        csr_read_data_o1 = cpucfg2;
+                    end
+                    `CSR_CPUCFG10: begin
+                        csr_read_data_o1 = cpucfg10;
+                    end
+                    `CSR_CPUCFG11: begin
+                        csr_read_data_o1 = cpucfg11;
+                    end
+                    `CSR_CPUCFG12: begin
+                        csr_read_data_o1 = cpucfg12;
+                    end
+                    `CSR_CPUCFG13: begin
+                        csr_read_data_o1 = cpucfg13;
                     end
                     default: begin
                         csr_read_data_o2 = 32'b0;

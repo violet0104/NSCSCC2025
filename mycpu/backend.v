@@ -649,6 +649,16 @@ module backend (
     wire flush_to_execute = flush_o[5];
     wire pause_to_execute = pause_o[5];
 
+    //cacop
+    wire icacop_en1;            // to icache
+    wire icacop_en2;
+    wire dcacop_en1;            // to dcache
+    wire dcacop_en2;
+    wire [1:0] cacop_mode1;     // to icache & dcache
+    wire [1:0] cacop_mode2;
+    wire data_vaddr1;           // to addr_trans
+    wire data_vaddr2;
+
     execute u_execute 
     (
         .clk(clk),
@@ -788,7 +798,17 @@ module backend (
         .csr_write_data1_mem(csr_write_data_execute1),
         .csr_write_data2_mem(csr_write_data_execute2),
 
-        .is_llw_scw_mem(is_llw_scw_execute)
+        .is_llw_scw_mem(is_llw_scw_execute),
+
+        //cacop
+        .icacop_en1(icacop_en1), 
+        .icacop_en2(icacop_en2),
+        .dcacop_en1(dcacop_en1),
+        .dcacop_en2(dcacop_en2),
+        .cacop_mode1(cacop_mode1),
+        .cacop_mode2(cacop_mode2),
+        .data_vaddr1(data_vaddr1),    // to addr_trans
+        .data_vaddr2(data_vaddr2)
 
     );
 

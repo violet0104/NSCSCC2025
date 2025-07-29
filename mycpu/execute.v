@@ -142,7 +142,17 @@ module execute (
     output reg [1:0] is_privilege_mem,
     output reg [1:0] is_ertn_mem,
     output reg [1:0] is_idle_mem,
-    output reg [1:0] is_llw_scw_mem
+    output reg [1:0] is_llw_scw_mem,
+
+    //cacop
+    output wire icacop_en1, 
+    output wire icacop_en2,
+    output wire dcacop_en1,
+    output wire dcacop_en2,
+    output wire [1:0] cacop_mode1,
+    output wire [1:0] cacop_mode2,
+    output wire data_vaddr1,    // to addr_trans
+    output wire data_vaddr2
 );
 
     wire [1:0] pause_alu;
@@ -159,6 +169,7 @@ module execute (
     wire [31:0] pc_dispatch_alu1;
     wire [31:0] pc_dispatch_alu2;
 
+/*************************************
     // 和cache有关的信息
     wire [1:0] is_cacop_alu;
     wire [4:0] cacop_code_alu1;
@@ -166,6 +177,9 @@ module execute (
     wire [1:0] is_preld_alu;
     wire [1:0] hint_alu;
     wire [31:0] addr_alu;
+
+*************************************/
+
     wire [1:0] valid_o;
 
     wire [1:0] op;
@@ -457,6 +471,28 @@ module execute (
     assign branch_flush_o = |branch_flush_alu && !pause_ex_o && !pause_mem_i;
 
     assign branch_target_o = branch_flush_alu[0] ? branch_target_addr_alu1 : branch_target_addr_alu2;
+
+    //cacop
+    wire [4:0] cacop_opcode1;
+    wire [4:0] cacop_opcode2;
+    assign cacop_opcode1 = reg_write_addr1_i;
+    assign cacop_opcode2 = reg_write_addr2_i;
+
+    wire cacop_valid1;
+    wire cacop_valid2;
+    assign cacop_valid1 = (aluop1_i == `ALU_CACOP) & valid_o[0];
+    assign cacop_valid2 = (aluop2_i == `ALU_CACOP) & valid_o[1];
+
+    assign icacop_en1  = (cacop_opcode1[2:0] == 3'b000) & cacop_valid1;
+    assign icacop_en2  = (cacop_opcode2[2:0] == 3'b000) & cacop_valid2;
+    assign dcacop_en1  = (cacop_opcode1[2:0] == 3'b001) & cacop_valid1;
+    assign dcacop_en2  = (cacop_opcode2[2:0] == 3'b001) & cacop_valid2;
+
+    assign cacop_mode1 = cacop_opcode1[4:3];
+    assign cacop_mode2 = cacop_opcode2[4:3];
+
+    assign data_vaddr1 = reg_write_data1;
+    assign data_vaddr2 = reg_write_data2;
 
 /*********************************************************************
     always @(posedge clk) begin

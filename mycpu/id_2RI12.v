@@ -53,7 +53,6 @@ module id_2RI12
         pc_out = pc;
         inst_out = inst;
         
-        is_privilege = 1'b0;
         csr_read_en = 1'b0;
         csr_write_en = 1'b0;
         csr_addr = 14'b0;
@@ -74,6 +73,7 @@ module id_2RI12
                 reg2_read_addr = 5'b0;
                 imm = {20'b0,ui12};
                 inst_valid = 1'b1;
+                is_privilege = 1'b0;
             end
             `SLTI_OPCODE:begin
                 reg_writen_en = 1'b1;
@@ -86,6 +86,7 @@ module id_2RI12
                 reg2_read_addr = 5'b0;
                 imm = {{20{si12[11]}},si12};
                 inst_valid = 1'b1;
+                is_privilege = 1'b0;
             end
             `SLTUI_OPCODE:begin
                 reg_writen_en = 1'b1;
@@ -98,6 +99,7 @@ module id_2RI12
                 reg2_read_addr = 5'b0;
                 imm = {{20{si12[11]}},si12};
                 inst_valid = 1'b1;
+                is_privilege = 1'b0;
             end
             `ADDIW_OPCODE:begin
                 reg_writen_en = 1'b1;
@@ -110,6 +112,7 @@ module id_2RI12
                 reg2_read_addr = 5'b0;
                 imm = {{20{si12[11]}},si12};
                 inst_valid = 1'b1;
+                is_privilege = 1'b0;
             end
             `ANDI_OPCODE:begin
                 reg_writen_en = 1'b1;
@@ -122,6 +125,7 @@ module id_2RI12
                 reg2_read_addr = 5'b0;
                 imm = {20'b0,ui12};
                 inst_valid = 1'b1;
+                is_privilege = 1'b0;
             end
             `XORI_OPCODE: begin
                 reg_writen_en = 1'b1;
@@ -134,6 +138,7 @@ module id_2RI12
                 reg2_read_addr = 5'b0;
                 imm = {20'b0, ui12};
                 inst_valid = 1'b1;
+                is_privilege = 1'b0;
             end
             `LDB_OPCODE: begin
                 reg_writen_en = 1'b1;
@@ -146,6 +151,7 @@ module id_2RI12
                 reg2_read_addr = 5'b0;
                 imm = {{20{si12[11]}}, si12};
                 inst_valid = 1'b1;
+                is_privilege = 1'b0;
             end
             `LDH_OPCODE: begin
                 reg_writen_en = 1'b1;
@@ -158,6 +164,7 @@ module id_2RI12
                 reg2_read_addr = 5'b0;
                 imm = {{20{si12[11]}}, si12};
                 inst_valid = 1'b1;
+                is_privilege = 1'b0;
             end
             `LDW_OPCODE: begin
                 reg_writen_en = 1'b1;
@@ -170,6 +177,7 @@ module id_2RI12
                 reg2_read_addr = 5'b0;
                 imm = {{20{si12[11]}}, si12};
                 inst_valid = 1'b1;
+                is_privilege = 1'b0;
             end
             `LDBU_OPCODE: begin
                 reg_writen_en = 1'b1;
@@ -182,6 +190,7 @@ module id_2RI12
                 reg2_read_addr = 5'b0;
                 imm = {{20{si12[11]}}, si12};
                 inst_valid = 1'b1;
+                is_privilege = 1'b0;
             end
             `LDHU_OPCODE: begin
                 reg_writen_en = 1'b1;
@@ -194,6 +203,7 @@ module id_2RI12
                 reg2_read_addr = 5'b0;
                 imm = {{20{si12[11]}}, si12};
                 inst_valid = 1'b1;
+                is_privilege = 1'b0;
             end
             `STB_OPCODE: begin
                 reg_writen_en = 1'b0;
@@ -206,6 +216,7 @@ module id_2RI12
                 reg2_read_addr = rd;
                 imm = 32'b0;
                 inst_valid = 1'b1;
+                is_privilege = 1'b0;
             end
             `STH_OPCODE: begin
                 reg_writen_en = 1'b0;
@@ -218,6 +229,7 @@ module id_2RI12
                 reg2_read_addr = rd;
                 imm = 32'b0;
                 inst_valid = 1'b1;
+                is_privilege = 1'b0;
             end
             `STW_OPCODE: begin
                 reg_writen_en = 1'b0;
@@ -230,6 +242,22 @@ module id_2RI12
                 reg2_read_addr = rd;
                 imm = 32'b0;
                 inst_valid = 1'b1;
+                is_privilege = 1'b0;
+            end
+            `CACOP_OPCODE: begin
+                reg_writen_en = 1'b0;
+                reg_write_addr = 5'b0;
+                aluop = ((rd[2:0]!=3'b0&&rd[2:0]!=3'b1)||(rd[4:3]==2'd3))?  `ALU_NOP : `ALU_CACOP;
+                alusel = ((rd[2:0]!=3'b0&&rd[2:0]!=3'b1)||(rd[4:3]==2'd3)) ? `ALU_SEL_NOP  :  `ALU_SEL_ARITHMETIC;
+                is_privilege = (rd[2:0]==3'b0||rd[2:0]==3'b1)&&(rd[4:3]==2'd0||rd[4:3]==2'd1);
+                inst_valid = (rd[2:0]==3'b0||rd[2:0]==3'b1)&&(rd[4:3]==2'd0||rd[4:3]==2'd1||rd[4:3]==2'd2);
+                reg1_read_en = 1'b1;
+                reg2_read_en = 1'b0;
+                reg1_read_addr = rj;
+                reg2_read_addr = 5'b0;
+                imm = {{20{si12[11]}},si12}; 
+
+                
             end
             default:begin
                 aluop = `ALU_NOP;

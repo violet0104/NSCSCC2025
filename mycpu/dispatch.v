@@ -12,7 +12,7 @@ module dispatch
     input wire flush,
 
 
-    // 来自dispatch的输入信号
+    // 来自dispatch的输入信�?
     input wire [31:0] pc1_i,      //指令地址
     input wire [31:0] pc2_i,      //指令地址
     
@@ -20,8 +20,8 @@ module dispatch
     input wire [31:0] inst2_i,    //指令编码
     input wire [1:0]  valid_i,   //指令有效标志
 
-    input wire [2:0]  is_exception_i1, //第1条指令的异常标志
-    input wire [2:0]  is_exception_i2, //第2条指令的异常标志
+    input wire [2:0]  is_exception_i1, //�?1条指令的异常标志
+    input wire [2:0]  is_exception_i2, //�?2条指令的异常标志
     
     input wire [6:0] pc_exception_cause_i1,
     input wire [6:0] instbuffer_exception_cause_i1,
@@ -30,74 +30,74 @@ module dispatch
     input wire [6:0] instbuffer_exception_cause_i2,
     input wire [6:0] decoder_exception_cause_i2,
 
-    input wire [1:0]  is_privilege_i, //两条指令的特权指令标志
+    input wire [1:0]  is_privilege_i, //两条指令的特权指令标�?
     input wire [1:0]  is_cnt_i,       //两条指令的计数器指令标志
 
-    input wire [7:0]  alu_op_i1,  //ALU操作码
-    input wire [7:0]  alu_op_i2,  //ALU操作码
+    input wire [7:0]  alu_op_i1,  //ALU操作�?
+    input wire [7:0]  alu_op_i2,  //ALU操作�?
     input wire [2:0]  alu_sel_i1, //ALU功能选择
     input wire [2:0]  alu_sel_i2, //ALU功能选择
-    input wire [31:0] imm_i1,     //立即数值
-    input wire [31:0] imm_i2,     //立即数值
+    input wire [31:0] imm_i1,     //立即数�??
+    input wire [31:0] imm_i2,     //立即数�??
 
-    input wire [4:0]  invtlb_op_i1,   //第1条指令的分支指令标志
-    input wire [4:0]  invtlb_op_i2,   //第2条指令的分支指令标志
+    input wire [4:0]  invtlb_op_i1,   //�?1条指令的分支指令标志
+    input wire [4:0]  invtlb_op_i2,   //�?2条指令的分支指令标志
 
-    input wire [1:0]  reg_read_en_i1,     //第1条指令的两个源寄存器源寄存器读使能
-    input wire [1:0]  reg_read_en_i2,     //第2条指令的两个源寄存器源寄存器读使能   
-    input wire [4:0]  reg_read_addr_i1_1, //第1条指令的第1个源寄存器地址
-    input wire [4:0]  reg_read_addr_i1_2, //第1条指令的第2个源寄存器地址
-    input wire [4:0]  reg_read_addr_i2_1, //第2条指令的第1个源寄存器地址
-    input wire [4:0]  reg_read_addr_i2_2, //第2条指令的第2个源寄存器地址
+    input wire [1:0]  reg_read_en_i1,     //�?1条指令的两个源寄存器源寄存器读使�?
+    input wire [1:0]  reg_read_en_i2,     //�?2条指令的两个源寄存器源寄存器读使�?   
+    input wire [4:0]  reg_read_addr_i1_1, //�?1条指令的�?1个源寄存器地�?
+    input wire [4:0]  reg_read_addr_i1_2, //�?1条指令的�?2个源寄存器地�?
+    input wire [4:0]  reg_read_addr_i2_1, //�?2条指令的�?1个源寄存器地�?
+    input wire [4:0]  reg_read_addr_i2_2, //�?2条指令的�?2个源寄存器地�?
 
     input wire [1:0]  reg_write_en_i,    //两条指令目的寄存器写使能
-    input wire [4:0]  reg_write_addr_i1,  //指令1目的寄存器地址
-    input wire [4:0]  reg_write_addr_i2,  //指令2目的寄存器地址
+    input wire [4:0]  reg_write_addr_i1,  //指令1目的寄存器地�?
+    input wire [4:0]  reg_write_addr_i2,  //指令2目的寄存器地�?
 
-    input wire [1:0]   csr_read_en_i,   //csr读使能
-    input wire [13:0]  csr_addr_i1,     //第1条指令csr地址
-    input wire [13:0]  csr_addr_i2,     //第2条指令csr地址
-    input wire [1:0]   csr_write_en_i,  //csr写使能
+    input wire [1:0]   csr_read_en_i,   //csr读使�?
+    input wire [13:0]  csr_addr_i1,     //�?1条指令csr地址
+    input wire [13:0]  csr_addr_i2,     //�?2条指令csr地址
+    input wire [1:0]   csr_write_en_i,  //csr写使�?
     input wire [1:0]   pre_is_branch_taken_i,//前一条指令是否是分支指令
     input wire [31:0]  pre_branch_addr_i1, 
     input wire [31:0]  pre_branch_addr_i2, 
 
 
-    // 来自ex和mem的前递数据
-    input wire [1:0]   ex_pf_write_en,     //从ex阶段前递出来的使能
-    input wire [4:0]   ex_pf_write_addr1,   //从ex阶段前递出来的地址
-    input wire [4:0]   ex_pf_write_addr2,   //从ex阶段前递出来的地址
-    input wire [31:0]  ex_pf_write_data1,   //从ex阶段前递出来的数据
-    input wire [31:0]  ex_pf_write_data2,   //从ex阶段前递出来的数据
+    // 来自ex和mem的前递数�?
+    input wire [1:0]   ex_pf_write_en,     //从ex阶段前�?�出来的使能
+    input wire [4:0]   ex_pf_write_addr1,   //从ex阶段前�?�出来的地址
+    input wire [4:0]   ex_pf_write_addr2,   //从ex阶段前�?�出来的地址
+    input wire [31:0]  ex_pf_write_data1,   //从ex阶段前�?�出来的数据
+    input wire [31:0]  ex_pf_write_data2,   //从ex阶段前�?�出来的数据
 
-    input wire [1:0]   mem_pf_write_en,    //从mem阶段前递出来的使能
-    input wire [4:0]   mem_pf_write_addr1,  //从mem阶段前递出来的地址
-    input wire [4:0]   mem_pf_write_addr2,  //从mem阶段前递出来的地址
-    input wire [31:0]  mem_pf_write_data1,  //从mem阶段前递出来的数据
-    input wire [31:0]  mem_pf_write_data2,  //从mem阶段前递出来的数据
+    input wire [1:0]   mem_pf_write_en,    //从mem阶段前�?�出来的使能
+    input wire [4:0]   mem_pf_write_addr1,  //从mem阶段前�?�出来的地址
+    input wire [4:0]   mem_pf_write_addr2,  //从mem阶段前�?�出来的地址
+    input wire [31:0]  mem_pf_write_data1,  //从mem阶段前�?�出来的数据
+    input wire [31:0]  mem_pf_write_data2,  //从mem阶段前�?�出来的数据
 
-    input wire [1:0]   wb_pf_write_en,     //从wb阶段前递出来的使能
-    input wire [4:0]   wb_pf_write_addr1,   //从wb阶段前递出来的地址
-    input wire [4:0]   wb_pf_write_addr2,   //从wb阶段前递出来的地址
-    input wire [31:0]  wb_pf_write_data1,   //从wb阶段前递出来的数据
-    input wire [31:0]  wb_pf_write_data2,   //从wb阶段前递出来的数据
+    input wire [1:0]   wb_pf_write_en,     //从wb阶段前�?�出来的使能
+    input wire [4:0]   wb_pf_write_addr1,   //从wb阶段前�?�出来的地址
+    input wire [4:0]   wb_pf_write_addr2,   //从wb阶段前�?�出来的地址
+    input wire [31:0]  wb_pf_write_data1,   //从wb阶段前�?�出来的数据
+    input wire [31:0]  wb_pf_write_data2,   //从wb阶段前�?�出来的数据
 
     //来自ex阶段的，用于判断ex运行的指令是否是load指令
     input wire [7:0]   ex_pre_aluop1,       //ex阶段的load指令标志
     input wire [7:0]   ex_pre_aluop2,       //ex阶段的load指令标志
-    //来自ex阶段的，可能由于乘除法等指令引起的暂停信号
-    input wire         ex_pause,           //ex阶段的暂停信号
+    //来自ex阶段的，可能由于乘除法等指令引起的暂停信�?
+    input wire         ex_pause,           //ex阶段的暂停信�?
 
 
-    // 输出给execute的数据
+    // 输出给execute的数�?
     output reg [31:0] pc1_o,  
     output reg [31:0] pc2_o,  
     output reg [31:0] inst1_o,
     output reg [31:0] inst2_o,
     output reg [1:0]  valid_o,
 
-    output reg [3:0]  is_exception_o1, //第1条指令的异常标志
-    output reg [3:0]  is_exception_o2, //第2条指令的异常标
+    output reg [3:0]  is_exception_o1, //�?1条指令的异常标志
+    output reg [3:0]  is_exception_o2, //�?2条指令的异常�?
 
     output reg [6:0] pc_exception_cause_o1,
     output reg [6:0] instbuffer_exception_cause_o1,
@@ -108,59 +108,59 @@ module dispatch
     output reg [6:0] decoder_exception_cause_o2,
     output reg [6:0] dispatch_exception_cause_o2,
 
-    output reg [1:0]  is_privilege_o, //两条指令的特权指令标志
+    output reg [1:0]  is_privilege_o, //两条指令的特权指令标�?
 
     output reg [7:0]  alu_op_o1,
     output reg [7:0]  alu_op_o2,
     output reg [2:0]  alu_sel_o1,
     output reg [2:0]  alu_sel_o2,
 
-    output reg [31:0] reg_read_data_o1_1, //寄存器堆给出的第1条指令的第1个源操作数
-    output reg [31:0] reg_read_data_o1_2, //寄存器堆给出的第1条指令的第2个源操作数
-    output reg [31:0] reg_read_data_o2_1, //寄存器堆给出的第2条指令的第1个源操作数
-    output reg [31:0] reg_read_data_o2_2, //寄存器堆给出的第2条指令的第2个源操作数
+    output reg [31:0] reg_read_data_o1_1, //寄存器堆给出的第1条指令的�?1个源操作�?
+    output reg [31:0] reg_read_data_o1_2, //寄存器堆给出的第1条指令的�?2个源操作�?
+    output reg [31:0] reg_read_data_o2_1, //寄存器堆给出的第2条指令的�?1个源操作�?
+    output reg [31:0] reg_read_data_o2_2, //寄存器堆给出的第2条指令的�?2个源操作�?
     
     output reg [1:0]  reg_write_en_o,     //目的寄存器写使能
-    output reg [4:0]  reg_write_addr_o1,  //目的寄存器地址
-    output reg [4:0]  reg_write_addr_o2,  //目的寄存器地址
+    output reg [4:0]  reg_write_addr_o1,  //目的寄存器地�?
+    output reg [4:0]  reg_write_addr_o2,  //目的寄存器地�?
 
-    output reg [31:0]  csr_read_data_o1, //寄存器堆的csr读数据
-    output reg [31:0]  csr_read_data_o2, //寄存器堆的csr读数据
-    output reg [1:0]   csr_write_en_o, //寄存器堆的csr写使能
+    output reg [31:0]  csr_read_data_o1, //寄存器堆的csr读数�?
+    output reg [31:0]  csr_read_data_o2, //寄存器堆的csr读数�?
+    output reg [1:0]   csr_write_en_o, //寄存器堆的csr写使�?
     output reg [13:0]  csr_addr_o1,     //寄存器堆的csr地址
     output reg [13:0]  csr_addr_o2,     //寄存器堆的csr地址
     
-    output reg [4:0]  invtlb_op_o1,   //第1条指令的分支指令标志
-    output reg [4:0]  invtlb_op_o2,   //第2条指令的分支指令标志
+    output reg [4:0]  invtlb_op_o1,   //�?1条指令的分支指令标志
+    output reg [4:0]  invtlb_op_o2,   //�?2条指令的分支指令标志
     
     output reg [1:0]   pre_is_branch_taken_o, //前一条指令是否是分支指令
     output reg [31:0]  pre_branch_addr_o1, //前一条指令的分支地址
     output reg [31:0]  pre_branch_addr_o2,  //前一条指令的分支地址
 
     
-    // 输出给 id 阶段的信号
+    // 输出�? id 阶段的信�?
     output wire [1:0] invalid_en, //指令发射控制信号
 
-    //与寄存器的接口
-    input wire [31:0] from_reg_read_data_i1_1, //寄存器给出的第1条指令的第1个源操作数
-    input wire [31:0] from_reg_read_data_i1_2, //寄存器给出的第1条指令的第2个源操作数
-    input wire [31:0] from_reg_read_data_i2_1, //寄存器给出的第2条指令的第1个源操作数
-    input wire [31:0] from_reg_read_data_i2_2, //寄存器给出的第2条指令的第2个源操作数
+    //与寄存器的接�?
+    input wire [31:0] from_reg_read_data_i1_1, //寄存器给出的�?1条指令的�?1个源操作�?
+    input wire [31:0] from_reg_read_data_i1_2, //寄存器给出的�?1条指令的�?2个源操作�?
+    input wire [31:0] from_reg_read_data_i2_1, //寄存器给出的�?2条指令的�?1个源操作�?
+    input wire [31:0] from_reg_read_data_i2_2, //寄存器给出的�?2条指令的�?2个源操作�?
 
-    output wire dispatch_pause ,//发射器暂停信号,当发生load-use冒险时需要暂停
+    output wire dispatch_pause ,//发射器暂停信�?,当发生load-use冒险时需要暂�?
 
 
-    // 和csr的接口
-    input wire  [31:0]  csr_read_data_i1,   // csr读数据
-    input wire  [31:0]  csr_read_data_i2,   // csr读数据
+    // 和csr的接�?
+    input wire  [31:0]  csr_read_data_i1,   // csr读数�?
+    input wire  [31:0]  csr_read_data_i2,   // csr读数�?
 
-    output wire [1:0]   csr_read_en_o,      // csr读使能
-    output wire [13:0]   csr_read_addr_o1,   // csr读地址
-    output wire [13:0]   csr_read_addr_o2   // csr读地址
+    output wire [1:0]   csr_read_en_o,      // csr读使�?
+    output wire [13:0]   csr_read_addr_o1,   // csr读地�?
+    output wire [13:0]   csr_read_addr_o2   // csr读地�?
 );
 
-    wire [1:0] send_en;     //内部发射信号，给invalid_en赋值
-    wire       send_double; //判断是否为双发射的信号 
+    wire [1:0] send_en;     //内部发射信号，给invalid_en赋�??
+    wire       send_double; //判断是否为双发射的信�? 
     
     wire [1:0] inst_valid;  //内部指令有效标志
 
@@ -174,56 +174,56 @@ module dispatch
     reg  [31:0] inst1_temp;     //临时寄存器，存储指令编码
     reg  [31:0] inst2_temp;     //临时寄存器，存储指令编码
     reg  [1:0]  valid_temp;     //临时寄存器，存储指令有效标志
-    reg  [7:0]  alu_op1_temp;   //临时寄存器，存储ALU操作码
-    reg  [7:0]  alu_op2_temp;   //临时寄存器，存储ALU操作码
+    reg  [7:0]  alu_op1_temp;   //临时寄存器，存储ALU操作�?
+    reg  [7:0]  alu_op2_temp;   //临时寄存器，存储ALU操作�?
     reg  [2:0]  alu_sel1_temp;  //临时寄存器，存储ALU功能选择
     reg  [2:0]  alu_sel2_temp;  //临时寄存器，存储ALU功能选择
     reg  [1:0]  reg_write_en_temp; //临时寄存器，存储目的寄存器写使能
-    reg  [4:0]  reg_write_addr1_temp; //临时寄存器，存储目的寄存器地址
-    reg  [4:0]  reg_write_addr2_temp; //临时寄存器，存储目的寄存器地址
-    reg  [31:0] reg_read_data1_1_temp; //寄存器堆给出的第1条指令的第1个源操作数
-    reg  [31:0] reg_read_data1_2_temp; //寄存器堆给出的第1条指令的第2个源操作数
-    reg  [31:0] reg_read_data2_1_temp; //寄存器堆给出的第2条指令的第1个源操作数
-    reg  [31:0] reg_read_data2_2_temp; //寄存器堆给出的第2条指令的第2个源操作数
+    reg  [4:0]  reg_write_addr1_temp; //临时寄存器，存储目的寄存器地�?
+    reg  [4:0]  reg_write_addr2_temp; //临时寄存器，存储目的寄存器地�?
+    reg  [31:0] reg_read_data1_1_temp; //寄存器堆给出的第1条指令的�?1个源操作�?
+    reg  [31:0] reg_read_data1_2_temp; //寄存器堆给出的第1条指令的�?2个源操作�?
+    reg  [31:0] reg_read_data2_1_temp; //寄存器堆给出的第2条指令的�?1个源操作�?
+    reg  [31:0] reg_read_data2_2_temp; //寄存器堆给出的第2条指令的�?2个源操作�?
     reg  [1:0]  is_privilege_temp; //临时寄存器，存储特权指令标志
-    reg  [3:0]  is_exception1_temp; //第1条指令的异常标志
-    reg  [3:0]  is_exception2_temp; //第2条指令的异常标志
+    reg  [3:0]  is_exception1_temp; //�?1条指令的异常标志
+    reg  [3:0]  is_exception2_temp; //�?2条指令的异常标志
 
-    reg  [6:0] pc_exception_cause1_temp; //第1条指令的异常原因
-    reg  [6:0] instbuffer_exception_cause1_temp; //第1条指令的异常原因
-    reg  [6:0] id_exception_cause1_temp; //第1条指令的异常原因
-    reg  [6:0] dispatch_exception_cause1_temp; //第1条指令的异常原因
-    reg  [6:0] pc_exception_cause2_temp; //第2条指令的异常原因
-    reg  [6:0] instbuffer_exception_cause2_temp; //第2条指令的异常原因
-    reg  [6:0] id_exception_cause2_temp; //第2条指令的异常原因
-    reg  [6:0] dispatch_exception_cause2_temp; //第2条指令的异常原因
+    reg  [6:0] pc_exception_cause1_temp; //�?1条指令的异常原因
+    reg  [6:0] instbuffer_exception_cause1_temp; //�?1条指令的异常原因
+    reg  [6:0] id_exception_cause1_temp; //�?1条指令的异常原因
+    reg  [6:0] dispatch_exception_cause1_temp; //�?1条指令的异常原因
+    reg  [6:0] pc_exception_cause2_temp; //�?2条指令的异常原因
+    reg  [6:0] instbuffer_exception_cause2_temp; //�?2条指令的异常原因
+    reg  [6:0] id_exception_cause2_temp; //�?2条指令的异常原因
+    reg  [6:0] dispatch_exception_cause2_temp; //�?2条指令的异常原因
 
-    reg  [4:0]  invtlb_op1_temp;   //第1条指令的分支指令标志
-    reg  [4:0]  invtlb_op2_temp;   //第2条指令的分支指令标志
-    reg  [1:0]  csr_write_en_temp; //临时寄存器，存储csr写使能
-    reg  [13:0] csr_addr1_temp; //临时寄存器，存储csr写地址
-    reg  [13:0] csr_addr2_temp; //临时寄存器，存储csr写地址
+    reg  [4:0]  invtlb_op1_temp;   //�?1条指令的分支指令标志
+    reg  [4:0]  invtlb_op2_temp;   //�?2条指令的分支指令标志
+    reg  [1:0]  csr_write_en_temp; //临时寄存器，存储csr写使�?
+    reg  [13:0] csr_addr1_temp; //临时寄存器，存储csr写地�?
+    reg  [13:0] csr_addr2_temp; //临时寄存器，存储csr写地�?
     reg  [1:0]  pre_is_branch_taken_temp; //临时寄存器，存储前一条指令是否是分支指令
     reg  [31:0] pre_branch_addr1_temp; //临时寄存器，存储前一条指令的分支地址
     reg  [31:0] pre_branch_addr2_temp; //临时寄存器，存储前一条指令的分支地址
-    reg  [31:0] csr_read_data1_temp; //临时寄存器，存储csr读数据
-    reg  [31:0] csr_read_data2_temp; //临时寄存器，存储csr读数据
+    reg  [31:0] csr_read_data1_temp; //临时寄存器，存储csr读数�?
+    reg  [31:0] csr_read_data2_temp; //临时寄存器，存储csr读数�?
 
-    assign invalid_en = pause ? 2'b00 : send_en;//发射控制信号赋值
+    assign invalid_en = pause ? 2'b00 : send_en;//发射控制信号赋�??
 
-    assign inst_valid = valid_i;//内部有效标志赋值
+    assign inst_valid = valid_i;//内部有效标志赋�??
     
 
-    assign privilege_inst = (is_privilege_i[0] || is_privilege_i[1]);//判断发射的两条指令中有没有特权指令
-    assign mem_inst = (alu_sel_i1 == `ALU_SEL_LOAD_STORE || alu_sel_i2 == `ALU_SEL_LOAD_STORE);//判断发射的两条指令中有没有load和store类型的指令
+    assign privilege_inst = (is_privilege_i[0] || is_privilege_i[1]);//判断发射的两条指令中有没有特权指�?
+    assign mem_inst = (alu_sel_i1 == `ALU_SEL_LOAD_STORE || alu_sel_i2 == `ALU_SEL_LOAD_STORE);//判断发射的两条指令中有没有load和store类型的指�?
     //下面这条语句，检验了将要双发射的这两条指令间是否存在数据相关冒险
-    assign data_hazard_inst = (reg_write_en_i[0] && reg_write_addr_i1 != 5'b0) //第1条指令有写寄存器的功能
-                            &&((reg_write_addr_i1 == reg_read_addr_i2_1 && reg_read_en_i2[0]) //第1条指令的写寄存器的地址与第2条指令第1个源寄存器相同
-                            ||(reg_write_addr_i1 == reg_read_addr_i2_2 && reg_read_en_i2[1])); //第1条指令的写寄存器的地址与第2条指令第2个源寄存器相同
+    assign data_hazard_inst = (reg_write_en_i[0] && reg_write_addr_i1 != 5'b0) //�?1条指令有写寄存器的功�?
+                            &&((reg_write_addr_i1 == reg_read_addr_i2_1 && reg_read_en_i2[0]) //�?1条指令的写寄存器的地�?与第2条指令第1个源寄存器相�?
+                            ||(reg_write_addr_i1 == reg_read_addr_i2_2 && reg_read_en_i2[1])); //�?1条指令的写寄存器的地�?与第2条指令第2个源寄存器相�?
     assign cnt_inst = (is_cnt_i[0] || is_cnt_i[1]);//判断发射的两条指令中有没有计数器指令
 
-    assign send_double = (!mem_inst) && (!data_hazard_inst) && (!cnt_inst) && (!privilege_inst) && (&inst_valid); //判断这两条指令能否同时发射
-    assign send_en = (send_double == 1'b1) ? 2'b11 : (inst_valid[0] ? 2'b01 : (inst_valid[1] ? 2'b10 : 2'b00));//当指令不能双发射时优先发第一条
+    assign send_double = (!mem_inst) && (!data_hazard_inst) && (!cnt_inst) && (!privilege_inst) && (&inst_valid); //判断这两条指令能否同时发�?
+    assign send_en = (send_double == 1'b1) ? 2'b11 : (inst_valid[0] ? 2'b01 : (inst_valid[1] ? 2'b10 : 2'b00));//当指令不能双发射时优先发第一�?
 
     //信号传输
     always @(*) begin
@@ -262,7 +262,7 @@ module dispatch
     
     always @(*) begin
         //正常的读数据
-        //第1条指令
+        //�?1条指�?
         if(reg_read_en_i1[0]) begin
             reg_read_data1_1_temp = from_reg_read_data_i1_1;
         end else begin
@@ -274,7 +274,7 @@ module dispatch
             reg_read_data1_2_temp = imm_i1; //如果没有读使能，则赋值立即数
         end
         
-        //第2条指令
+        //�?2条指�?
         if(reg_read_en_i2[0]) begin
             reg_read_data2_1_temp = from_reg_read_data_i2_1;
         end else begin
@@ -286,82 +286,82 @@ module dispatch
             reg_read_data2_2_temp = imm_i2; //如果没有读使能，则赋值立即数
         end
         
-        //与写回阶段有数据冲突进行数据前递
-        //第1条指令的源1
+        //与写回阶段有数据冲突进行数据前�??
+        //�?1条指令的�?1
         if(wb_pf_write_en[0] && reg_read_en_i1[0] && (reg_read_addr_i1_1 == wb_pf_write_addr1)) 
             reg_read_data1_1_temp = wb_pf_write_data1;
         else if(wb_pf_write_en[1] && reg_read_en_i1[0] && (reg_read_addr_i1_1 == wb_pf_write_addr2)) 
             reg_read_data1_1_temp = wb_pf_write_data2;
         
-        //第1条指令的源2
+        //�?1条指令的�?2
         if(wb_pf_write_en[0] && reg_read_en_i1[1] && (reg_read_addr_i1_2 == wb_pf_write_addr1)) 
             reg_read_data1_2_temp = wb_pf_write_data1;
         else if(wb_pf_write_en[1] && reg_read_en_i1[1] && (reg_read_addr_i1_2 == wb_pf_write_addr2)) 
             reg_read_data1_2_temp = wb_pf_write_data2;
         
-        //第2条指令的源1
+        //�?2条指令的�?1
         if(wb_pf_write_en[0] && reg_read_en_i2[0] && (reg_read_addr_i2_1 == wb_pf_write_addr1)) 
             reg_read_data2_1_temp = wb_pf_write_data1;
         else if(wb_pf_write_en[1] && reg_read_en_i2[0] && (reg_read_addr_i2_1 == wb_pf_write_addr2)) 
             reg_read_data2_1_temp = wb_pf_write_data2;
         
-        //第2条指令的源2
+        //�?2条指令的�?2
         if(wb_pf_write_en[0] && reg_read_en_i2[1] && (reg_read_addr_i2_2 == wb_pf_write_addr1)) 
             reg_read_data2_2_temp = wb_pf_write_data1;
         else if(wb_pf_write_en[1] && reg_read_en_i2[1] && (reg_read_addr_i2_2 == wb_pf_write_addr2)) 
             reg_read_data2_2_temp = wb_pf_write_data2;
         
-        //与访存阶段有数据冲突进行数据前递
-        //第1条指令的源1
+        //与访存阶段有数据冲突进行数据前�??
+        //�?1条指令的�?1
         if(mem_pf_write_en[0] && reg_read_en_i1[0] && (reg_read_addr_i1_1 == mem_pf_write_addr1)) 
             reg_read_data1_1_temp = mem_pf_write_data1;
         else if(mem_pf_write_en[1] && reg_read_en_i1[0] && (reg_read_addr_i1_1 == mem_pf_write_addr2)) 
             reg_read_data1_1_temp = mem_pf_write_data2;
         
-        //第1条指令的源2
+        //�?1条指令的�?2
         if(mem_pf_write_en[0] && reg_read_en_i1[1] && (reg_read_addr_i1_2 == mem_pf_write_addr1)) 
             reg_read_data1_2_temp = mem_pf_write_data1;
         else if(mem_pf_write_en[1] && reg_read_en_i1[1] && (reg_read_addr_i1_2 == mem_pf_write_addr2)) 
             reg_read_data1_2_temp = mem_pf_write_data2;
         
-        //第2条指令的源1
+        //�?2条指令的�?1
         if(mem_pf_write_en[0] && reg_read_en_i2[0] && (reg_read_addr_i2_1 == mem_pf_write_addr1)) 
             reg_read_data2_1_temp = mem_pf_write_data1;
         else if(mem_pf_write_en[1] && reg_read_en_i2[0] && (reg_read_addr_i2_1 == mem_pf_write_addr2)) 
             reg_read_data2_1_temp = mem_pf_write_data2;
         
-        //第2条指令的源2
+        //�?2条指令的�?2
         if(mem_pf_write_en[0] && reg_read_en_i2[1] && (reg_read_addr_i2_2 == mem_pf_write_addr1)) 
             reg_read_data2_2_temp = mem_pf_write_data1;
         else if(mem_pf_write_en[1] && reg_read_en_i2[1] && (reg_read_addr_i2_2 == mem_pf_write_addr2)) 
             reg_read_data2_2_temp = mem_pf_write_data2;
         
-        //与执行阶段有数据冲突进行数据前递
-        //第1条指令的源1
+        //与执行阶段有数据冲突进行数据前�??
+        //�?1条指令的�?1
         if(ex_pf_write_en[0] && reg_read_en_i1[0] && (reg_read_addr_i1_1 == ex_pf_write_addr1)) 
             reg_read_data1_1_temp = ex_pf_write_data1;
         else if(ex_pf_write_en[1] && reg_read_en_i1[0] && (reg_read_addr_i1_1 == ex_pf_write_addr2)) 
             reg_read_data1_1_temp = ex_pf_write_data2;
         
-        //第1条指令的源2
+        //�?1条指令的�?2
         if(ex_pf_write_en[0] && reg_read_en_i1[1] && (reg_read_addr_i1_2 == ex_pf_write_addr1)) 
             reg_read_data1_2_temp = ex_pf_write_data1;
         else if(ex_pf_write_en[1] && reg_read_en_i1[1] && (reg_read_addr_i1_2 == ex_pf_write_addr2)) 
             reg_read_data1_2_temp = ex_pf_write_data2;
         
-        //第2条指令的源1
+        //�?2条指令的�?1
         if(ex_pf_write_en[0] && reg_read_en_i2[0] && (reg_read_addr_i2_1 == ex_pf_write_addr1)) 
             reg_read_data2_1_temp = ex_pf_write_data1;
         else if(ex_pf_write_en[1] && reg_read_en_i2[0] && (reg_read_addr_i2_1 == ex_pf_write_addr2)) 
             reg_read_data2_1_temp = ex_pf_write_data2;
         
-        //第2条指令的源2
+        //�?2条指令的�?2
         if(ex_pf_write_en[0] && reg_read_en_i2[1] && (reg_read_addr_i2_2 == ex_pf_write_addr1)) 
             reg_read_data2_2_temp = ex_pf_write_data1;
         else if(ex_pf_write_en[1] && reg_read_en_i2[1] && (reg_read_addr_i2_2 == ex_pf_write_addr2)) 
             reg_read_data2_2_temp = ex_pf_write_data2;
         
-        //如果源寄存器地址为0，则赋值为0
+        //如果源寄存器地址�?0，则赋�?�为0
         if(reg_read_en_i1[0] && reg_read_addr_i1_1 == 5'b0) 
             reg_read_data1_1_temp = 32'b0;
         if(reg_read_en_i1[1] && reg_read_addr_i1_2 == 5'b0) 
@@ -382,9 +382,35 @@ module dispatch
         end
     end
 
+    reg [13:0] cpucfg_addr1;
+    reg [13:0] cpucfg_addr2;
+    always @(*) begin
+        if (alu_op_i1 == `ALU_CPUCFG) begin
+            case (reg_read_data1_1_temp) 
+                    32'h1:       cpucfg_addr1 = `CSR_CPUCFG1;
+                    32'h2:       cpucfg_addr1 = `CSR_CPUCFG2;
+                    32'h10:      cpucfg_addr1 = `CSR_CPUCFG10;
+                    32'h11:      cpucfg_addr1 = `CSR_CPUCFG11;
+                    32'h12:      cpucfg_addr1 = `CSR_CPUCFG12;
+                    32'h13:      cpucfg_addr1 = `CSR_CPUCFG13;
+                    default:     cpucfg_addr1 = 14'b0;
+            endcase
+        end
+        else if (alu_op_i2 == `ALU_CPUCFG) begin
+            case (reg_read_data2_1_temp) 
+                    32'h1:       cpucfg_addr2 = `CSR_CPUCFG1;
+                    32'h2:       cpucfg_addr2 = `CSR_CPUCFG2;
+                    32'h10:      cpucfg_addr2 = `CSR_CPUCFG10;
+                    32'h11:      cpucfg_addr2 = `CSR_CPUCFG11;
+                    32'h12:      cpucfg_addr2 = `CSR_CPUCFG12;
+                    32'h13:      cpucfg_addr2 = `CSR_CPUCFG13;
+                    default:     cpucfg_addr2 = 14'b0;
+            endcase
+        end
+    end
     assign csr_read_en_o = csr_read_en_i;
-    assign csr_read_addr_o1 = csr_addr_i1;
-    assign csr_read_addr_o2 = csr_addr_i2;
+    assign csr_read_addr_o1 = (alu_op_i1 == `ALU_CPUCFG) ? cpucfg_addr1 : csr_addr_i1;
+    assign csr_read_addr_o2 = (alu_op_i2 == `ALU_CPUCFG) ? cpucfg_addr2 : csr_addr_i2;
 
     //csr
     always @(*) begin
@@ -400,15 +426,15 @@ module dispatch
     end
 
 
-    //load-use冒险比起一般的数据冒险更严重。
-    //一般的数据冒险在执行阶段就可得到结果
-    //load-use冒险则需要在访存阶段后才能结束
+    //load-use冒险比起�?般的数据冒险更严重�??
+    //�?般的数据冒险在执行阶段就可得到结�?
+    //load-use冒险则需要在访存阶段后才能结�?
 
     wire        pre_load; //判断先前的指令是否是load指令
-    wire        reg_relate_i1_1;//第1条指令的源1与前一条load指令相关
-    wire        reg_relate_i1_2;//第1条指令的源2与前一条load指令相关
-    wire        reg_relate_i2_1;//第2条指令的源1与前一条load指令相关
-    wire        reg_relate_i2_2;//第2条指令的源2与前一条load指令相关
+    wire        reg_relate_i1_1;//�?1条指令的�?1与前�?条load指令相关
+    wire        reg_relate_i1_2;//�?1条指令的�?2与前�?条load指令相关
+    wire        reg_relate_i2_1;//�?2条指令的�?1与前�?条load指令相关
+    wire        reg_relate_i2_2;//�?2条指令的�?2与前�?条load指令相关
 
     //判断这时候在ex阶段的指令是否是load指令
     assign pre_load = (ex_pre_aluop1 == `ALU_LDB) 
@@ -426,13 +452,13 @@ module dispatch
                     || (ex_pre_aluop2 == `ALU_LLW)
                     || (ex_pre_aluop2 == `ALU_SCW);
 
-    //判断发射器中的两条指令是否与当前ex阶段的load指令相关（load指令一次只发一条）
+    //判断发射器中的两条指令是否与当前ex阶段的load指令相关（load指令�?次只发一条）
     assign reg_relate_i1_1 = pre_load && reg_read_en_i1[0] && (reg_read_addr_i1_1 == ex_pf_write_addr1);
     assign reg_relate_i1_2 = pre_load && reg_read_en_i1[1] && (reg_read_addr_i1_2 == ex_pf_write_addr1);
     assign reg_relate_i2_1 = pre_load && reg_read_en_i2[0] && (reg_read_addr_i2_1 == ex_pf_write_addr1);
     assign reg_relate_i2_2 = pre_load && reg_read_en_i2[1] && (reg_read_addr_i2_2 == ex_pf_write_addr1);
 
-    assign dispatch_pause = reg_relate_i1_1 | reg_relate_i1_2 | reg_relate_i2_1 | reg_relate_i2_2; //若存在load-use冒险，则暂停发射器
+    assign dispatch_pause = reg_relate_i1_1 | reg_relate_i1_2 | reg_relate_i2_1 | reg_relate_i2_2; //若存在load-use冒险，则暂停发射�?
 
     reg [31:0] ex_pc1_temp;             
     reg [31:0] ex_pc2_temp;             
@@ -583,7 +609,7 @@ module dispatch
     end
     
     wire dispatch_current_pause;//当前发射器的暂停信号
-    assign dispatch_current_pause =  !ex_pause && dispatch_pause;//如果ex阶段没有暂停且发生load-use冒险，则发射器暂停 
+    assign dispatch_current_pause =  !ex_pause && dispatch_pause;//如果ex阶段没有暂停且发生load-use冒险，则发射器暂�? 
 
     always @(posedge clk) begin
         if(rst || flush || dispatch_current_pause) begin
@@ -669,8 +695,8 @@ module dispatch
             pre_branch_addr_o2 <= ex_pre_branch_addr2_temp;
         end
         else begin
-            //暂停时不做任何操作
-            //保留所有输出不变
+            //暂停时不做任何操�?
+            //保留�?有输出不�?
             pc1_o <= pc1_o;
             pc2_o <= pc2_o;
             inst1_o <= inst1_o;

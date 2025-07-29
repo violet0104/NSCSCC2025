@@ -36,7 +36,7 @@ module id
     output reg  [4:0]reg1_read_addr,
     output reg  [4:0]reg2_read_addr,
     output reg  reg_writen_en,          //寄存器写使能信号
-    output reg  [4:0]reg_write_addr,    //目的寄存器地址
+    output reg  [4:0]reg_write_addr,    //目的寄存器地�?
 
     output reg  id_pre_taken,
     output reg  [31:0] id_pre_addr,
@@ -45,11 +45,11 @@ module id
     output reg  csr_read_en,        //CSR寄存器读使能
     output reg  csr_write_en,       //CSR寄存器写使能
     output reg  [13:0] csr_addr,    //CSR
-    output reg  is_cnt,             //是否是计数器寄存器
+    output reg  is_cnt,             //是否是计数器寄存�?
     output reg  [4:0]invtlb_op           //TLB无效操作
 
 );
-    wire  [5:0]  id_valid_o;
+    wire  [6:0]  id_valid_o;
     
     wire  [31:0] id_pc_out0;
     wire  [31:0] id_pc_out1;
@@ -57,13 +57,15 @@ module id
     wire  [31:0] id_pc_out3;
     wire  [31:0] id_pc_out4;
     wire  [31:0] id_pc_out5;
+    wire  [31:0] id_pc_out6;
 
     wire  [2:0]  id_is_exception0;           //是否异常
     wire  [2:0]  id_is_exception1;
     wire  [2:0]  id_is_exception2;
     wire  [2:0]  id_is_exception3;
     wire  [2:0]  id_is_exception4;
-    wire  [2:0]  id_is_exception5;          // 这个好像没用到
+    wire  [2:0]  id_is_exception5;          // 这个好像没用�?
+    wire  [2:0]  id_is_exception6;
 
     wire  [6:0]  id_pc_exception_cause0;    //异常原因 
     wire  [6:0]  id_pc_exception_cause1;
@@ -71,6 +73,7 @@ module id
     wire  [6:0]  id_pc_exception_cause3;
     wire  [6:0]  id_pc_exception_cause4;
     wire  [6:0]  id_pc_exception_cause5;
+    wire  [6:0]  id_pc_exception_cause6;
 
     wire  [6:0]  id_instbuffer_exception_cause0; 
     wire  [6:0]  id_instbuffer_exception_cause1; 
@@ -78,6 +81,7 @@ module id
     wire  [6:0]  id_instbuffer_exception_cause3; 
     wire  [6:0]  id_instbuffer_exception_cause4; 
     wire  [6:0]  id_instbuffer_exception_cause5; 
+    wire  [6:0]  id_instbuffer_exception_cause6; 
 
     wire  [6:0]  id_decoder_exception_cause0;
     wire  [6:0]  id_decoder_exception_cause1;
@@ -85,6 +89,7 @@ module id
     wire  [6:0]  id_decoder_exception_cause3;
     wire  [6:0]  id_decoder_exception_cause4;
     wire  [6:0]  id_decoder_exception_cause5;
+    wire  [6:0]  id_decoder_exception_cause6;
 
     wire  [31:0] id_inst_out0;
     wire  [31:0] id_inst_out1;
@@ -92,8 +97,9 @@ module id
     wire  [31:0] id_inst_out3;
     wire  [31:0] id_inst_out4;
     wire  [31:0] id_inst_out5;
+    wire  [31:0] id_inst_out6;
 
-    wire  [5:0]  id_reg_writen_en; 
+    wire  [6:0]  id_reg_writen_en; 
 
     wire  [7:0]  id_aluop0;
     wire  [7:0]  id_aluop1;
@@ -101,6 +107,7 @@ module id
     wire  [7:0]  id_aluop3;
     wire  [7:0]  id_aluop4;
     wire  [7:0]  id_aluop5;
+    wire  [7:0]  id_aluop6;
 
     wire  [2:0]  id_alusel0;
     wire  [2:0]  id_alusel1;
@@ -108,6 +115,7 @@ module id
     wire  [2:0]  id_alusel3;
     wire  [2:0]  id_alusel4;
     wire  [2:0]  id_alusel5;
+    wire  [2:0]  id_alusel6;
 
     wire  [31:0] id_imm0;
     wire  [31:0] id_imm1;
@@ -115,9 +123,10 @@ module id
     wire  [31:0] id_imm3;
     wire  [31:0] id_imm4;
     wire  [31:0] id_imm5;
+    wire  [31:0] id_imm6;
 
-    wire  [5:0]  id_reg1_read_en;   
-    wire  [5:0]  id_reg2_read_en;   
+    wire  [6:0]  id_reg1_read_en;   
+    wire  [6:0]  id_reg2_read_en;   
 
     wire  [4:0]  id_reg1_read_addr0;
     wire  [4:0]  id_reg1_read_addr1;
@@ -125,6 +134,7 @@ module id
     wire  [4:0]  id_reg1_read_addr3;
     wire  [4:0]  id_reg1_read_addr4;
     wire  [4:0]  id_reg1_read_addr5;
+    wire  [4:0]  id_reg1_read_addr6;
 
     wire  [4:0]  id_reg2_read_addr0;
     wire  [4:0]  id_reg2_read_addr1;
@@ -132,6 +142,7 @@ module id
     wire  [4:0]  id_reg2_read_addr3;
     wire  [4:0]  id_reg2_read_addr4;
     wire  [4:0]  id_reg2_read_addr5;
+    wire  [4:0]  id_reg2_read_addr6;
 
     wire  [4:0]  id_reg_write_addr0;
     wire  [4:0]  id_reg_write_addr1;
@@ -139,10 +150,11 @@ module id
     wire  [4:0]  id_reg_write_addr3;
     wire  [4:0]  id_reg_write_addr4;
     wire  [4:0]  id_reg_write_addr5;
+    wire  [4:0]  id_reg_write_addr6;
 
-    wire  [5:0]  id_is_privilege;   //特权指令标志
-    wire  [5:0]  id_csr_read_en;    //CSR寄存器读使能
-    wire  [5:0]  id_csr_write_en;   //CSR寄存器写使能
+    wire  [6:0]  id_is_privilege;   //特权指令标志
+    wire  [6:0]  id_csr_read_en;    //CSR寄存器读使能
+    wire  [6:0]  id_csr_write_en;   //CSR寄存器写使能
 
     wire  [13:0] id_csr_addr0;      //CSR
     wire  [13:0] id_csr_addr1;
@@ -150,8 +162,9 @@ module id
     wire  [13:0] id_csr_addr3;
     wire  [13:0] id_csr_addr4;
     wire  [13:0] id_csr_addr5;
+    wire  [13:0] id_csr_addr6;
 
-    wire  [5:0]  id_is_cnt;         //是否是计数器寄存器
+    wire  [6:0]  id_is_cnt;         //是否是计数器寄存�?
 
     wire  [4:0]  id_invtlb_op0;     //TLB无效操作  
     wire  [4:0]  id_invtlb_op1;
@@ -159,8 +172,9 @@ module id
     wire  [4:0]  id_invtlb_op3;
     wire  [4:0]  id_invtlb_op4;
     wire  [4:0]  id_invtlb_op5;
+    wire  [4:0]  id_invtlb_op6;
 
-    wire [5:0]  id_valid_vec;       //这个6位的向量表示哪个解码器的输出是有效的
+    wire [6:0]  id_valid_vec;       //这个6位的向量表示哪个解码器的输出是有效的
 
     id_1R_I26 u_id_1R_I26 (
         .pc(pc),
@@ -330,6 +344,34 @@ module id
         .invtlb_op(id_invtlb_op5)
     ); 
     
+    id_2R u_id_2R (
+        .pc(pc),
+        .inst(inst),
+
+        .inst_valid(id_valid_vec[6]),
+        .pc_out(id_pc_out6),
+        .is_exception(id_is_exception6),
+        .pc_exception_cause(id_pc_exception_cause6),
+        .instbuffer_exception_cause(id_instbuffer_exception_cause6),
+        .decoder_exception_cause(id_decoder_exception_cause6),
+        .inst_out(id_inst_out6),
+        .reg_write_en(id_reg_writen_en[6]), 
+        .aluop(id_aluop6),
+        .alusel(id_alusel6),
+        .imm(id_imm6),
+        .reg1_read_en(id_reg1_read_en[6]),   
+        .reg2_read_en(id_reg2_read_en[6]),  
+        .reg1_read_addr(id_reg1_read_addr6),
+        .reg2_read_addr(id_reg2_read_addr6),
+        .reg_write_addr(id_reg_write_addr6),
+        .is_privilege(id_is_privilege[6]),
+        .csr_read_en(id_csr_read_en[6]),
+        .csr_write_en(id_csr_write_en[6]),
+        .csr_addr(id_csr_addr6),
+        .is_cnt(id_is_cnt[6]),
+        .invtlb_op(id_invtlb_op6)
+    ); 
+
 
     wire sys_exception;
     wire brk_exception;
@@ -350,7 +392,7 @@ module id
 
     always  @(*) begin
         case(id_valid_vec)
-            6'b000001: begin
+            7'b0000001: begin
                 pc_out = id_pc_out0;
                 is_exception_out = id_is_exception0;
                 pc_exception_cause_out = id_pc_exception_cause0;
@@ -373,7 +415,7 @@ module id
                 is_cnt = id_is_cnt[0];
                 invtlb_op = id_invtlb_op0;
             end
-            6'b000010: begin
+            7'b0000010: begin
                 pc_out = id_pc_out1;
                 is_exception_out = id_is_exception1;
                 pc_exception_cause_out = id_pc_exception_cause1;
@@ -396,7 +438,7 @@ module id
                 is_cnt = id_is_cnt[1];
                 invtlb_op = id_invtlb_op1;
             end
-            6'b000100: begin
+            7'b0000100: begin
                 pc_out = id_pc_out2;
                 is_exception_out = id_is_exception2;
                 pc_exception_cause_out = id_pc_exception_cause2;
@@ -419,7 +461,7 @@ module id
                 is_cnt = id_is_cnt[2];
                 invtlb_op = id_invtlb_op2;
             end
-            6'b001000: begin
+            7'b0001000: begin
                 pc_out = id_pc_out3;
                 is_exception_out = id_is_exception3;
                 pc_exception_cause_out = id_pc_exception_cause3;
@@ -442,7 +484,7 @@ module id
                 is_cnt = id_is_cnt[3];
                 invtlb_op = id_invtlb_op3;
             end
-            6'b010000: begin
+            7'b0010000: begin
                 pc_out = id_pc_out4;
                 is_exception_out = id_is_exception4;
                 pc_exception_cause_out = id_pc_exception_cause4;
@@ -465,7 +507,7 @@ module id
                 is_cnt = id_is_cnt[4];
                 invtlb_op = id_invtlb_op4;
             end
-            6'b100000: begin
+            7'b0100000: begin
                 pc_out = id_pc_out5;
                 is_exception_out = {is_exception,sys_exception | brk_exception};
                 pc_exception_cause_out = pc_exception_cause;  
@@ -487,6 +529,29 @@ module id
                 csr_addr = id_csr_addr5;
                 is_cnt = id_is_cnt[5];
                 invtlb_op = id_invtlb_op5;
+            end
+            7'b1000000: begin
+                pc_out = id_pc_out6;
+                is_exception_out = id_is_exception6;
+                pc_exception_cause_out = id_pc_exception_cause6;
+                instbuffer_exception_cause_out = id_instbuffer_exception_cause6;
+                decoder_exception_cause_out = id_decoder_exception_cause6;
+                inst_out = id_inst_out6;
+                reg_writen_en = id_reg_writen_en[6]; 
+                aluop = id_aluop6;
+                alusel = id_alusel6;
+                imm = id_imm6;
+                reg1_read_en = id_reg1_read_en[6];   
+                reg2_read_en = id_reg2_read_en[6];   
+                reg1_read_addr = id_reg1_read_addr6;
+                reg2_read_addr = id_reg2_read_addr6;
+                reg_write_addr = id_reg_write_addr6;
+                is_privilege = id_is_privilege[6];
+                csr_read_en = id_csr_read_en[6];
+                csr_write_en = id_csr_write_en[6];
+                csr_addr = id_csr_addr6;
+                is_cnt = id_is_cnt[6];
+                invtlb_op = id_invtlb_op6;
             end
             default: begin
                 pc_out = pc;

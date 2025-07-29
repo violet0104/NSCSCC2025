@@ -34,7 +34,7 @@ module regular_alu (
     // 主ALU计算逻辑
     always @(*) begin
         case(aluop)
-            `ALU_ADDW, `ALU_SUBW, `ALU_ADDIW, `ALU_PCADDU12I: begin
+            `ALU_ADDW, `ALU_SUBW, `ALU_ADDIW, `ALU_PCADDU12I,`ALU_CACOP: begin
                 result = sum_result;
             end
             `ALU_AND, `ALU_ANDI: begin

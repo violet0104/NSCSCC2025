@@ -495,6 +495,9 @@ module alu (
                 csr_alu_res = cnt_i[63:32];       // 读计数器高32位
             end
 
+            `ALU_CPUCFG: begin
+                csr_alu_res = csr_read_data_i;
+            end
             default: begin
                 csr_alu_res = 32'b0;            // 其他情况
             end

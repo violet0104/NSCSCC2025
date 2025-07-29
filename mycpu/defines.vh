@@ -39,6 +39,8 @@
 // `define RDCNTVLW_OPCODE 27'b000000000000000001100000000
 `define RDCNTVHW_OPCODE 22'b0000000000000000011001
 
+`define CPUCFG_OPCODE 22'b0000000000000000011011 
+
 `define LU12I_OPCODE 7'b0001010
 `define PCADDU12I_OPCODE 7'b0001110
 
@@ -139,6 +141,8 @@
 `define ALU_CSRRD 8'b01000100
 `define ALU_CSRWR 8'b10000100
 `define ALU_CSRXCHG 8'b00000100
+`define ALU_CPUCFG 8'b00011011
+
 
 `define ALU_BREAK 8'b11010100
 `define ALU_SYSCALL 8'b01010110
@@ -168,5 +172,5 @@
 
 // 数据长度
 `define DEPTH 8                 // 队列深度
-`define DATA_WIDTH 97           // 前端传递的数据宽度   
+`define DATA_WIDTH 97           // 前端传�?�的数据宽度   
 `define DECODE_DATA_WIDTH 206    // 解码数据宽度 (?? 还未确定长度)
