@@ -1,0 +1,483 @@
+`timescale 1ns / 1ps
+`include "defines.vh"
+`include "csr_defines.vh"
+
+module mem
+(
+    input  wire clk,
+    input  wire rst,
+
+    // 执行阶段的信号
+    input  wire [31:0] pc1 ,
+    input  wire [31:0] pc2 ,
+    input  wire [31:0] inst1,
+    input  wire [31:0] inst2,
+
+    input  wire [4:0] is_exception1_i,   //异常标志
+    input  wire [4:0] is_exception2_i,   
+    input  wire [6:0] pc_exception_cause1_i, //异常原因
+    input  wire [6:0] pc_exception_cause2_i,
+    input  wire [6:0] instbuffer_exception_cause1_i,
+    input  wire [6:0] instbuffer_exception_cause2_i,
+    input  wire [6:0] decoder_exception_cause1_i,
+    input  wire [6:0] decoder_exception_cause2_i,
+    input  wire [6:0] dispatch_exception_cause1_i,
+    input  wire [6:0] dispatch_exception_cause2_i,
+    input  wire [6:0] execute_exception_cause1_i,
+    input  wire [6:0] execute_exception_cause2_i,
+
+    input  wire [1:0]is_privilege, //特权指令标志
+    input  wire [1:0]is_ertn, //是否是异常返回指令
+    input  wire [1:0]is_idle, //是否是空闲指令
+    input  wire [1:0]valid, //指令是否有效
+    input  wire [1:0]reg_write_en,  //寄存器写使能信号
+    input  wire [4:0]reg_write_addr1,
+    input  wire [4:0]reg_write_addr2,
+    input  wire [31:0] reg_write_data1, //寄存器写数据
+    input  wire [31:0] reg_write_data2,
+    input  wire [7:0]aluop1,
+    input  wire [7:0]aluop2,
+    input  wire [31:0]mem_addr1, //内存地址
+    input  wire [31:0]mem_addr2,
+    input  wire [31:0]mem_write_data1, //内存写数据
+    input  wire [31:0]mem_write_data2,
+    input  wire [1:0]csr_write_en, //CSR寄存器写使能
+    input  wire [13:0] csr_addr1, //CSR寄存器地址
+    input  wire [13:0] csr_addr2,
+    input  wire [31:0] csr_write_data_mem1,
+    input  wire [31:0] csr_write_data_mem2, 
+    input  wire [1:0]is_llw_scw, //是否是LLW/SCW指令
+    input  wire [1:0] icacop_en,
+
+    //dcache的信号
+    input  wire [31:0] dcache_read_data, 
+    input  wire data_ok,                    //数据访问完成信号（接Dcache的rdata_valid）
+    input  wire [31:0] dcache_P_addr,       // 这个存疑？？
+    
+    // 输出给dispatch的信号
+    output wire  [1:0]  mem_pf_reg_write_en, 
+    output wire  [4:0]  mem_pf_reg_write_addr1,
+    output wire  [4:0]  mem_pf_reg_write_addr2,
+
+
+    // 输出给ctrl的信号
+    output wire   pause_mem, //通知暂停内存访问信号
+
+    //输出给wb的信号
+    output wire  [1:0]  wb_reg_write_en, 
+    output wire  [4:0]  wb_reg_write_addr1,
+    output wire  [4:0]  wb_reg_write_addr2,
+    output reg   [31:0] wb_reg_write_data1,
+    output reg   [31:0] wb_reg_write_data2,
+
+    output wire  [1:0]  wb_csr_write_en, //CSR寄存器写使能
+    output wire  [13:0] wb_csr_addr1, //CSR寄存器地址
+    output wire  [13:0] wb_csr_addr2,
+    output wire  [31:0] wb_csr_write_data1,
+    output wire  [31:0] wb_csr_write_data2,
+    output wire  [1:0]  wb_is_llw_scw, //是否是LLW/SCW指令
+
+    //commit_ctrl的信号
+    output wire  [1:0] commit_valid, //指令是否有效
+    output wire  [5:0]  is_exception1_o,
+    output wire  [5:0]  is_exception2_o, 
+    output wire  [6:0]  pc_exception_cause1_o, 
+    output wire  [6:0]  pc_exception_cause2_o,
+    output wire  [6:0]  instbuffer_exception_cause1_o,
+    output wire  [6:0]  instbuffer_exception_cause2_o,
+    output wire  [6:0]  decoder_exception_cause1_o,
+    output wire  [6:0]  decoder_exception_cause2_o,
+    output wire  [6:0]  dispatch_exception_cause1_o,
+    output wire  [6:0]  dispatch_exception_cause2_o,
+    output wire  [6:0]  execute_exception_cause1_o,
+    output wire  [6:0]  execute_exception_cause2_o,
+    output wire  [6:0]  commit_exception_cause1_o,
+    output wire  [6:0]  commit_exception_cause2_o,
+
+    output wire  [31:0] commit_pc1,
+    output wire  [31:0] commit_pc2,
+    output wire  [31:0] commit_addr1, //内存地址
+    output wire  [31:0] commit_addr2,
+    output wire  [1:0] commit_idle, //是否是空闲指令
+    output wire  [1:0] commit_ertn, //是否是异常返回指令
+    output wire  [1:0] commit_is_privilege, //特权指令
+    output wire  [1:0] commit_icacop_en
+/**************************************************************
+   `ifdef DIFF
+    // diff
+    output reg  [1:0][31:0] debug_wb_pc, // debug信息：写回阶段的PC
+    output reg  [1:0][31:0] debug_wb_inst, 
+    output reg  [1:0][3:0] debug_wb_rf_we, 
+    output reg  [1:0][4:0] debug_wb_rf_wnum, // debug信息：寄存器写地址
+    output reg  [1:0][31:0] debug_wb_rf_wdata, // debug信息：寄存器写数据
+    output reg  [1:0] inst_valid, // debug信息：指令是否有效
+    output reg  [1:0] cnt_inst,
+    output reg  [1:0] csr_rstat_en,
+    output reg  [1:0][31:0] csr_data,
+    output reg  [1:0]excp_flush,
+    output reg  [1:0]ertn_flush,
+    output reg  [1:0][5:0] ecode,
+    output reg  [1:0][7:0] inst_st_en,
+    output reg  [1:0][31:0] st_paddr, //存储器地址
+    output reg  [1:0][31:0] st_vaddr, //虚拟地址
+    output reg  [1:0][31:0] st_data, //存储器写数据
+    output reg  [1:0][7:0] inst_ld_en, //加载指令使能
+    output reg  [1:0][31:0] ld_paddr, //加载指令地址
+    output reg  [1:0][31:0] ld_vaddr, //加载指令虚拟地址
+    output reg  [1:0] tlbfill_en, //TLB填充使能
+    `endif 
+****************************************************************/
+);
+
+    assign mem_pf_reg_write_en[0] = reg_write_en[0];
+    assign mem_pf_reg_write_en[1] = reg_write_en[1];
+    assign mem_pf_reg_write_addr1 = reg_write_addr1;
+    assign mem_pf_reg_write_addr2 = reg_write_addr2;
+
+    assign wb_reg_write_en[0] = reg_write_en[0];
+    assign wb_reg_write_en[1] = reg_write_en[1];
+    assign wb_reg_write_addr1 = reg_write_addr1;
+    assign wb_reg_write_addr2 = reg_write_addr2;
+    assign wb_is_llw_scw[0] = is_llw_scw[0];
+    assign wb_is_llw_scw[1] = is_llw_scw[1];
+    assign wb_csr_write_en[0] = csr_write_en[0];
+    assign wb_csr_write_en[1] = csr_write_en[1];
+    assign wb_csr_addr1 = csr_addr1;
+    assign wb_csr_addr2 = csr_addr2;
+    assign wb_csr_write_data1 = csr_write_data_mem1;
+    assign wb_csr_write_data2 = csr_write_data_mem2;
+
+
+    assign is_exception1_o = {is_exception1_i,1'b0};
+    assign is_exception2_o = {is_exception2_i,1'b0};
+    assign pc_exception_cause1_o = pc_exception_cause1_i;
+    assign pc_exception_cause2_o = pc_exception_cause2_i;
+    assign instbuffer_exception_cause1_o = instbuffer_exception_cause1_i;
+    assign instbuffer_exception_cause2_o = instbuffer_exception_cause2_i;
+    assign decoder_exception_cause1_o = decoder_exception_cause1_i;
+    assign decoder_exception_cause2_o = decoder_exception_cause2_i;
+    assign dispatch_exception_cause1_o = dispatch_exception_cause1_i;
+    assign dispatch_exception_cause2_o = dispatch_exception_cause2_i;
+    assign execute_exception_cause1_o = execute_exception_cause1_i;
+    assign execute_exception_cause2_o = execute_exception_cause2_i;
+    assign commit_exception_cause1_o = `EXCEPTION_NOP;
+    assign commit_exception_cause2_o = `EXCEPTION_NOP;
+
+
+    assign commit_pc1 = pc1;
+    assign commit_pc2 = pc2;
+    assign commit_addr1 = mem_addr1;
+    assign commit_addr2 = mem_addr2;
+    assign commit_is_privilege[0] = is_privilege[0];
+    assign commit_is_privilege[1] = is_privilege[1];
+    assign commit_valid[0] = valid[0];
+    assign commit_valid[1] = valid[1];
+    assign commit_ertn[0] = is_ertn[0];
+    assign commit_ertn[1] = is_ertn[1];
+    assign commit_idle[0] = is_idle[0];
+    assign commit_idle[1] = is_idle[1];
+
+    assign commit_icacop_en = icacop_en;
+
+    reg [1:0] pause_uncache;
+    wire [31:0] mem_addr_reg [1:0];
+    
+    assign mem_addr_reg[0] = mem_addr1;
+    assign mem_addr_reg[1] = mem_addr2;
+
+    always @(*) begin
+        case(aluop1)
+            `ALU_LDB:begin
+                if(data_ok) begin
+                    pause_uncache[0] = 1'b0;
+                    case(mem_addr_reg[0][1:0])
+                        2'b00: begin
+                            wb_reg_write_data1 = {{24{dcache_read_data[7]}},dcache_read_data[7:0]};
+                        end
+                        2'b01: begin
+                            wb_reg_write_data1 = {{24{dcache_read_data[15]}},dcache_read_data[15:8]};
+                        end
+                        2'b10: begin
+                            wb_reg_write_data1 = {{24{dcache_read_data[23]}},dcache_read_data[23:16]};
+                        end
+                        2'b11: begin
+                            wb_reg_write_data1 = {{24{dcache_read_data[31]}},dcache_read_data[31:24]};
+                        end
+                        default: begin
+                            wb_reg_write_data1 = 32'b0;
+                        end
+                    endcase
+                end
+                else begin
+                    pause_uncache[0] = 1'b1;
+                    wb_reg_write_data1 = 32'b0;
+                end
+            end
+            `ALU_LDBU:begin
+                if(data_ok) begin
+                    pause_uncache[0] = 1'b0;
+                    case(mem_addr_reg[0][1:0])
+                        2'b00: begin
+                            wb_reg_write_data1 = {24'b0,dcache_read_data[7:0]};
+                        end
+                        2'b01: begin
+                            wb_reg_write_data1 = {24'b0,dcache_read_data[15:8]};
+                        end
+                        2'b10: begin
+                            wb_reg_write_data1 = {24'b0,dcache_read_data[23:16]};
+                        end
+                        2'b11: begin
+                            wb_reg_write_data1 = {24'b0,dcache_read_data[31:24]};
+                        end
+                        default: begin
+                            wb_reg_write_data1 = 32'b0;
+                        end
+                    endcase
+                end
+                else begin
+                    pause_uncache[0] = 1'b1;
+                    wb_reg_write_data1 = 32'b0;
+                end
+            end
+            `ALU_LDH:begin
+                if(data_ok) begin
+                    pause_uncache[0] = 1'b0;
+                    case(mem_addr_reg[0][1:0])
+                        2'b00: begin
+                            wb_reg_write_data1 = {{16{dcache_read_data[15]}},dcache_read_data[15:0]};
+                        end
+                        2'b10: begin
+                            wb_reg_write_data1 = {{16{dcache_read_data[31]}},dcache_read_data[31:16]};
+                        end
+                        default: begin
+                            wb_reg_write_data1 = 32'b0;
+                        end
+                    endcase
+                end
+                else begin
+                    pause_uncache[0] = 1'b1;
+                    wb_reg_write_data1 = 32'b0;
+                end
+            end
+            `ALU_LDHU:begin
+                if(data_ok) begin
+                    pause_uncache[0] = 1'b0;
+                    case(mem_addr_reg[0][1:0])
+                        2'b00: begin
+                            wb_reg_write_data1 = {16'b0,dcache_read_data[15:0]};
+                        end
+                        2'b10: begin
+                            wb_reg_write_data1 = {16'b0,dcache_read_data[31:16]};
+                        end
+                        default: begin
+                            wb_reg_write_data1 = 32'b0;
+                        end
+                    endcase
+                end
+                else begin
+                    pause_uncache[0] = 1'b1;
+                    wb_reg_write_data1 = 32'b0;
+                end
+            end
+            `ALU_LDW:begin
+                if(data_ok) begin
+                    pause_uncache[0] = 1'b0;
+                    wb_reg_write_data1 = dcache_read_data;
+                end
+                else begin
+                    pause_uncache[0] = 1'b1;
+                    wb_reg_write_data1 = 32'b0;
+                end
+            end
+            `ALU_LLW:begin
+                if(data_ok) begin
+                    pause_uncache[0] = 1'b0;
+                    wb_reg_write_data1 = dcache_read_data;
+                end
+                else begin
+                    pause_uncache[0] = 1'b1;
+                    wb_reg_write_data1 = 32'b0;
+                end
+            end
+            default: begin
+                pause_uncache[0] = 1'b0;
+                wb_reg_write_data1 = reg_write_data1;
+            end
+        endcase
+    end
+
+
+    always @(*) begin
+        case(aluop2)
+            `ALU_LDB:begin
+                if(data_ok) begin
+                    pause_uncache[1] = 1'b0;
+                    case(mem_addr_reg[1][1:0])
+                        2'b00: begin
+                            wb_reg_write_data2 = {{24{dcache_read_data[7]}},dcache_read_data[7:0]};
+                        end
+                        2'b01: begin
+                            wb_reg_write_data2 = {{24{dcache_read_data[15]}},dcache_read_data[15:8]};
+                        end
+                        2'b10: begin
+                            wb_reg_write_data2 = {{24{dcache_read_data[23]}},dcache_read_data[23:16]};
+                        end
+                        2'b11: begin
+                            wb_reg_write_data2 = {{24{dcache_read_data[31]}},dcache_read_data[31:24]};
+                        end
+                        default: begin
+                            wb_reg_write_data2 = 32'b0;
+                        end
+                    endcase
+                end
+                else begin
+                    pause_uncache[1] = 1'b1;
+                    wb_reg_write_data2 = 32'b0;
+                end
+            end
+            `ALU_LDBU:begin
+                if(data_ok) begin
+                    pause_uncache[1] = 1'b0;
+                    case(mem_addr_reg[1][1:0])
+                        2'b00: begin
+                            wb_reg_write_data2 = {24'b0,dcache_read_data[7:0]};
+                        end
+                        2'b01: begin
+                            wb_reg_write_data2 = {24'b0,dcache_read_data[15:8]};
+                        end
+                        2'b10: begin
+                            wb_reg_write_data2 = {24'b0,dcache_read_data[23:16]};
+                        end
+                        2'b11: begin
+                            wb_reg_write_data2 = {24'b0,dcache_read_data[31:24]};
+                        end
+                        default: begin
+                            wb_reg_write_data2 = 32'b0;
+                        end
+                    endcase
+                end
+                else begin
+                    pause_uncache[1] = 1'b1;
+                    wb_reg_write_data2 = 32'b0;
+                end
+            end
+            `ALU_LDH:begin
+                if(data_ok) begin
+                    pause_uncache[1] = 1'b0;
+                    case(mem_addr_reg[1][1:0])
+                        2'b00: begin
+                            wb_reg_write_data2 = {{16{dcache_read_data[15]}},dcache_read_data[15:0]};
+                        end
+                        2'b10: begin
+                            wb_reg_write_data2 = {{16{dcache_read_data[31]}},dcache_read_data[31:16]};
+                        end
+                        default: begin
+                            wb_reg_write_data2= 32'b0;
+                        end
+                    endcase
+                end
+                else begin
+                    pause_uncache[1] = 1'b1;
+                    wb_reg_write_data2 = 32'b0;
+                end
+            end
+            `ALU_LDHU:begin
+                if(data_ok) begin
+                    pause_uncache[1] = 1'b0;
+                    case(mem_addr_reg[1][1:0])
+                        2'b00: begin
+                            wb_reg_write_data2 = {16'b0,dcache_read_data[15:0]};
+                        end
+                        2'b10: begin
+                            wb_reg_write_data2 = {16'b0,dcache_read_data[31:16]};
+                        end
+                        default: begin
+                            wb_reg_write_data2 = 32'b0;
+                        end
+                    endcase
+                end
+                else begin
+                    pause_uncache[1] = 1'b1;
+                    wb_reg_write_data2 = 32'b0;
+                end
+            end
+            `ALU_LDW:begin
+                if(data_ok) begin
+                    pause_uncache[1] = 1'b0;
+                    wb_reg_write_data2 = dcache_read_data;
+                end
+                else begin
+                    pause_uncache[1] = 1'b1;
+                    wb_reg_write_data2 = 32'b0;
+                end
+            end
+            `ALU_LLW:begin
+                if(data_ok) begin
+                    pause_uncache[1] = 1'b0;
+                    wb_reg_write_data2 = dcache_read_data;
+                end
+                else begin
+                    pause_uncache[1] = 1'b1;
+                    wb_reg_write_data2 = 32'b0;
+                end
+            end
+            default: begin
+                pause_uncache[1] = 1'b0;
+                wb_reg_write_data2 = reg_write_data2;
+            end
+        endcase
+    end
+
+    assign pause_mem = (pause_uncache[0] || pause_uncache[1]) && (is_exception1_o == 0 && is_exception2_o == 0);
+/***************************************************************************8
+    `ifdef DIFF
+    always @(*) begin
+        debug_wb_pc[0] = pc[0];
+        debug_wb_pc[1] = pc[1];
+        debug_wb_inst[0] = inst[0];
+        debug_wb_inst[1] = inst[1];
+        debug_wb_rf_we[0] = 4'b0;
+        debug_wb_rf_we[1] = 4'b0;
+        debug_wb_rf_wnum[0] = 5'b0;
+        debug_wb_rf_wnum[1] = 5'b0;
+        debug_wb_rf_wdata[0] = 32'b0;
+        debug_wb_rf_wdata[1] = 32'b0;
+
+        inst_valid[0] = valid[0];
+        inst_valid[1] = valid[1];
+        cnt_inst[0] = (aluop[0] == `ALU_RDCNTID || aluop[0] == `ALU_RDCNTVLW || aluop[0] == `ALU_RDCNTVHW);
+        cnt_inst[1] = (aluop[1] == `ALU_RDCNTID || aluop[1] == `ALU_RDCNTVLW || aluop[1] == `ALU_RDCNTVHW);
+
+        csr_rstat_en[0] = 1'b0;
+        csr_rstat_en[1] = 1'b0;
+        csr_data[0] = 32'b0;
+        csr_data[1] = 32'b0;
+
+        excp_flush[0] = 1'b0;
+        excp_flush[1] = 1'b0;
+        ertn_flush[0] = 1'b0;
+        ertn_flush[1] = 1'b0;
+        ecode[0] = 6'b0;
+        ecode[1] = 6'b0;
+
+        inst_st_en[0] = {4'b0, (is_llw_scw && (aluop == `ALU_SCW)),aluop == `ALU_STW, aluop == `ALU_STH, aluop == `ALU_STB};
+        inst_st_en[1] = {4'b0, (is_llw_scw && (aluop == `ALU_SCW)),aluop == `ALU_STW, aluop == `ALU_STH, aluop == `ALU_STB};
+        st_paddr[0] = dcache_P_addr;
+        st_paddr[1] = dcache_P_addr;
+        st_vaddr[0] = mem_addr[0];
+        st_vaddr[1] = mem_addr[1];
+        st_data[0] = mem_write_data[0];
+        st_data[1] = mem_write_data[1];
+
+        inst_ld_en[0] = {2'b0, aluop[0] == `ALU_LDW, aluop[0] == `ALU_LDHU, aluop[0] == `ALU_LDH, aluop[0] == `ALU_LDBU, aluop[0] == `ALU_LDB};
+        inst_ld_en[1] = {2'b0, aluop[1] == `ALU_LDW, aluop[1] == `ALU_LDHU, aluop[1] == `ALU_LDH, aluop[1] == `ALU_LDBU, aluop[1] == `ALU_LDB};
+        ld_paddr[0] = dcache_P_addr;
+        ld_paddr[1] = dcache_P_addr;
+        ld_vaddr[0] = mem_addr[0];
+        ld_vaddr[1] = mem_addr[1];
+        tlbfill_en[0] = (aluop == `ALU_TLBFILL) ;
+        tlbfill_en[1] = (aluop == `ALU_TLBFILL) ;
+    end
+    `endif
+*******************************************************************************************************************/
+endmodule
